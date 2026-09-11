@@ -18,3 +18,10 @@ africa_districts.rds
 .RData
 *.Rproj
 README*
+setup_git_repo.R
+setup_git_repo.log
+sia_ai_mwanza_pro_v2.R
+ci/
+input/africa_countries.rds
+input/africa_provinces.rds
+input/africa_districts.rds
