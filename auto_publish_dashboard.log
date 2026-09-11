@@ -1,0 +1,1884 @@
+Messages d'avis :
+1: le package 'rsconnect' a été compilé avec la version R 4.4.3 
+2: le package 'blastula' a été compilé avec la version R 4.4.3 
+3: le package 'keyring' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO AFRO Shiny Dashboard deployment...
+^C2025-11-01 13:00:01 | 🔁 [1/6] Attempt 1/3 – Running PADACORD data fetch (Python via .BAT)...
+^C^CMessage d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,069,145b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11747789
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1667426575
+  building: Processing bundle: 11747789
+  building: Parsing manifest
+  building: Building image: 14600221
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Building package: websocket
+  building: Building package: igraph
+  building: Building package: ggforce
+  building: Building package: ellmer
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14600221
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,069,508b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11752822
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1667942519
+  building: Processing bundle: 11752822
+  building: Parsing manifest
+  building: Building image: 14607624
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Building package: websocket
+  building: Building package: ggforce
+  building: Building package: gdtools
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14607624
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,069,927b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11758837
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1668496226
+  building: Processing bundle: 11758837
+  building: Parsing manifest
+  building: Building image: 14616675
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Building package: websocket
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14616675
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,069,814b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11763875
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1668970326
+  building: Processing bundle: 11763875
+  building: Building image: 14624422
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14624422
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Timeout was reached [api.shinyapps.io]:
+Connection timed out after 10024 milliseconds
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,070,417b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11776764
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1670367003
+  building: Processing bundle: 11776764
+  building: Parsing manifest
+  building: Building image: 14641769
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14641769
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,070,631b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11781087
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1670826310
+  building: Processing bundle: 11781087
+  building: Building image: 14647344
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14647344
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Timeout was reached [api.shinyapps.io]:
+Connection timed out after 378823 milliseconds
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,070,879b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11795820
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1672743401
+  building: Processing bundle: 11795820
+  building: Building image: 14669812
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Building package: websocket
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14669812
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 31 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_LQAS_data_c.rds', 'input/Scope.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 147,071,361b bundle
+ℹ Uploading bundle...
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Failed sending data to the peer [shinyapps-upload.s3.amazonaws.com]:
+Send failure: Connection was reset
+Appels : <Anonymous> ... uploadBundle -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,411,516b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11826500
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1676029943
+  building: Processing bundle: 11826500
+  building: Building image: 14712555
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14712555
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,339b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11832002
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1676544219
+  building: Processing bundle: 11832002
+  building: Building image: 14720667
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14720667
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,586b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11848895
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1678221519
+  building: Processing bundle: 11848895
+  building: Building image: 14743641
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14743641
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,818b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11854443
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1678790040
+  building: Processing bundle: 11854443
+  building: Parsing manifest
+  building: Building image: 14751549
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14751549
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,806b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11860499
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1679379982
+  building: Processing bundle: 11860499
+  building: Parsing manifest
+  building: Building image: 14760038
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14760038
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,184b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11865819
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1679828953
+  building: Processing bundle: 11865819
+  building: Building image: 14767291
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14767291
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,490b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11877983
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1680951748
+  building: Processing bundle: 11877983
+  building: Parsing manifest
+  building: Building image: 14782889
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14782889
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,585b bundle
+ℹ Uploading bundle...
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Failed sending data to the peer [shinyapps-upload.s3.amazonaws.com]:
+Send failure: Connection was aborted
+Appels : <Anonymous> ... uploadBundle -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,668b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11912324
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1684348225
+  building: Processing bundle: 11912324
+  building: Building image: 14829105
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14829105
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,412,800b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11917864
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1684872042
+  building: Processing bundle: 11917864
+  building: Building image: 14836301
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14836301
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,441,277b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11923556
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1685451474
+  building: Processing bundle: 11923556
+  building: Parsing manifest
+  building: Building image: 14843767
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14843767
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,441,252b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11928739
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1685975743
+  building: Processing bundle: 11928739
+  building: Building image: 14850739
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14850739
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,441,492b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11937690
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1686895678
+  building: Processing bundle: 11937690
+  building: Parsing manifest
+  building: Building image: 14862248
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Timeout was reached [api.shinyapps.io]:
+Operation too slow. Less than 1 bytes/sec transferred the last 600 seconds
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,441,653b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11945303
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1687650682
+  building: Processing bundle: 11945303
+  building: Parsing manifest
+  building: Building image: 14871332
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14871332
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,443,973b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11951401
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1688163718
+  building: Processing bundle: 11951401
+  building: Parsing manifest
+  building: Building image: 14879314
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14879314
+  deploying: Starting instances
+  rollforward: Activating new instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,431,016b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11956920
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1688691715
+  building: Processing bundle: 11956920
+  building: Parsing manifest
+  building: Building image: 14886801
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14886801
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,431,022b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11967394
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1689771257
+  building: Processing bundle: 11967394
+  building: Parsing manifest
+  building: Building image: 14899538
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14899538
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,430,508b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11971268
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1690174812
+  building: Processing bundle: 11971268
+  building: Parsing manifest
+  building: Building image: 14903993
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14903993
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,431,220b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11978204
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1690890759
+  building: Processing bundle: 11978204
+  building: Parsing manifest
+  building: Building image: 14912296
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14912296
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,603,854b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11983341
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1691394151
+  building: Processing bundle: 11983341
+  building: Building image: 14918657
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14918657
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,625,281b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 11988198
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1691892205
+  building: Processing bundle: 11988198
+  building: Building image: 14925353
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14925353
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Could not resolve hostname [api.shinyapps.io]:
+Could not resolve host: api.shinyapps.io
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,626,977b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12007791
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1693999233
+  building: Processing bundle: 12007791
+  building: Building image: 14949075
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14949075
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,627,365b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12012671
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1694482231
+  building: Processing bundle: 12012671
+  building: Building image: 14954762
+  building: Installing system dependencies
+## Begin Task Log ##############################################################
+## End Task Log ################################################################
+Erreur : Unhandled Exception: child_task=1694482232 child_task_status=error: Unhandled Exception: Timeout during request
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,646,905b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12017819
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1695001128
+  building: Processing bundle: 12017819
+  building: Building image: 14960965
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 14960965
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,647,013b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12022754
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1695494960
+  building: Processing bundle: 12022754
+  building: Building image: 14966711
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+^CMessage d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,647,320b bundle
+ℹ Uploading bundle...
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Timeout was reached [shinyapps-upload.s3.amazonaws.com]:
+Connection timed out after 10000 milliseconds
+Appels : <Anonymous> ... uploadBundle -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,647,903b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12083899
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1701940465
+  building: Processing bundle: 12083899
+  building: Building image: 15035430
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15035430
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Could not resolve hostname [api.shinyapps.io]:
+Could not resolve host: api.shinyapps.io
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,661,269b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12104826
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1704010930
+  building: Processing bundle: 12104826
+  building: Building image: 15058069
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15058069
+  deploying: Starting instances
+  rollforward: Activating new instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,662,629b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12109231
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1704449214
+  building: Processing bundle: 12109231
+  building: Building image: 15062966
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15062966
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,663,572b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12129359
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1706413675
+  building: Processing bundle: 12129359
+  building: Building image: 15084932
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15084932
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Could not resolve hostname [api.shinyapps.io]:
+Could not resolve host: api.shinyapps.io
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,783b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12139948
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1707509189
+  building: Processing bundle: 12139948
+  building: Parsing manifest
+  building: Building image: 15096662
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15096662
+  deploying: Starting instances
+  rollforward: Activating new instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,871b bundle
+ℹ Uploading bundle...
+^CMessage d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,751b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12161283
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1709483845
+  building: Processing bundle: 12161283
+  building: Building image: 15119465
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15119465
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,427b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12166765
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1709967759
+  building: Processing bundle: 12166765
+  building: Building image: 15125426
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15125426
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,730b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12200569
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1712869975
+  building: Processing bundle: 12200569
+  building: Building image: 15161817
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15161817
+  deploying: Starting instances
+  rollforward: Activating new instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 33 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', 'input/AFRO_admin_data_vf2.rds', 'input/AFRO_LQAS_combined.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 184 dependencies
+✔ Created 148,668,789b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12211298
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1713782389
+  building: Processing bundle: 12211298
+  building: Building image: 15173510
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15173510
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Timeout was reached [api.shinyapps.io]:
+Connection timed out after 10007 milliseconds
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,782,250b bundle
+ℹ Uploading bundle...
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Failed sending data to the peer [shinyapps-upload.s3.amazonaws.com]:
+Send failure: Connection was aborted
+Appels : <Anonymous> ... uploadBundle -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+Erreur dans curl::curl_fetch_memory(url, handle = handle) : 
+  Could not resolve hostname [api.shinyapps.io]:
+Could not resolve host: api.shinyapps.io
+Appels : <Anonymous> ... httpRequest -> http -> <Anonymous> -> raise_libcurl_error
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,782,911b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12418600
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1732102462
+  building: Processing bundle: 12418600
+  building: Parsing manifest
+  building: Building image: 15399996
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15399996
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,782,661b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12421988
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1732418530
+  building: Processing bundle: 12421988
+  building: Building image: 15404023
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15404023
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,784,324b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12426782
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1732872917
+  building: Processing bundle: 12426782
+  building: Building image: 15410317
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15410317
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,039b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12432868
+── Deploying to server ─────────────────────────────────────────────────────────
+Error in `POST()`:
+! <https://api.shinyapps.io/v1/applications/15917837/deploy> failed with
+  HTTP status 409
+Unable to dispatch task for application=15917837 as there are 1 tasks already
+in progress. This is most likely a transient error. Please try again in a bit.
+If this error persists please contact support.
+Backtrace:
+    ▆
+ 1. └─rsconnect::deployApp(...)
+ 2.   └─client$deployApplication(application, bundle$id, space)
+ 3.     └─rsconnect:::POST_JSON(service, authInfo, path, json)
+ 4.       └─rsconnect:::POST(...)
+ 5.         └─rsconnect:::httpRequestWithBody(...)
+ 6.           └─rsconnect:::handleResponse(httpResponse, error_call = error_call)
+ 7.             └─rsconnect (local) reportError(unlist(json$error))
+ 8.               └─cli::cli_abort(...)
+ 9.                 └─rlang::abort(...)
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,545b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12439091
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1733728516
+  building: Processing bundle: 12439091
+  building: Building image: 15426163
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15426163
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,695b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12444099
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1734181195
+  building: Processing bundle: 12444099
+  building: Building image: 15432454
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15432454
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,186b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12448570
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1734607737
+  building: Processing bundle: 12448570
+  building: Building image: 15438243
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15438243
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,421b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12455205
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1735242039
+  building: Processing bundle: 12455205
+  building: Building image: 15445611
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15445611
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,785,349b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12460266
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1735701847
+  building: Processing bundle: 12460266
+  building: Building image: 15452078
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15452078
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,786,907b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12465293
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1736164236
+  building: Processing bundle: 12465293
+  building: Building image: 15458347
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15458347
+  deploying: Starting instances
+  rollforward: Activating new instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,972,607b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12470312
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1736622552
+  building: Processing bundle: 12470312
+  building: Building image: 15465420
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15465420
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,972,717b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12475648
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1737072551
+  building: Processing bundle: 12475648
+  building: Parsing manifest
+  building: Building image: 15472602
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15472602
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,812,425b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12492296
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1738539294
+  building: Processing bundle: 12492296
+  building: Building image: 15493585
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15493585
+  deploying: Starting instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,684,218b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12497650
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1738990684
+  building: Processing bundle: 12497650
+  building: Building image: 15500555
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15500555
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,684,329b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12502668
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1739402788
+  building: Processing bundle: 12502668
+  building: Building image: 15508081
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,684,382b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12508043
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1739829010
+  building: Processing bundle: 12508043
+  building: Building image: 15516494
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15516494
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,684,552b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12512632
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1740194337
+  building: Processing bundle: 12512632
+  building: Building image: 15523270
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15523270
+  deploying: Starting instances
+  terminating: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,685,304b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12516582
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1740509812
+  building: Processing bundle: 12516582
+  building: Building image: 15527770
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15527770
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', 'input/AFRO_admin_data.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,685,573b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12519326
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1740734598
+  building: Processing bundle: 12519326
+  building: Building image: 15531049
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 39 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', '.vscode/launch.json', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+✔ Found 185 dependencies
+✔ Created 148,685,733b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 12524404
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1741145139
+  building: Processing bundle: 12524404
+  building: Building image: 15537378
+  building: Installing system dependencies
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 15537378
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+✅ Deployment completed successfully for WHO-AFRO_SIA_Dashboard
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 39 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', '.vscode/launch.json', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+The following package(s) have unsatisfied dependencies:
+- sfheaders  requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- geojsonsf  requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- geometries requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- jsonify    requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+Consider updating the required dependencies as appropriate.
+
+Erreur dans renv_snapshot_validate_report(valid, prompt, force) : 
+  aborting snapshot due to pre-flight validation failure
+Appels : <Anonymous> ... snapshotRenvDependencies -> <Anonymous> -> renv_snapshot_validate_report
+Traceback (most recent calls last):
+9: rsconnect::deployApp(appDir = dashboard_path, appName = app_name, 
+       account = account_name, logLevel = "normal", launch.browser = FALSE, 
+       forceUpdate = TRUE)
+8: bundleApp(appName = deployment$name, appDir = appDir, appFiles = appFiles, 
+       appMetadata = appMetadata, quiet = quiet, verbose = verbose, 
+       pythonConfig = pythonConfig, image = image, envManagement = envManagement, 
+       envManagementR = envManagementR, envManagementPy = envManagementPy)
+7: createAppManifest(appDir = bundleDir, appMetadata = appMetadata, 
+       users = users, pythonConfig = pythonConfig, retainPackratDirectory = TRUE, 
+       image = image, envManagement = envManagement, envManagementR = envManagementR, 
+       envManagementPy = envManagementPy, verbose = verbose, quiet = quiet)
+6: bundlePackages(bundleDir = appDir, extraPackages = extraPackages, 
+       verbose = verbose, quiet = quiet)
+5: computePackageDependencies(bundleDir, extraPackages, quiet = quiet, 
+       verbose = verbose)
+4: snapshotRenvDependencies(bundleDir, extraPackages, quiet = quiet, 
+       verbose = verbose)
+3: renv::snapshot(bundleDir, packages = deps$Package, prompt = FALSE)
+2: renv_snapshot_validate_report(valid, prompt, force)
+1: stop("aborting snapshot due to pre-flight validation failure")
+Exécution arrêtée
+Message d'avis :
+le package 'rsconnect' a été compilé avec la version R 4.4.3 
+🚀 Starting WHO-AFRO SIA Dashboard deployment…
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Re-deploying "WHO-AFRO_SIA_Dashboard" using "server: shinyapps.io / username: afropepdim"
+ℹ Looking up application with id "15917837"...
+✔ Found application <https://afropepdim.shinyapps.io/WHO-AFRO_SIA_Dashboard/>
+ℹ Bundling 38 files: '.RDataTmp', '.rscignore.txt', '.rsconnectignore', '.vscode/launch.json', 'app.R', 'app_updt_21072026.R', 'auto_publish_dashboard.log', 'ci/check_app.R', 'ci/deploy_connect.R', 'district_performance_optimized.R', 'district_performance_optimized_updt_21072026.R', 'input/4434.rds', 'input/4445.rds', 'input/5212.rds', 'input/5710.rds', 'input/africa_countries.rds', 'input/africa_districts.rds', 'input/africa_provinces.rds', …, 'www/AFRO_SIA_Dashboard_QR.png', and 'www/who_afro_logo.png'
+ℹ Capturing R dependencies
+The following package(s) have unsatisfied dependencies:
+- sfheaders  requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- geojsonsf  requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- geometries requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+- jsonify    requires Rcpp (>= 1.1.0), but version 1.0.13 is installed
+Consider updating the required dependencies as appropriate.
+
+Erreur dans renv_snapshot_validate_report(valid, prompt, force) : 
+  aborting snapshot due to pre-flight validation failure
+Appels : <Anonymous> ... snapshotRenvDependencies -> <Anonymous> -> renv_snapshot_validate_report
+Traceback (most recent calls last):
+9: rsconnect::deployApp(appDir = dashboard_path, appName = app_name, 
+       account = account_name, logLevel = "normal", launch.browser = FALSE, 
+       forceUpdate = TRUE)
+8: bundleApp(appName = deployment$name, appDir = appDir, appFiles = appFiles, 
+       appMetadata = appMetadata, quiet = quiet, verbose = verbose, 
+       pythonConfig = pythonConfig, image = image, envManagement = envManagement, 
+       envManagementR = envManagementR, envManagementPy = envManagementPy)
+7: createAppManifest(appDir = bundleDir, appMetadata = appMetadata, 
+       users = users, pythonConfig = pythonConfig, retainPackratDirectory = TRUE, 
+       image = image, envManagement = envManagement, envManagementR = envManagementR, 
+       envManagementPy = envManagementPy, verbose = verbose, quiet = quiet)
+6: bundlePackages(bundleDir = appDir, extraPackages = extraPackages, 
+       verbose = verbose, quiet = quiet)
+5: computePackageDependencies(bundleDir, extraPackages, quiet = quiet, 
+       verbose = verbose)
+4: snapshotRenvDependencies(bundleDir, extraPackages, quiet = quiet, 
+       verbose = verbose)
+3: renv::snapshot(bundleDir, packages = deps$Package, prompt = FALSE)
+2: renv_snapshot_validate_report(valid, prompt, force)
+1: stop("aborting snapshot due to pre-flight validation failure")
+Exécution arrêtée
