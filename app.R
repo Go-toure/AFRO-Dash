@@ -5021,7 +5021,7 @@ ui <- dashboardPage(
               width = 12, solidHeader = TRUE, status = "info", collapsible = TRUE,
               tabsetPanel(
                 id = "scope_tabs",
-                tabPanel(tags$div(icon("globe"), "Scope Map"),
+                tabPanel(tags$div(icon("globe"), "Scope Map"), value = "scope_map",
                          div(style = "text-align:center;",
                              shinycssloaders::withSpinner(
                                plotOutput("scope_map_plot", height = "650px", width = "100%"),
@@ -5030,7 +5030,7 @@ ui <- dashboardPage(
                              downloadButton("download_scope_map", "🗺️ Download Map",
                                             class = "btn-primary-custom", style = "width:200px;"))
                 ),
-                tabPanel(tags$div(icon("layer-group"), "Scope Summary Map"),
+                tabPanel(tags$div(icon("layer-group"), "Scope Summary Map"), value = "scope_summary_map",
                          div(style = "margin: 10px 0 12px 0; padding:10px 12px; background:#f8fafc; border-left:4px solid #1f4e79; border-radius:6px; font-size:12px; color:#374151;",
                              tags$b("Definition: "),
                              "One map aggregated over the whole selected period -- a district is shown as in scope if it appeared in ANY round. ",
@@ -7730,6 +7730,7 @@ server <- function(input, output, session) {
   scope_analysis <- reactiveVal(NULL)
   scope_analysis_running <- reactiveVal(FALSE)
   scope_summary_analysis <- reactiveVal(NULL)
+  scope_summary_params <- reactiveVal(NULL)
 
   # ADDED: Reactive block choices for scope analysis
   scope_block_choices <- reactive({
@@ -7940,6 +7941,36 @@ server <- function(input, output, session) {
     }
   })
   
+  # Builds the aggregated Scope Summary Map from a snapshotted parameter set
+  # (captured at Analyze-time so it stays consistent with the per-round map
+  # even if filter inputs change before this actually runs -- used both for
+  # an immediate build below and for the lazy tab-switch build further down).
+  run_scope_summary_analysis <- function(params) {
+    tryCatch(
+      generate_scope_summary_map(
+        scope_data = scope,
+        x_months = params$x_months,
+        year_selection = params$year_selection,
+        block_selection = params$block_selection,
+        country_selection = params$country_selection,
+        province_selection = params$province_selection,
+        district_selection = params$district_selection,
+        vaccine_selection = params$vaccine_selection,
+        afro_blocks = afro_blocks,
+        ist_blocks = ist_blocks,
+        all_countries = all_countries,
+        all_provinces = all_provinces,
+        all_districts = all_districts,
+        block_type = params$block_type,
+        ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS
+      ),
+      error = function(e) {
+        showNotification(paste("Scope Summary Map failed:", e$message), type = "warning")
+        NULL
+      }
+    )
+  }
+
   # FIXED: Analysis with proper multi-select handling and dynamic block switching
   observeEvent(input$scope_analyze, {
     if (input$tabs != "scope") return()
@@ -8016,38 +8047,49 @@ server <- function(input, output, session) {
       force_gc()
 
       # ---- Companion aggregated summary map (same filters/period) ----
+      # Only built here eagerly if the Scope Summary Map sub-tab is already
+      # the one on screen. Otherwise it's deferred to the lazy tab-switch
+      # observer below, so "Analyze" doesn't pay for a map that may not be
+      # looked at this time (mirrors the Unresolved Cases lazy-reason build).
       scope_summary_analysis(NULL)
-      summary_result <- tryCatch(
-        generate_scope_summary_map(
-          scope_data = scope,
-          x_months = x_months,
-          year_selection = if (length(year_selection) > 0) year_selection else NULL,
-          block_selection = block_selection,
-          country_selection = country_selection,
-          province_selection = province_selection,
-          district_selection = district_selection,
-          vaccine_selection = vaccine_selection,
-          afro_blocks = afro_blocks,
-          ist_blocks = ist_blocks,
-          all_countries = all_countries,
-          all_provinces = all_provinces,
-          all_districts = all_districts,
-          block_type = input$scope_block_type,
-          ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS
-        ),
-        error = function(e) {
-          showNotification(paste("Scope Summary Map failed:", e$message), type = "warning")
-          NULL
-        }
+      summary_params <- list(
+        x_months = x_months,
+        year_selection = if (length(year_selection) > 0) year_selection else NULL,
+        block_selection = block_selection,
+        country_selection = country_selection,
+        province_selection = province_selection,
+        district_selection = district_selection,
+        vaccine_selection = vaccine_selection,
+        block_type = input$scope_block_type
       )
-      scope_summary_analysis(summary_result)
-      force_gc()
+      scope_summary_params(summary_params)
+
+      if (identical(input$scope_tabs, "scope_summary_map")) {
+        scope_summary_analysis(run_scope_summary_analysis(summary_params))
+        force_gc()
+      }
 
     }, "SIA Scope Analysis")
     
     # Reset running flag when done
     scope_analysis_running(FALSE)
   })
+
+  # Lazily build the Scope Summary Map the first time the user actually
+  # switches to that sub-tab after an Analyze click (same tradeoff already
+  # accepted for Unresolved Cases: instant Analyze, one short delay the
+  # first time this specific sub-tab is opened).
+  observeEvent(input$scope_tabs, {
+    if (input$tabs != "scope") return()
+    if (!identical(input$scope_tabs, "scope_summary_map")) return()
+    params <- scope_summary_params()
+    req(params)
+    if (!is.null(scope_summary_analysis())) return()
+    safe_analysis({
+      scope_summary_analysis(run_scope_summary_analysis(params))
+      force_gc()
+    }, "SIA Scope Analysis (lazy summary map)")
+  }, ignoreInit = TRUE)
   
   # Reset running flag if analysis fails
   observe({
