@@ -715,7 +715,15 @@ preprocess_main_data <- function(data) {
       vaccine.type = if_else(is.na(vaccine.type), "nOPV2", as.character(vaccine.type))
     ) %>%
     filter(!is.na(round_start_date)) %>%
-    select(any_of(ESSENTIAL_COLS)) %>%
+    # ESSENTIAL_COLS only lists the traditional r_*/prct_r_* reason columns by
+    # exact name. The Reasons Analysis "Combined Overview" tab also needs the
+    # Absence (abs_reason_*) and Non-Compliance (nc_reason_*) columns, whose
+    # exact suffixes vary by dataset -- select(any_of(ESSENTIAL_COLS)) alone
+    # was silently dropping ALL of them here, so absence_result/nc_result were
+    # always NULL downstream and only Traditional Reasons ever appeared in the
+    # combined heatmap, no matter which combination radio button was picked.
+    # Keep the essential whitelist AND any column matching those two prefixes.
+    select(any_of(ESSENTIAL_COLS) | matches("^abs_reason_|^nc_reason_")) %>%
     optimize_data_types()
 }
 
