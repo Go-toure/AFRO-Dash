@@ -3506,7 +3506,8 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
         scale_color_identity() +
         scale_fill_gradientn(colors = c("#f7fbff", "#6baed6", "#08306b"),
                              name = "Percentage (%)") +
-        facet_grid(reason_type ~ ., scales = "free_y", space = "free_y") +
+        facet_grid(reason_type ~ ., scales = "free_y", space = "free_y",
+                   labeller = label_wrap_gen(width = 10)) +
         labs(title = paste("Comprehensive Reasons Analysis -", geo_display, "Level -", block_type_text),
              subtitle = paste(period_label, geo_info),
              x = geo_display, y = NULL) +
@@ -3517,7 +3518,7 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
           axis.title.x = element_text(size = 16, margin = margin(t = 10)),
           axis.line = element_line(color = "grey70", linewidth = 0.5),
           axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-          strip.text = element_text(face = "bold", size = 18, color = "white"),
+          strip.text = element_text(face = "bold", size = 12, color = "white", lineheight = 0.85),
           strip.background = element_rect(fill = "#2c3e50", color = NA),
           legend.position = "bottom",
           legend.key.width = unit(2, "cm"),
@@ -3588,7 +3589,8 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
           scale_color_identity() +
           scale_fill_gradientn(colors = c("#f7fbff", "#6baed6", "#08306b"),
                                name = "Percentage (%)") +
-          facet_grid(reason_type ~ ., scales = "free_y", space = "free_y") +
+          facet_grid(reason_type ~ ., scales = "free_y", space = "free_y",
+                     labeller = label_wrap_gen(width = 10)) +
           labs(title = paste("Comprehensive Reasons Analysis -", geo_display, "Level -", block_type_text),
                subtitle = paste(period_label, geo_info),
                x = geo_display, y = NULL) +
@@ -3599,7 +3601,7 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
             axis.title.x = element_text(size = 16, margin = margin(t = 10)),
             axis.line = element_line(color = "grey70", linewidth = 0.5),
             axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-            strip.text = element_text(face = "bold", size = 16, color = "white"),
+            strip.text = element_text(face = "bold", size = 12, color = "white", lineheight = 0.85),
             strip.background = element_rect(fill = "#2c3e50", color = NA),
             legend.position = "bottom",
             legend.key.width = unit(2, "cm"),
@@ -6082,7 +6084,7 @@ ui <- dashboardPage(
                 box(
                   title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
                   width = 12, solidHeader = TRUE, status = "info",
-                  plotOutput("reasons_combined_heatmap", height = "800px"),
+                  plotOutput("reasons_combined_heatmap", height = "1100px"),
                   div(style = "text-align: center; margin-top: 15px;",
                       downloadButton("download_reasons_combined_plot", 
                                      "📊 Download Combined Visualization", 

@@ -1,0 +1,2 @@
+cd "C:\Users\TOURE\Documents\Gith_repositories\AFRO-Dash"
+powershell -ExecutionPolicy Bypass -File .\git-commit-push.ps1 -Message "Refresh AFRO_LQAS_data_c.rds with restored Absence/Non-Compliance reason columns" -Force
