@@ -1,0 +1,66 @@
+# =============================================================
+# WHO AFRO – AFRO-SIA Dashboard Deployment Ignore List
+# Excludes static shapefiles, logs, raw data, and local-only files
+# Keeps dynamic .rds inputs for live app updates
+# =============================================================
+
+# Ignore R history and local settings
+.RData
+.Rhistory
+.Rproj.user/
+.Rproj
+
+# Ignore logs, temporary files, and deployment wrappers
+logs/
+*.log
+*.zip
+auto_publish_dashboard.R
+auto_fetch_data_wrapper.R
+auto_fetch_data_wrapper.log
+auto_fetch_data.bat
+
+# Ignore documentation and presentations
+*.pptx
+*.pdf
+README*
+README.md
+
+# Ignore spreadsheets and raw files (not needed for runtime)
+*.csv
+*.xlsx
+*.xlsm
+
+# Ignore temporary and backup folders
+backup/
+outputs/
+temp/
+__MACOSX/
+
+# =============================================================
+# ❌ Static shapefiles (do not change between deployments)
+# =============================================================
+africa_countries.rds
+africa_provinces.rds
+africa_districts.rds
+
+# =============================================================
+# ✅ Keep all other .rds files (data inputs, summaries, metrics)
+# =============================================================
+
+# =============================================================
+# 🧩 Misc: Local cache, project, and testing artifacts
+# =============================================================
+.Rhistory
+.RData
+*.Rproj
+*.bak
+*.tmp
+*.old
+*.DS_Store
+
+# =============================================================
+# 🧠 Notes:
+# - shinyapps.io uses this file (.rscignore) to decide what to skip.
+# - This replaces older .rsconnectignore but keeps all its logic.
+# - Dynamic files in /input/ (.rds) remain included for live refresh.
+# =============================================================

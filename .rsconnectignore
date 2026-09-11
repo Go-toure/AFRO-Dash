@@ -1,0 +1,43 @@
+# =============================================================
+# WHO AFRO – AFRO-SIA Dashboard Deployment Ignore List
+# Excludes only static shapefiles and unnecessary local files
+# Keeps dynamic .rds inputs for live app updates
+# =============================================================
+
+# Ignore R history and local settings
+.RData
+.Rhistory
+.Rproj.user/
+.Rproj
+
+# Ignore logs and deployment scripts
+logs/
+auto_publish_dashboard.R
+*.log
+*.zip
+
+# Ignore documentation and presentations
+*.pptx
+*.pdf
+
+# Ignore spreadsheets and raw files (not needed for runtime)
+*.csv
+*.xlsx
+*.xlsm
+
+# Ignore temporary and backup folders
+backup/
+outputs/
+temp/
+__MACOSX/
+
+# =============================================================
+# ❌ Static shapefiles (do not change between deployments)
+# =============================================================
+africa_countries.rds
+africa_provinces.rds
+africa_districts.rds
+
+# =============================================================
+# ✅ Keep all other .rds files (data inputs, summaries, metrics)
+# =============================================================

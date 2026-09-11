@@ -1,0 +1,19 @@
+﻿# R session/workspace junk
+.Rhistory
+.RData
+.RDataTmp
+
+# Local deployment records (account-specific -- not meant to be shared)
+rsconnect/
+
+# Logs
+logs/
+*.log
+
+# Raw shapefiles -- only needed by the offline prebuild pipeline; the app
+# only ever reads the *_simplified.rds versions at runtime (those ARE
+# tracked). Keeping these out of git avoids ~85MB of data with no reason
+# to ever have version history.
+input/africa_countries.rds
+input/africa_provinces.rds
+input/africa_districts.rds
