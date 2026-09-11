@@ -463,7 +463,19 @@ optimize_data_types <- function(data) {
   
   # Convert character columns to factor for memory efficiency in deployment
   if (is_deployment) {
+    # Exclude geographic identifier columns from factor conversion. These
+    # feed dropdown "choices" built via patterns like c("All" = "", values)
+    # across many tabs (Scope, District Performance, LQAS, Reasons,
+    # Unresolved, Missed Children, Coverage, Admin Overview, ...) -- base
+    # R's c() silently converts a factor to its underlying integer level
+    # codes when combined with a plain character vector that way, which
+    # showed up as country pickers listing "1, 2, 3, ..." instead of names
+    # once deployed (this branch only runs when is_deployment is TRUE, so
+    # it was never seen in local testing). Keep these as plain character;
+    # still factor-ize everything else eligible for the memory savings.
+    exclude_from_factor <- "country|province|district"
     char_cols <- names(data)[sapply(data, is.character)]
+    char_cols <- char_cols[!grepl(exclude_from_factor, char_cols, ignore.case = TRUE)]
     for (col in char_cols) {
       if (col %in% names(data) && n_distinct(data[[col]]) < 1000) {
         data[[col]] <- as.factor(data[[col]])
