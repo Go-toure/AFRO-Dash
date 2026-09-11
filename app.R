@@ -8047,10 +8047,12 @@ server <- function(input, output, session) {
       force_gc()
 
       # ---- Companion aggregated summary map (same filters/period) ----
-      # Only built here eagerly if the Scope Summary Map sub-tab is already
-      # the one on screen. Otherwise it's deferred to the lazy tab-switch
-      # observer below, so "Analyze" doesn't pay for a map that may not be
-      # looked at this time (mirrors the Unresolved Cases lazy-reason build).
+      # Just snapshot the params here -- the level-triggered observer below
+      # (not an edge-triggered observeEvent) picks this up and builds the
+      # summary map only if/when that sub-tab is actually the one on screen,
+      # whether that's true right now or becomes true later by switching
+      # tabs. Keeps "Analyze" itself fast (mirrors the Unresolved Cases
+      # lazy-reason build).
       scope_summary_analysis(NULL)
       summary_params <- list(
         x_months = x_months,
@@ -8064,32 +8066,31 @@ server <- function(input, output, session) {
       )
       scope_summary_params(summary_params)
 
-      if (identical(input$scope_tabs, "scope_summary_map")) {
-        scope_summary_analysis(run_scope_summary_analysis(summary_params))
-        force_gc()
-      }
-
     }, "SIA Scope Analysis")
     
     # Reset running flag when done
     scope_analysis_running(FALSE)
   })
 
-  # Lazily build the Scope Summary Map the first time the user actually
-  # switches to that sub-tab after an Analyze click (same tradeoff already
-  # accepted for Unresolved Cases: instant Analyze, one short delay the
-  # first time this specific sub-tab is opened).
-  observeEvent(input$scope_tabs, {
-    if (input$tabs != "scope") return()
+  # Builds the Scope Summary Map whenever its sub-tab is the one currently
+  # on screen and a build is actually pending -- level-triggered (re-checks
+  # the current state on every relevant change) rather than edge-triggered,
+  # so it also covers "already on that tab when Analyze was clicked" and
+  # "tab was already selected before this session's Analyze ever ran",
+  # not just the moment of switching into it.
+  observe({
+    if (is.null(input$tabs) || input$tabs != "scope") return()
     if (!identical(input$scope_tabs, "scope_summary_map")) return()
     params <- scope_summary_params()
     req(params)
     if (!is.null(scope_summary_analysis())) return()
-    safe_analysis({
-      scope_summary_analysis(run_scope_summary_analysis(params))
-      force_gc()
-    }, "SIA Scope Analysis (lazy summary map)")
-  }, ignoreInit = TRUE)
+    isolate({
+      safe_analysis({
+        scope_summary_analysis(run_scope_summary_analysis(params))
+        force_gc()
+      }, "SIA Scope Analysis (lazy summary map)")
+    })
+  })
   
   # Reset running flag if analysis fails
   observe({
