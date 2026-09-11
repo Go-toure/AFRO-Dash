@@ -9393,6 +9393,7 @@ server <- function(input, output, session) {
     countries <- perf_data_reactive() %>%
       dplyr::distinct(country) %>%
       dplyr::pull(country) %>%
+      as.character() %>%
       sort() %>%
       stats::na.omit()
     
@@ -9418,7 +9419,7 @@ server <- function(input, output, session) {
       available_countries <- if (!identical(current_block, "All")) {
         perf_block_choices()[[current_block]]
       } else {
-        sort(unique(perf_data_reactive()$country))
+        sort(unique(as.character(perf_data_reactive()$country)))
       }
       
       current_selection <- input$perf_countries
