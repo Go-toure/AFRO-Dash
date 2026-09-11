@@ -27,7 +27,7 @@ district_lqas_performance <- function(data,
   
   required_packages <- c(
     "dplyr", "sf", "lubridate", "ggplot2",
-    "patchwork", "flextable", "tidyr", "scales", "rlang", "ggnewscale"
+    "patchwork", "flextable", "tidyr", "scales", "rlang"
   )
   
   missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
