@@ -4066,11 +4066,16 @@ ui <- dashboardPage(
                tabName = "powerbi_dashboard", 
                icon = icon("chart-line")),
       
-      menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
+      # LQAS Repository Overview now groups three pages as sub-tabs. The tabNames
+      # are unchanged ("overview", "missed_children", "coverage"), so every page and
+      # every input$tabs check in the server keeps working exactly as before.
+      menuItem("LQAS Repository Overview", icon = icon("dashboard"), startExpanded = TRUE,
+               menuSubItem("Overview", tabName = "overview", icon = icon("dashboard")),
+               menuSubItem("Missed Children", tabName = "missed_children", icon = icon("child")),
+               menuSubItem("Coverage Analysis", tabName = "coverage", icon = icon("chart-line"))
+      ),
       menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
-      menuItem("Missed Children", tabName = "missed_children", icon = icon("child")),
-      menuItem("Coverage Analysis", tabName = "coverage", icon = icon("chart-line")),
       menuItem("District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
       menuItem("LQAS Summary Maps", tabName = "lqas_maps", icon = icon("globe-africa")),
       menuItem("Reasons Analysis", tabName = "reasons", icon = icon("search")),
