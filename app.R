@@ -6788,15 +6788,16 @@ ui <- dashboardPage(
     tabItem(
       tabName = "im_overview",
       # Same layout as the LQAS Repository Overview page: one page with in-page
-      # sub-tabs, the first one being "Overview".
+      # sub-tabs. "Overview" = IM repository (filters, metric cards, scrollable
+      # Data Explorer); "IM Analytics" = the charts dashboard.
       tabsetPanel(
         id = "im_subtabs",
         type = "tabs",
         tabPanel(
           title = tagList(icon("dashboard"), "Overview"),
-          value = "im_overview_main",
+          value = "im_repo",
           if (IM_OVERVIEW_AVAILABLE) {
-            im_overview_ui("im")
+            im_repository_ui("imr")
           } else {
             tags$div(
               class = "alert alert-warning",
@@ -6804,6 +6805,11 @@ ui <- dashboardPage(
               "or im_overview_module.R is missing."
             )
           }
+        ),
+        tabPanel(
+          title = tagList(icon("chart-line"), "IM Analytics"),
+          value = "im_analytics",
+          if (IM_OVERVIEW_AVAILABLE) im_overview_ui("im")
         )
       )
     ),
@@ -7294,7 +7300,10 @@ vbox_fun <- function(value, subtitle, icon_name, color = "blue") {
 server <- function(input, output, session) {
   
   # IM Overview tab (module defined in im_overview_module.R)
-  if (IM_OVERVIEW_AVAILABLE) im_overview_server("im")
+  if (IM_OVERVIEW_AVAILABLE) {
+    im_repository_server("imr")
+    im_overview_server("im")
+  }
   
   # TRUE when the LQAS Repository Overview page is open on the given sub-tab
   # ("overview_main", "missed_children" or "coverage").

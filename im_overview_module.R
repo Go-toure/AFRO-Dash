@@ -376,7 +376,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     }
 
     # ---- data -------------------------------------------------------------------------
-    rv <- shiny::reactiveValues(data = im_load_data(data_path))
+    rv <- shiny::reactiveValues(data = im_data_cached(data_path))
 
     output$im_empty <- shiny::renderUI({
       if (!is.null(rv$data) && nrow(rv$data) > 0) return(NULL)
@@ -2188,6 +2188,243 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
   })
 }
 
+# ============================================================
+# IM REPOSITORY OVERVIEW (sub-tab "Overview")  -- filters + metric cards + data explorer
+# Mirrors the layout of the LQAS Repository Overview page.
+# ============================================================
+
+.im_cache <- new.env(parent = emptyenv())
+im_data_cached <- function(path = IM_DATA_FILE) {
+  mt <- if (file.exists(path)) file.mtime(path) else NA
+  if (is.null(.im_cache$data) || !identical(.im_cache$mtime, mt)) {
+    .im_cache$data  <- im_load_data(path)
+    .im_cache$mtime <- mt
+  }
+  .im_cache$data
+}
+
+# columns shown by default in the explorer (everything else stays available via "Show/Hide Columns")
+.im_repo_default_cols <- c("country", "province", "district", "afro_block", "response", "vaccine_type",
+                           "roundnumber", "round_start_date", "number_of_hh_visited", "u5_present", "u5_fm",
+                           "missed_child", "cv", "qc_flag", "reconciliation_flag")
+.im_repo_labels <- c(country = "Country", province = "Province", district = "District", afro_block = "AFRO Block",
+                     response = "Response", vaccine_type = "Vaccine", roundnumber = "Round",
+                     round_start_date = "Round start", number_of_hh_visited = "HH visited",
+                     u5_present = "U5 present", u5_fm = "U5 finger-marked", missed_child = "Missed children",
+                     cv = "Coverage (CV)", qc_flag = "QC flag", reconciliation_flag = "Reconciliation")
+
+im_repository_ui <- function(id) {
+  ns <- shiny::NS(id)
+  H  <- shiny::HTML
+  shiny::div(class = "im-repo",
+    shiny::tags$head(shiny::tags$style(H(IM_CSS)),
+      shiny::tags$style(H(".im-repo-cards > div { flex: 1 1 0; min-width: 0; width: auto; float: none; padding: 0; } .im-repo-cards .small-box { margin-bottom: 0; } .dark-mode .im-repo label, .dark-mode .im-repo h4, .dark-mode .im-repo .control-label, .dark-mode .im-repo .dataTables_info, .dark-mode .im-repo .dataTables_filter label { color: #e5e7eb !important; } .dark-mode .im-repo .analysis-controls { background-color: #0b1120; border-left-color: #3b82f6; color: #e5e7eb; } .dark-mode .im-repo table.dataTable, .dark-mode .im-repo table.dataTable td, .dark-mode .im-repo table.dataTable th { color: #e5e7eb; background-color: transparent; } .dark-mode .im-repo table.dataTable tbody tr { background-color: transparent !important; } .dark-mode .im-repo .dataTables_scrollBody { border-bottom-color: #1f2937; }"))),
+    shiny::uiOutput(ns("rp_empty")),
+    shiny::fluidRow(
+      # ---- FILTER PANEL ---------------------------------------------------------------
+      shiny::column(3,
+        shinydashboard::box(
+          title = shiny::tags$div(shiny::icon("filter"), "IM Repository Filters"),
+          width = NULL, status = "primary", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE,
+          style = "max-height: 88vh; overflow-y: auto;",
+          shiny::selectizeInput(ns("rp_block"), "AFRO Block:", c("All", "LCB", "WA", "DRC", "CEA", "ESA"),
+            selected = "All", options = list(dropdownParent = "body")),
+          shiny::selectizeInput(ns("rp_country"), "Countries (optional):", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "All countries", dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::selectizeInput(ns("rp_province"), "Provinces (optional):", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "All provinces", dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::selectizeInput(ns("rp_district"), "Districts (optional):", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "Type to search districts...", maxItems = 25, maxOptions = 100,
+                           dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::selectizeInput(ns("rp_response"), "Response:", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "All responses", dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::selectizeInput(ns("rp_vaccine"), "Vaccine type:", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "All vaccines", dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::selectizeInput(ns("rp_round"), "Round number(s):", choices = NULL, multiple = TRUE,
+            options = list(placeholder = "All rounds", dropdownParent = "body", plugins = list("remove_button"))),
+          shiny::dateRangeInput(ns("rp_dates"), "Round start date:", format = "yyyy-mm-dd", startview = "year"),
+          shiny::selectInput(ns("rp_qc"), "QC flag:", c("All", "OK only", "Needs review only")),
+          shiny::actionButton(ns("rp_reset"), shiny::tagList(shiny::icon("undo"), "Reset filters"),
+            class = "btn btn-default", style = "margin-top: 8px; width: 100%;")
+        )
+      ),
+      # ---- RESULTS PANEL ---------------------------------------------------------------
+      shiny::column(9,
+        shinydashboard::box(
+          title = shiny::tags$div(shiny::icon("database"), "IM Repository Overview"),
+          width = NULL, status = "info", solidHeader = TRUE, collapsible = FALSE,
+          shiny::div(class = "valuebox-flex-container im-repo-cards",
+            shinydashboard::valueBoxOutput(ns("rp_records")),
+            shinydashboard::valueBoxOutput(ns("rp_rounds")),
+            shinydashboard::valueBoxOutput(ns("rp_countries")),
+            shinydashboard::valueBoxOutput(ns("rp_provinces")),
+            shinydashboard::valueBoxOutput(ns("rp_districts")),
+            shinydashboard::valueBoxOutput(ns("rp_period"))
+          ),
+          shiny::div(class = "analysis-controls",
+            shiny::h4(shiny::icon("table"), "Data Explorer"),
+            DT::DTOutput(ns("rp_table"))
+          ),
+          shiny::div(style = "text-align: center; margin-top: 20px;",
+            shiny::downloadButton(ns("rp_download"), "Download Filtered Data",
+              class = "btn-primary-custom", style = "width: 300px;"))
+        )
+      )
+    )
+  )
+}
+
+im_repository_server <- function(id, data_path = IM_DATA_FILE) {
+  shiny::moduleServer(id, function(input, output, session) {
+    data <- im_data_cached(data_path)
+
+    output$rp_empty <- shiny::renderUI({
+      if (!is.null(data) && nrow(data) > 0) return(NULL)
+      shiny::div(class = "alert alert-warning",
+        paste0("No Independent Monitoring data found (expected ", data_path, ")."))
+    })
+    if (is.null(data) || !nrow(data)) return(invisible(NULL))
+
+    nz  <- function(x) { x <- as.character(x); x[!is.na(x) & nzchar(x)] }
+    chk <- function(col) if (col %in% names(data)) sort(unique(nz(data[[col]]))) else character(0)
+    en_period <- function(d) paste(month.abb[as.integer(format(d, "%m"))], format(d, "%Y"))
+
+    dts <- if ("round_start_date" %in% names(data)) as.Date(data$round_start_date) else as.Date(NA)
+    dts <- dts[!is.na(dts)]
+    dmin <- if (length(dts)) min(dts) else NA
+    dmax <- if (length(dts)) max(dts) else NA
+
+    set_static_choices <- function() {
+      shiny::updateSelectizeInput(session, "rp_response", choices = chk("response"), selected = character(0))
+      shiny::updateSelectizeInput(session, "rp_vaccine",  choices = chk("vaccine_type"), selected = character(0))
+      shiny::updateSelectizeInput(session, "rp_round",    choices = chk("roundnumber"), selected = character(0))
+      if (!is.na(dmin)) shiny::updateDateRangeInput(session, "rp_dates", start = dmin, end = dmax, min = dmin, max = dmax)
+    }
+
+    # ---- cascading choices: block -> countries -> provinces -> districts ---------------
+    in_block <- shiny::reactive({
+      df <- data
+      if (!is.null(input$rp_block) && input$rp_block != "All" && "afro_block" %in% names(df))
+        df <- df[!is.na(df$afro_block) & df$afro_block == input$rp_block, ]
+      df
+    })
+    shiny::observe({
+      ctr <- sort(unique(nz(in_block()$country)))
+      shiny::updateSelectizeInput(session, "rp_country", choices = ctr,
+                                  selected = intersect(shiny::isolate(input$rp_country), ctr))
+    })
+    in_country <- shiny::reactive({
+      df <- in_block()
+      if (length(input$rp_country)) df <- df[!is.na(df$country) & df$country %in% input$rp_country, ]
+      df
+    })
+    shiny::observe({
+      prv <- sort(unique(nz(in_country()$province)))
+      shiny::updateSelectizeInput(session, "rp_province", choices = prv,
+                                  selected = intersect(shiny::isolate(input$rp_province), prv))
+    })
+    in_province <- shiny::reactive({
+      df <- in_country()
+      if (length(input$rp_province)) df <- df[!is.na(df$province) & df$province %in% input$rp_province, ]
+      df
+    })
+    shiny::observe({
+      dst <- sort(unique(nz(in_province()$district)))
+      shiny::updateSelectizeInput(session, "rp_district", choices = dst,
+                                  selected = intersect(shiny::isolate(input$rp_district), dst), server = TRUE)
+    })
+    shiny::observeEvent(TRUE, set_static_choices(), once = TRUE)
+
+    shiny::observeEvent(input$rp_reset, {
+      shiny::updateSelectizeInput(session, "rp_block", selected = "All")
+      for (i in c("rp_country", "rp_province", "rp_district", "rp_response", "rp_vaccine", "rp_round"))
+        shiny::updateSelectizeInput(session, i, selected = character(0))
+      shiny::updateSelectInput(session, "rp_qc", selected = "All")
+      if (!is.na(dmin)) shiny::updateDateRangeInput(session, "rp_dates", start = dmin, end = dmax)
+    })
+
+    # ---- filtered repository ----------------------------------------------------------
+    filtered <- shiny::reactive({
+      df <- in_province()
+      if (length(input$rp_district)) df <- df[!is.na(df$district) & df$district %in% input$rp_district, ]
+      if (length(input$rp_response) && "response" %in% names(df))
+        df <- df[!is.na(df$response) & df$response %in% input$rp_response, ]
+      if (length(input$rp_vaccine) && "vaccine_type" %in% names(df))
+        df <- df[!is.na(df$vaccine_type) & df$vaccine_type %in% input$rp_vaccine, ]
+      if (length(input$rp_round) && "roundnumber" %in% names(df))
+        df <- df[!is.na(df$roundnumber) & as.character(df$roundnumber) %in% input$rp_round, ]
+      dr <- input$rp_dates
+      if (!is.null(dr) && length(dr) == 2 && !anyNA(dr) && !is.na(dmin) &&
+          (dr[1] > dmin || dr[2] < dmax) && "round_start_date" %in% names(df)) {
+        d <- as.Date(df$round_start_date)
+        df <- df[!is.na(d) & d >= dr[1] & d <= dr[2], ]
+      }
+      if (!is.null(input$rp_qc) && input$rp_qc != "All" && "qc_flag" %in% names(df)) {
+        ok <- !is.na(df$qc_flag) & df$qc_flag == "OK"
+        df <- if (input$rp_qc == "OK only") df[ok, ] else df[!ok, ]
+      }
+      df
+    })
+
+    # ---- metric cards ---------------------------------------------------------------------
+    nd <- function(x) dplyr::n_distinct(x[!is.na(x)])
+    output$rp_records <- shinydashboard::renderValueBox(
+      shinydashboard::valueBox(format(nrow(filtered()), big.mark = ","), "Records",
+                               icon = shiny::icon("database"), color = "blue"))
+    output$rp_rounds <- shinydashboard::renderValueBox({
+      df <- filtered()
+      n <- if (all(c("country", "response", "roundnumber") %in% names(df)))
+        dplyr::n_distinct(paste(df$country, df$response, df$roundnumber)) else 0
+      shinydashboard::valueBox(format(n, big.mark = ","), "Campaign Rounds", icon = shiny::icon("calendar"), color = "aqua")
+    })
+    output$rp_countries <- shinydashboard::renderValueBox(
+      shinydashboard::valueBox(nd(filtered()$country), "Countries", icon = shiny::icon("globe-africa"), color = "green"))
+    output$rp_provinces <- shinydashboard::renderValueBox(
+      shinydashboard::valueBox(format(nd(filtered()$province), big.mark = ","), "Provinces", icon = shiny::icon("map"), color = "teal"))
+    output$rp_districts <- shinydashboard::renderValueBox({
+      df <- filtered()
+      n <- dplyr::n_distinct(paste(df$country, df$province, df$district)[!is.na(df$district)])
+      shinydashboard::valueBox(format(n, big.mark = ","), "Districts", icon = shiny::icon("map-marker-alt"), color = "light-blue")
+    })
+    output$rp_period <- shinydashboard::renderValueBox({
+      d <- if ("round_start_date" %in% names(filtered())) as.Date(filtered()$round_start_date) else as.Date(NA)
+      d <- d[!is.na(d)]
+      txt <- if (length(d)) paste0(en_period(min(d)), " - ", en_period(max(d))) else "No dates"
+      shinydashboard::valueBox(shiny::HTML(sprintf("<span style='font-size:13px; display:block; white-space:normal; line-height:1.15;'>%s</span>", txt)),
+        shiny::HTML("<span style='font-size:12px;'>Data Period</span>"),
+        icon = shiny::icon("clock"), color = "purple")
+    })
+
+    # ---- data explorer ---------------------------------------------------------------------
+    output$rp_table <- DT::renderDT({
+      df <- filtered()
+      dc <- if ("round_start_date" %in% names(df)) "round_start_date" else NULL
+      if (!is.null(dc)) df <- df[order(df[[dc]], decreasing = TRUE, na.last = TRUE), ]
+      keep <- intersect(.im_repo_default_cols, names(df))
+      shown <- c(keep, setdiff(names(df), keep))                    # default columns first
+      df <- df[, shown, drop = FALSE]
+      lab <- ifelse(shown %in% names(.im_repo_labels), unname(.im_repo_labels[shown]), shown)
+      hidden <- which(!(shown %in% keep)) - 1L                       # 0-based for DataTables
+      w <- DT::datatable(
+        df, colnames = lab, rownames = FALSE, filter = "top",
+        extensions = c("Buttons", "Scroller"),
+        options = list(
+          dom = "Bfrtip",
+          buttons = list(list(extend = "copy", text = "Copy"), list(extend = "csv", text = "CSV"),
+                         list(extend = "excel", text = "Excel"), list(extend = "colvis", text = "Show/Hide Columns")),
+          columnDefs = list(list(visible = FALSE, targets = hidden)),
+          scrollX = TRUE, scrollY = 400, scroller = TRUE, deferRender = TRUE, pageLength = 10, autoWidth = FALSE
+        ))
+      if ("cv" %in% shown) w <- DT::formatPercentage(w, "cv", 1)
+      w
+    }, server = TRUE)
+
+    output$rp_download <- shiny::downloadHandler(
+      filename = function() paste0("IM_Repository_Overview_", Sys.Date(), ".csv"),
+      content  = function(file) utils::write.csv(filtered(), file, row.names = FALSE, na = ""))
+  })
+}
+
 # ---- keep plotly out of the search path (the app uses `conflicted`) -------------------
 .im_env <- new.env(parent = globalenv())
 for (.nm in getNamespaceExports("plotly"))
@@ -2196,3 +2433,5 @@ rm(.nm)
 assign("bs_icon", bs_icon, envir = .im_env); rm(bs_icon)   # keep the icon shim out of the global env
 environment(im_overview_ui)     <- .im_env
 environment(im_overview_server) <- .im_env
+environment(im_repository_ui)   <- .im_env
+environment(im_repository_server) <- .im_env
