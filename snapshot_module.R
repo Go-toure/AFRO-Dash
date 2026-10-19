@@ -234,7 +234,6 @@ SNAP_CSS <- "
 .snap-card { position: relative; border-radius: 14px; padding: 14px 16px 12px 16px; overflow: hidden;
   background: var(--kpi-bg, #fff); border: 1px solid var(--kpi-border, rgba(37,99,235,.18));
   border-top: 4px solid var(--accent, #009ADE); box-shadow: var(--kpi-shadow, none); min-height: 112px; }
-.snap-card .snap-ico { position: absolute; right: 12px; top: 12px; font-size: 22px; color: var(--accent, #009ADE); opacity: .35; }
 .snap-label { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
   color: var(--kpi-subtext, #6b7280); padding-right: 30px; }
 .snap-value { font-size: 32px; line-height: 1.15; font-weight: 800; margin: 4px 0 2px 0; color: var(--kpi-text, #111827);
@@ -294,7 +293,6 @@ SNAP_CSS <- "
 snap_card <- function(label, value, sub = NULL, icon = "chart-bar", accent = "#009ADE", full = NULL, meter = NULL, pending = FALSE) {
   shiny::tags$div(
     class = paste("snap-card", if (pending) "snap-pending"), style = paste0("--accent:", accent, ";"),
-    shiny::tags$div(class = "snap-ico", shiny::icon(icon)),
     shiny::tags$div(class = "snap-label", label),
     shiny::tags$div(class = "snap-value", title = full, value),
     if (!is.null(sub)) shiny::tags$div(class = "snap-sub", sub),
