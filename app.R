@@ -244,6 +244,17 @@ source("plot_map.R")
 # faster) to do it once offline instead of on every Shiny cold start.
 source("shapefile_prep_utils.R")
 
+# Independent Monitoring (IM) Overview tab -- self-contained Shiny module that
+# reads input/AFRO_IM_data.rds. It needs the plotly package; if plotly (or the
+# module file) is missing the rest of the app still runs and the tab shows a note.
+IM_OVERVIEW_AVAILABLE <- requireNamespace("plotly", quietly = TRUE) &&
+  file.exists("im_overview_module.R")
+if (IM_OVERVIEW_AVAILABLE) {
+  source("im_overview_module.R")
+} else {
+  cat("IM Overview tab disabled (plotly package or im_overview_module.R not found)\n")
+}
+
 cat("✅ External map functions loaded from optimized files\n")
 # ============================================================
 # ---- List numeric .rds files ----
@@ -4111,6 +4122,7 @@ ui <- dashboardPage(
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
       # LQAS Summary Maps, Reasons Analysis and Unresolved Cases are sub-tabs inside this page.
       menuItem("LQAS District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
+      menuItem("IM Overview", tabName = "im_overview", icon = icon("clipboard-check")),
       menuItem("IM Settlement Maps", tabName = "settlement_maps", icon = icon("map")),
       menuItem("Generate Slides", tabName = "generate_slides", icon = icon("file-powerpoint")),
       menuItem("Quick Start Guide", tabName = "guide", icon = icon("info-circle")),
@@ -6771,6 +6783,22 @@ ui <- dashboardPage(
     
     
     # ============================================================
+    # IM OVERVIEW (Independent Monitoring) -- module in im_overview_module.R
+    # ============================================================
+    tabItem(
+      tabName = "im_overview",
+      if (IM_OVERVIEW_AVAILABLE) {
+        im_overview_ui("im")
+      } else {
+        tags$div(
+          class = "alert alert-warning",
+          "The IM Overview is not available in this deployment: the 'plotly' package ",
+          "or im_overview_module.R is missing."
+        )
+      }
+    ),
+
+    # ============================================================
     # 🗺️ IM SETTLEMENT MAPS (Includes both Map and Data Explorer)
     # ============================================================
     tabItem(
@@ -7254,6 +7282,9 @@ vbox_fun <- function(value, subtitle, icon_name, color = "blue") {
 # ============================================================
 
 server <- function(input, output, session) {
+  
+  # IM Overview tab (module defined in im_overview_module.R)
+  if (IM_OVERVIEW_AVAILABLE) im_overview_server("im")
   
   # TRUE when the LQAS Repository Overview page is open on the given sub-tab
   # ("overview_main", "missed_children" or "coverage").
