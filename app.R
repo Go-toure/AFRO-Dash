@@ -4070,7 +4070,7 @@ ui <- dashboardPage(
       menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
       menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
-      menuItem("District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
+      menuItem("LQAS District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
       menuItem("LQAS Summary Maps", tabName = "lqas_maps", icon = icon("globe-africa")),
       menuItem("Reasons Analysis", tabName = "reasons", icon = icon("search")),
       menuItem("Unresolved Cases", tabName = "unresolved", icon = icon("exclamation-triangle")),
@@ -6836,7 +6836,7 @@ ui <- dashboardPage(
                                             "Admin Data Overview" = "admin",
                                             "Missed Children Analysis" = "missed",
                                             "Coverage Analysis" = "coverage",
-                                            "District Performance" = "district_perf",
+                                            "LQAS District Performance" = "district_perf",
                                             "LQAS Summary Maps" = "lqas_maps",
                                             "Reasons Analysis" = "reasons",
                                             "Unresolved Cases" = "unresolved"
@@ -7036,7 +7036,7 @@ ui <- dashboardPage(
                                 tags$li(tags$b("SIA Scope Analysis:"), " View vaccination campaign scope and coverage by geographic area"),
                                 tags$li(tags$b("Missed Children:"), " Analyze children missed during vaccination campaigns"),
                                 tags$li(tags$b("Coverage Analysis:"), " Examine vaccination coverage rates by gender and geography"),
-                                tags$li(tags$b("🗺️ District Performance:"), " Monitor LQAS performance at district level"),
+                                tags$li(tags$b("🗺️ LQAS District Performance:"), " Monitor LQAS performance at district level"),
                                 tags$li(tags$b("🌍 IM Settlement Maps:"), " Visualize settlement-level footprint maps to locate missed children and guide field teams effectively")
                               )
                      ),
