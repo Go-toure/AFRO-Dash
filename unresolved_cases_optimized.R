@@ -487,7 +487,7 @@ generate_unresolved_NC_plots_DS_optimized <- function(data,
         patchwork::wrap_plots(month_plots, ncol = ncol_value, nrow = nrow_value) +
           patchwork::plot_annotation(
             title = paste("Unresolved", reason_name, "Cases —", block_type_text, "—", period_text),
-            caption = paste("Source: PEP SIA Repository | © WHO AFRO | Production Date:", Sys.Date())
+            caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date())
           ) +
           ggplot2::theme(
             plot.title = ggplot2::element_text(

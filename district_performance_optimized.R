@@ -987,7 +987,7 @@ district_lqas_performance <- function(data,
       caption = paste(
         "Source: PEP SIA Repository |",
         block_type_text,
-        "| © WHO AFRO | Production Date:",
+        "| © WHO AFRO GIS CENTRE | Production Date:",
         Sys.Date()
       )
     ) +

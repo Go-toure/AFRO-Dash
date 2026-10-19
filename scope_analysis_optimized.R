@@ -348,7 +348,7 @@ generate_scope_plots_app <- function(scope_data,
   
   multiplot <- patchwork::wrap_plots(plots_list, ncol = ncol_value, nrow = nrow_value) +
     patchwork::plot_annotation(
-      caption = paste("Source: PEP SIA Repository | © WHO AFRO | Production Date:", Sys.Date()),
+      caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date()),
       theme = ggplot2::theme(
         plot.caption = ggplot2::element_text(size = 9, hjust = 1, face = "italic", margin = ggplot2::margin(t = 8)),
         plot.margin = ggplot2::margin(5, 5, 5, 5)
@@ -759,7 +759,7 @@ generate_scope_summary_map <- function(scope_data,
         n_rounds_total, " round(s) aggregated across ", n_countries_total,
         " countr", ifelse(n_countries_total == 1, "y", "ies")
       ),
-      caption = paste("Source: PEP SIA Repository | © WHO AFRO | Production Date:", Sys.Date())
+      caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date())
     ) +
     ggplot2::theme(
       plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),

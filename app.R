@@ -1663,7 +1663,7 @@ admin_coverage_summary <- function(
       )
     ) |>
     flextable::add_footer_lines(paste(
-      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO, Generated on:",
+      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO GIS CENTRE, Generated on:",
       Sys.Date()
     ))
   
@@ -1868,7 +1868,7 @@ admin_vaccinated_summary <- function(
     ) |>
     flextable::add_footer_lines(footnote_text) |>
     flextable::add_footer_lines(paste(
-      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO, Generated on:",
+      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO GIS CENTRE, Generated on:",
       Sys.Date()
     ))
   
@@ -2317,7 +2317,7 @@ missed_children_disaggregated <- function(
     ) |>
     flextable::add_footer_lines(summary_line) |>
     flextable::add_footer_lines(
-      paste("The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO, Generated on:", Sys.Date())
+      paste("The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO GIS CENTRE, Generated on:", Sys.Date())
     )
   
   return(list(
@@ -2707,7 +2707,7 @@ coverage_disaggregated <- function(data, year = NULL, Q = NULL, last_n_quarters 
     ) |>
     flextable::add_footer_lines(coverage_summary) |>
     flextable::add_footer_lines(paste(
-      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO, Generated on:", Sys.Date()
+      "The table is showing months with SIA data \nSource: PEP SIA repository © WHO AFRO GIS CENTRE, Generated on:", Sys.Date()
     )) |> 
     fontsize(i = 1:2, part = "footer", size = 8)
   
