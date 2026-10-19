@@ -4530,6 +4530,38 @@ ui <- dashboardPage(
       padding: 0 !important;
     }
 
+    /* Light mode: explicit, readable text on the coloured KPI cards.
+       Dark ink on the light/mid colours, white on the deep colours. */
+    body:not(.dark-mode) .content .small-box .inner,
+    body:not(.dark-mode) .content .small-box .inner h3 {
+      color: #0b1220;
+    }
+
+    body:not(.dark-mode) .content .small-box .inner p,
+    body:not(.dark-mode) .content .small-box .inner p span {
+      color: #0b1220;
+      font-weight: 600;
+    }
+
+    body:not(.dark-mode) .content .small-box.bg-purple .inner,
+    body:not(.dark-mode) .content .small-box.bg-purple .inner h3,
+    body:not(.dark-mode) .content .small-box.bg-purple .inner p,
+    body:not(.dark-mode) .content .small-box.bg-purple .inner p span,
+    body:not(.dark-mode) .content .small-box.bg-blue .inner,
+    body:not(.dark-mode) .content .small-box.bg-blue .inner h3,
+    body:not(.dark-mode) .content .small-box.bg-blue .inner p,
+    body:not(.dark-mode) .content .small-box.bg-blue .inner p span,
+    body:not(.dark-mode) .content .small-box.bg-navy .inner,
+    body:not(.dark-mode) .content .small-box.bg-navy .inner h3,
+    body:not(.dark-mode) .content .small-box.bg-navy .inner p,
+    body:not(.dark-mode) .content .small-box.bg-navy .inner p span,
+    body:not(.dark-mode) .content .small-box.bg-maroon .inner,
+    body:not(.dark-mode) .content .small-box.bg-maroon .inner h3,
+    body:not(.dark-mode) .content .small-box.bg-maroon .inner p,
+    body:not(.dark-mode) .content .small-box.bg-maroon .inner p span {
+      color: #ffffff;
+    }
+
     /* Dark-mode tweaks for KPI cards */
     .dark-mode .valuebox-flex-container .small-box,
     .dark-mode .content .small-box {
