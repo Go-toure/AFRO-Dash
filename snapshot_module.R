@@ -259,10 +259,10 @@ SNAP_CSS <- "
 .snap-legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 8px; }
 .snap-legend .n { font-weight: 700; font-variant-numeric: tabular-nums; }
 .snap-legend .p { color: var(--kpi-subtext, #6b7280); text-align: right; display: block; }
-.snap-bars { display: flex; align-items: flex-end; gap: 10px; height: 190px; padding-top: 6px; }
-.snap-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.snap-bars { display: flex; align-items: flex-end; gap: 10px; padding-top: 6px; }
+.snap-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
 .snap-bar-val { font-size: 11px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.snap-bar-track { width: 100%; max-width: 46px; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+.snap-bar-track { width: 100%; max-width: 46px; height: 140px; flex: none; display: flex; flex-direction: column; justify-content: flex-end; }
 .snap-bar-fill { width: 100%; border-radius: 5px 5px 0 0; min-height: 2px; }
 .snap-bar-fill + .snap-bar-fill { margin-top: 2px; border-radius: 0; }
 .snap-bar-lab { font-size: 11px; margin-top: 5px; color: var(--kpi-subtext, #6b7280); }
@@ -275,7 +275,19 @@ SNAP_CSS <- "
   .main-header, .main-sidebar, .snap-filters, .snap-actions, .dark-mode-toggle { display: none !important; }
   .content-wrapper, .right-side { margin-left: 0 !important; background: #fff !important; }
   .snap-card, .snap-panel { break-inside: avoid; box-shadow: none !important; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body, .snap-wrap, .snap-wrap * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .snap-wrap { --kpi-bg: #ffffff; --kpi-text: #111827; --kpi-subtext: #6b7280; --kpi-border: rgba(37,99,235,.25); color: #111827; }
+  body.dark-mode, body.dark-mode .content-wrapper, body.dark-mode .content { background: #fff !important; }
+  .snap-panel, .snap-sec { break-inside: avoid; page-break-inside: avoid; }
+  /* Bootstrap 3 print CSS sets background:transparent !important on everything; re-assert fills */
+  .snap-wrap .snap-bar-fill, .snap-wrap .snap-seg, .snap-wrap .snap-legend .dot { background: var(--c) !important; }
+  .snap-wrap .snap-meter > span { background: var(--accent) !important; }
+  .snap-wrap .snap-meter { background: #e5e7eb !important; }
+  .snap-wrap .snap-card, .snap-wrap .snap-panel { background: #fff !important; }
+  .snap-hero { break-inside: avoid; background: #fff !important; color: #111827 !important; border-bottom: 4px solid #0072B2; border-radius: 0; padding: 8px 4px 10px 4px; }
+  .snap-hero h2 { color: #0b3c5d !important; }
+  .snap-hero p, .snap-asof { color: #374151 !important; opacity: 1 !important; }
+  .content { padding: 0 !important; }
 }
 "
 
@@ -305,7 +317,7 @@ snap_bars <- function(labels, series, colors, fmt = snap_fmt, totals = TRUE, nam
       v <- series[[j]][i]; v <- if (is.na(v)) 0 else v
       shiny::tags$div(class = "snap-bar-fill",
         title = paste0(if (!is.null(names)) paste0(names[j], ": ") else "", fmt(v), " (", labels[i], ")"),
-        style = sprintf("height:%.2f%%;background:%s;", 100 * v / mx, colors[j]))
+        style = sprintf("height:%.1fpx;background:%s;--c:%s;", max(2, 140 * v / mx), colors[j], colors[j]))
     })
     shiny::tags$div(class = "snap-bar",
       shiny::tags$div(class = "snap-bar-val", if (totals) fmt(tot[i])),
@@ -321,7 +333,8 @@ snap_bars <- function(labels, series, colors, fmt = snap_fmt, totals = TRUE, nam
 snap_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    shiny::tags$head(shiny::tags$style(shiny::HTML(SNAP_CSS))),
+    shiny::tags$head(shiny::tags$style(shiny::HTML(SNAP_CSS)),
+      shiny::tags$script(shiny::HTML("window.addEventListener('beforeprint', function(){ document.querySelectorAll('.snap-wrap details').forEach(function(d){ d.setAttribute('open',''); }); });"))),
     shiny::div(class = "snap-wrap",
       shiny::div(class = "snap-hero",
         shiny::div(
@@ -532,11 +545,11 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
       cols <- c(nopv = "#0072B2", bopv = "#D55E00", both = "#009E73")
       lab <- c(nopv = "nOPV only", bopv = "bOPV only", both = "nOPV + bOPV (both)")
       stack <- shiny::div(class = "snap-stack", lapply(names(cols), function(k)
-        shiny::div(style = sprintf("width:%.2f%%;background:%s;", if (tot > 0) 100 * mix[[k]] / tot else 0, cols[[k]]),
+        shiny::div(class = "snap-seg", style = sprintf("width:%.2f%%;background:%s;--c:%s;", if (tot > 0) 100 * mix[[k]] / tot else 0, cols[[k]], cols[[k]]),
                    title = paste0(lab[[k]], ": ", mix[[k]]))))
       legend <- shiny::div(class = "snap-legend", lapply(names(cols), function(k)
         shiny::div(class = "snap-lrow",
-          shiny::span(shiny::span(class = "dot", style = paste0("background:", cols[[k]], ";")), lab[[k]]),
+          shiny::span(shiny::span(class = "dot", style = paste0("background:", cols[[k]], ";--c:", cols[[k]], ";")), lab[[k]]),
           shiny::span(class = "n", mix[[k]]), shiny::span(class = "p", snap_pct(pc(mix[[k]]))))))
       other_txt <- if (mix[["other"]] > 0) paste0(mix[["other"]], " other campaign(s) (e.g. mOPV2) not shown.") else NULL
       shiny::tagList(
@@ -575,8 +588,8 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
             shiny::div(class = "snap-panel", shiny::tags$h4("ONA submissions per year"),
               snap_bars(lab, list(y$sub_i, y$sub_l), c("#CC79A7", "#56B4E9"), names = c("IM", "LQAS")),
               shiny::div(class = "snap-legend inline", style = "margin-top:8px;",
-                shiny::div(class = "snap-lrow", shiny::span(shiny::span(class = "dot", style = "background:#CC79A7;"), "IM")),
-                shiny::div(class = "snap-lrow", shiny::span(shiny::span(class = "dot", style = "background:#56B4E9;"), "LQAS"))))
+                shiny::div(class = "snap-lrow", shiny::span(shiny::span(class = "dot", style = "background:#CC79A7;--c:#CC79A7;"), "IM")),
+                shiny::div(class = "snap-lrow", shiny::span(shiny::span(class = "dot", style = "background:#56B4E9;--c:#56B4E9;"), "LQAS"))))
         )
       )
     })
