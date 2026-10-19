@@ -4108,9 +4108,7 @@ ui <- dashboardPage(
         ),
         tags$small(
           style = "color: #6c757d;",
-          tags$div("💾 Stable Data Loading", style = "margin-bottom: 5px;"),
-          tags$div("⚡ Performance Optimized", style = "margin-bottom: 5px;"),
-          tags$div("🛡️ Error Protected"),
+          tags$div("Powered by the AFRO GIS CENTRE", style = "font-weight: 600; text-align: center;"),
           tags$div(paste("Dev Mode:", if(interactive()) "ON" else "OFF"), 
                    style = "margin-top: 8px; font-weight: bold; color: #28a745;")
         )
