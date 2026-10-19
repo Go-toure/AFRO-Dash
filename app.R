@@ -5,6 +5,11 @@
 # Author: Gorgui Ba TOURE
 # ============================================================
 options(shiny.launch.browser = TRUE)
+# ---- Dates in English everywhere ----
+# Month names printed by format(date, "%b" / "%B") follow the language of the
+# computer running the app (French on a French PC). Pin the time locale to "C"
+# (English) so every date label reads the same wherever the app runs.
+invisible(tryCatch(suppressWarnings(Sys.setlocale("LC_TIME", "C")), error = function(e) NULL))
 # ---- Version and metadata ----
 DASHBOARD_VERSION <- "v1.0"
 DASHBOARD_DATE <- format(Sys.Date(), "%B %Y")
@@ -1388,6 +1393,16 @@ apply_admin_extra_filters <- function(df,
   df
 }
 
+# English "05 Jun 2026" label, independent of the R session / server language
+# (format(x, "%b") would print French month names on a French-locale machine).
+admin_date_label_en <- function(x) {
+  x <- as.Date(x)
+  mon <- month.abb[as.integer(format(x, "%m"))]
+  out <- paste(format(x, "%d"), mon, format(x, "%Y"))
+  out[is.na(x)] <- NA_character_
+  out
+}
+
 # Short text describing the active extra filters (used in the summary text).
 admin_extra_filters_text <- function(response_selection = NULL,
                                      date_selection = NULL,
@@ -1396,7 +1411,7 @@ admin_extra_filters_text <- function(response_selection = NULL,
     if (length(response_selection) > 0)
       paste0("Response: ", paste(response_selection, collapse = ", ")),
     if (length(date_selection) > 0)
-      paste0("Date: ", paste(format(as.Date(date_selection), "%d %b %Y"), collapse = ", ")),
+      paste0("Date: ", paste(admin_date_label_en(date_selection), collapse = ", ")),
     if (length(round_selection) > 0)
       paste0("Round: ", paste(round_selection, collapse = ", "))
   )
@@ -1440,7 +1455,7 @@ admin_date_round_choices <- function(df, response_selection = NULL) {
   r <- r[nzchar(r)]
   r <- r[order(suppressWarnings(as.integer(gsub("\\D", "", r))), r)]
   list(
-    dates  = stats::setNames(format(d, "%Y-%m-%d"), format(d, "%d %b %Y")),
+    dates  = stats::setNames(format(d, "%Y-%m-%d"), admin_date_label_en(d)),
     rounds = r
   )
 }
