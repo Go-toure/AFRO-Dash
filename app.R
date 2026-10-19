@@ -1364,6 +1364,88 @@ if (is_deployment) {
 cat("🎉 Deployment-ready data loading completed! Starting Shiny app...\n")
 
 # ============================================================
+# 🔎 ADMIN OVERVIEW: extra filters (Response / SIA date / Round number)
+# ============================================================
+# Each selection is optional: NULL or empty = no filtering on that field.
+# `df` must already contain the original admin columns (Response, SIA_date,
+# Round_Add). A column that is missing from the data is skipped, not an error.
+apply_admin_extra_filters <- function(df,
+                                      response_selection = NULL,
+                                      date_selection = NULL,
+                                      round_selection = NULL) {
+  if (!is.null(response_selection) && length(response_selection) > 0 &&
+      "Response" %in% names(df)) {
+    df <- df |> dplyr::filter(as.character(Response) %in% response_selection)
+  }
+  if (!is.null(date_selection) && length(date_selection) > 0 &&
+      "SIA_date" %in% names(df)) {
+    df <- df |> dplyr::filter(as.Date(SIA_date) %in% as.Date(date_selection))
+  }
+  if (!is.null(round_selection) && length(round_selection) > 0 &&
+      "Round_Add" %in% names(df)) {
+    df <- df |> dplyr::filter(as.character(Round_Add) %in% round_selection)
+  }
+  df
+}
+
+# Short text describing the active extra filters (used in the summary text).
+admin_extra_filters_text <- function(response_selection = NULL,
+                                     date_selection = NULL,
+                                     round_selection = NULL) {
+  parts <- c(
+    if (length(response_selection) > 0)
+      paste0("Response: ", paste(response_selection, collapse = ", ")),
+    if (length(date_selection) > 0)
+      paste0("Date: ", paste(format(as.Date(date_selection), "%d %b %Y"), collapse = ", ")),
+    if (length(round_selection) > 0)
+      paste0("Round: ", paste(round_selection, collapse = ", "))
+  )
+  if (length(parts) == 0) return("")
+  paste(parts, collapse = " | ")
+}
+
+# Restrict admin data to a set of countries. DRC / CAR are matched under both
+# spellings because the block lists and the summaries name them differently.
+admin_scope_filter <- function(df, countries = NULL) {
+  if (is.null(df) || is.null(countries) || length(countries) == 0) return(df)
+  alias <- dplyr::case_when(
+    df$Country == "DEMOCRATIC REPUBLIC OF THE CONGO" ~ "DRC",
+    df$Country == "CENTRAL AFRICAN REPUBLIC" ~ "CAR",
+    TRUE ~ df$Country
+  )
+  df[df$Country %in% countries | alias %in% countries, , drop = FALSE]
+}
+
+# Choices for the Response dropdown (sorted, blanks removed).
+admin_response_choices <- function(df) {
+  if (is.null(df) || !"Response" %in% names(df)) return(character(0))
+  ch <- sort(unique(trimws(as.character(df$Response[!is.na(df$Response)]))))
+  ch[nzchar(ch)]
+}
+
+# Choices for the Date and Round dropdowns, optionally limited to some Responses.
+# Dates: newest first, label "05 Jun 2026", value ISO "2026-06-05".
+# Rounds: Rnd0, Rnd1, ... in numeric order.
+admin_date_round_choices <- function(df, response_selection = NULL) {
+  if (!is.null(response_selection) && length(response_selection) > 0 &&
+      !is.null(df) && "Response" %in% names(df)) {
+    df <- df[as.character(df$Response) %in% response_selection, , drop = FALSE]
+  }
+  d <- if (!is.null(df) && "SIA_date" %in% names(df)) {
+    sort(unique(as.Date(df$SIA_date[!is.na(df$SIA_date)])), decreasing = TRUE)
+  } else as.Date(character(0))
+  r <- if (!is.null(df) && "Round_Add" %in% names(df)) {
+    unique(as.character(df$Round_Add[!is.na(df$Round_Add)]))
+  } else character(0)
+  r <- r[nzchar(r)]
+  r <- r[order(suppressWarnings(as.integer(gsub("\\D", "", r))), r)]
+  list(
+    dates  = stats::setNames(format(d, "%Y-%m-%d"), format(d, "%d %b %Y")),
+    rounds = r
+  )
+}
+
+# ============================================================
 # 👶 ADMIN coverage - COMPUTATIONALLY IDENTICAL with proper legend
 # ============================================================
 admin_coverage_summary <- function(
@@ -1374,7 +1456,10 @@ admin_coverage_summary <- function(
     block_selection = "All",
     country_selection = NULL,
     x_months = 12,
-    year_selection = NULL
+    year_selection = NULL,
+    response_selection = NULL,
+    date_selection = NULL,
+    round_selection = NULL
 ) {
   flextable::set_flextable_defaults(
     background.color = "white",
@@ -1412,10 +1497,18 @@ admin_coverage_summary <- function(
     df <- df |> dplyr::filter(Country %in% country_selection)
   }
   
+  # STEP 2b: Response / SIA date / Round number filters (optional)
+  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection)
+  
   # STEP 3: Apply date filtering EXACTLY as original
   if (!is.null(x_months) && is.numeric(x_months)) {
     start_date <- lubridate::floor_date(Sys.Date(), unit = "months") - months(x_months)
     df <- df |> dplyr::filter(date >= start_date)
+  }
+  # "Specific Years" mode: year_selection was accepted but never applied here
+  # (only the vaccinated summary honoured it), so apply it as well.
+  if (!is.null(year_selection) && length(year_selection) > 0) {
+    df <- df |> dplyr::filter(lubridate::year(date) %in% year_selection)
   }
   
   # STEP 4: Remove NA dates
@@ -1493,7 +1586,9 @@ admin_coverage_summary <- function(
   )
   
   # STEP 14: Create header text
-  period_text <- if (!is.null(x_months) && is.numeric(x_months)) {
+  period_text <- if (!is.null(date_selection) && length(date_selection) > 0) {
+    "Selected Dates"
+  } else if (!is.null(x_months) && is.numeric(x_months)) {
     paste("Last", x_months, "Months")
   } else if (!is.null(year_selection) && length(year_selection) > 0) {
     if (length(year_selection) == 1) paste("Year", year_selection)
@@ -1584,7 +1679,10 @@ admin_vaccinated_summary <- function(
     block_selection = "All",
     country_selection = NULL,
     x_months = 12,
-    year_selection = NULL
+    year_selection = NULL,
+    response_selection = NULL,
+    date_selection = NULL,
+    round_selection = NULL
 ) {
   flextable::set_flextable_defaults(
     background.color = "white",
@@ -1633,6 +1731,9 @@ admin_vaccinated_summary <- function(
   if (!is.null(country_selection) && length(country_selection) > 0) {
     df <- df |> dplyr::filter(Country %in% country_selection)
   }
+  
+  # Response / SIA date / Round number filters (optional)
+  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection)
   
   if (nrow(df) == 0) stop("No data found. (Check Country names/blocks and SIA_date parsing.)")
   
@@ -1700,7 +1801,9 @@ admin_vaccinated_summary <- function(
     "\nTotal doses administrated by Vaccine Type:", vaccine_totals_text
   )
   
-  period_text <- if (!is.null(x_months) && is.numeric(x_months)) {
+  period_text <- if (!is.null(date_selection) && length(date_selection) > 0) {
+    "Selected Dates"
+  } else if (!is.null(x_months) && is.numeric(x_months)) {
     paste("Last", x_months, "Months")
   } else if (!is.null(year_selection) && length(year_selection) > 0) {
     if (length(year_selection) == 1) paste("Year", year_selection)
@@ -5102,6 +5205,37 @@ ui <- dashboardPage(
             
             uiOutput("admin_countries_ui"),
             
+            # ADDED: Response / Date / Round number filters (auto-filled from the data)
+            selectizeInput(
+              "admin_response", "Response:",
+              choices = NULL, multiple = TRUE,
+              options = list(
+                placeholder = "All responses (type to search)",
+                plugins = list("remove_button"),
+                maxOptions = 1000,
+                dropdownParent = "body"
+              )
+            ),
+            selectizeInput(
+              "admin_dates", "Date (SIA date):",
+              choices = NULL, multiple = TRUE,
+              options = list(
+                placeholder = "All dates (overrides the time mode below)",
+                plugins = list("remove_button"),
+                maxOptions = 1000,
+                dropdownParent = "body"
+              )
+            ),
+            selectizeInput(
+              "admin_rounds", "Round Number:",
+              choices = NULL, multiple = TRUE,
+              options = list(
+                placeholder = "All rounds",
+                plugins = list("remove_button"),
+                dropdownParent = "body"
+              )
+            ),
+            
             selectInput("admin_time_type", "Time Mode:", 
                         choices = c("Last X Months" = "months", 
                                     "Specific Years" = "years"), 
@@ -8376,6 +8510,45 @@ server <- function(input, output, session) {
     )
   })
   
+  # ADDED: admin data restricted to the selected block / countries. This scopes
+  # the Response / Date / Round choices so they only list values that exist for
+  # the current selection.
+  admin_scope_df <- reactive({
+    req(admin_data)
+    countries <- input$admin_countries
+    sel <- if (!is.null(countries) && length(countries) > 0) {
+      countries
+    } else if (!is.null(input$admin_block) && input$admin_block != "All") {
+      admin_block_choices()[[input$admin_block]]
+    } else NULL
+    admin_scope_filter(admin_data, sel)
+  })
+  
+  # Response choices follow the block / country selection
+  observe({
+    ch <- admin_response_choices(admin_scope_df())
+    updateSelectizeInput(
+      session, "admin_response",
+      choices = ch,
+      selected = intersect(isolate(input$admin_response), ch)
+    )
+  })
+  
+  # Date and Round choices follow the block / country selection AND the chosen Response(s)
+  observe({
+    ch <- admin_date_round_choices(admin_scope_df(), input$admin_response)
+    updateSelectizeInput(
+      session, "admin_dates",
+      choices = ch$dates,
+      selected = intersect(isolate(input$admin_dates), unname(ch$dates))
+    )
+    updateSelectizeInput(
+      session, "admin_rounds",
+      choices = ch$rounds,
+      selected = intersect(isolate(input$admin_rounds), ch$rounds)
+    )
+  })
+  
   # MODIFIED: Analysis with dynamic block switching
   observeEvent(input$admin_analyze, {
     if (input$tabs != "admin_overview") return()  # Only run if admin tab is active
@@ -8391,6 +8564,18 @@ server <- function(input, output, session) {
       country_selection <- if (!is.null(input$admin_countries) && length(input$admin_countries) > 0)
         input$admin_countries else NULL
       
+      # ---- Response / Date / Round filters (empty = no filtering) ----
+      response_selection <- if (length(input$admin_response) > 0) input$admin_response else NULL
+      date_selection     <- if (length(input$admin_dates) > 0) as.Date(input$admin_dates) else NULL
+      round_selection    <- if (length(input$admin_rounds) > 0) input$admin_rounds else NULL
+      
+      # Specific dates take precedence over the time mode (otherwise an older
+      # date would be cut off by "Last 12 months")
+      if (!is.null(date_selection)) {
+        x_months <- NULL
+        year_selection <- NULL
+      }
+      
       # ---- Run coverage and vaccinated summaries ----
       coverage_res <- admin_coverage_summary(
         admin_data = admin_data,
@@ -8400,7 +8585,10 @@ server <- function(input, output, session) {
         block_selection = block_selection,
         country_selection = country_selection,
         x_months = x_months,
-        year_selection = year_selection
+        year_selection = year_selection,
+        response_selection = response_selection,
+        date_selection = date_selection,
+        round_selection = round_selection
       )
       
       vacc_res <- admin_vaccinated_summary(
@@ -8411,7 +8599,10 @@ server <- function(input, output, session) {
         block_selection = block_selection,
         country_selection = country_selection,
         x_months = x_months,
-        year_selection = year_selection
+        year_selection = year_selection,
+        response_selection = response_selection,
+        date_selection = date_selection,
+        round_selection = round_selection
       )
       
       # ---- Compute Key Metrics ----
@@ -8437,8 +8628,10 @@ server <- function(input, output, session) {
       block_type_text <- ifelse(input$admin_block_type == "afro", "AFRO Blocks", "IST Blocks")
       
       # ---- Text summary ----
+      extra_txt <- admin_extra_filters_text(response_selection, date_selection, round_selection)
       insights <- paste0(
         "📊 <strong>", block_type_text, " Analysis</strong><br>",
+        if (nzchar(extra_txt)) paste0("🔎 <em>", htmltools::htmlEscape(extra_txt), "</em><br>") else "",
         cov_icon, ": ", round(avg_cov, 1), "% average coverage across ", n_countries, " countries.  <br>",
         ge95_icon, " ", pct_ge95, "% of districts reached ≥95% coverage.  <br>",
         "👶 **", total_vacc, " million of doses administrated** in the selected period."
