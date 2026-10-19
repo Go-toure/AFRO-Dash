@@ -4042,9 +4042,9 @@ ui <- dashboardPage(
     ",
         
         # The logo is a WHITE WHO AFRO logo on a transparent background, so it sits on
-        # a WHO-blue banner (on the light header it would be invisible).
+        # a banner in the official WHO blue (#009ADE); on the light header it would be invisible.
         tags$div(
-          style = 'background-color: #0072B2; border-radius: 6px; padding: 4px 0; margin-bottom: 6px;',
+          style = 'background-color: #009ADE; border-radius: 6px; padding: 4px 0; margin-bottom: 6px;',
           tags$img(
             src = paste0('who_afro_logo.png?v=', LOGO_VERSION),
             alt = 'WHO AFRO',
