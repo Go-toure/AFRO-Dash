@@ -3061,6 +3061,33 @@
         "Built": "R 4.3.2; ; 2024-02-04 01:55:15 UTC; windows"
       }
     },
+    "plotly": {
+      "Source": "CRAN",
+      "Repository": "https://cloud.r-project.org",
+      "description": {
+        "Package": "plotly",
+        "Title": "Create Interactive Web Graphics via 'plotly.js'",
+        "Version": "4.10.4",
+        "Authors@R": "c(person(\"Carson\", \"Sievert\", role = c(\"aut\", \"cre\"),\n    email = \"cpsievert1@gmail.com\", comment = c(ORCID = \"0000-0002-4958-2844\")),\n    person(\"Chris\", \"Parmer\", role = \"aut\",\n    email = \"chris@plot.ly\"),\n    person(\"Toby\", \"Hocking\", role = \"aut\",\n    email = \"tdhock5@gmail.com\"),\n    person(\"Scott\", \"Chamberlain\", role = \"aut\",\n    email = \"myrmecocystus@gmail.com\"),\n    person(\"Karthik\", \"Ram\", role = \"aut\",\n    email = \"karthik.ram@gmail.com\"),\n    person(\"Marianne\", \"Corvellec\", role = \"aut\",\n    email = \"marianne.corvellec@igdore.org\", comment = c(ORCID = \"0000-0002-1994-3581\")),\n    person(\"Pedro\", \"Despouy\", role = \"aut\",\n    email = \"pedro@plot.ly\"),\n    person(\"Salim\", \"Br\u00fcggemann\", role = \"ctb\",\n    email = \"salim-b@pm.me\", comment = c(ORCID = \"0000-0002-5329-5987\")),\n    person(\"Plotly Technologies Inc.\", role = \"cph\"))",
+        "License": "MIT + file LICENSE",
+        "Description": "Create interactive web graphics from 'ggplot2' graphs and/or a custom interface to the (MIT-licensed) JavaScript library 'plotly.js' inspired by the grammar of graphics.",
+        "URL": "https://plotly-r.com, https://github.com/plotly/plotly.R,\nhttps://plotly.com/r/",
+        "BugReports": "https://github.com/plotly/plotly.R/issues",
+        "Depends": "R (>= 3.2.0), ggplot2 (>= 3.0.0)",
+        "Imports": "tools, scales, httr (>= 1.3.0), jsonlite (>= 1.6), magrittr,\ndigest, viridisLite, base64enc, htmltools (>= 0.3.6),\nhtmlwidgets (>= 1.5.2.9001), tidyr (>= 1.0.0), RColorBrewer,\ndplyr, vctrs, tibble, lazyeval (>= 0.2.0), rlang (>= 0.4.10),\ncrosstalk, purrr, data.table, promises",
+        "Suggests": "MASS, maps, hexbin, ggthemes, GGally, ggalluvial, testthat,\nknitr, shiny (>= 1.1.0), shinytest (>= 1.3.0), curl, rmarkdown,\nCairo, broom, webshot, listviewer, dendextend, sf, png,\nIRdisplay, processx, plotlyGeoAssets, forcats, withr,\npalmerpenguins, rversions, reticulate, rsvg",
+        "LazyData": "true",
+        "RoxygenNote": "7.2.3",
+        "Encoding": "UTF-8",
+        "Config/Needs/check": "tidyverse/ggplot2, rcmdcheck, devtools, reshape2",
+        "NeedsCompilation": "no",
+        "Packaged": "2024-01-13 20:51:33 UTC; cpsievert",
+        "Author": "Carson Sievert [aut, cre] (<https://orcid.org/0000-0002-4958-2844>),\nChris Parmer [aut],\nToby Hocking [aut],\nScott Chamberlain [aut],\nKarthik Ram [aut],\nMarianne Corvellec [aut] (<https://orcid.org/0000-0002-1994-3581>),\nPedro Despouy [aut],\nSalim Br\u00fcggemann [ctb] (<https://orcid.org/0000-0002-5329-5987>),\nPlotly Technologies Inc. [cph]",
+        "Maintainer": "Carson Sievert <cpsievert1@gmail.com>",
+        "Repository": "CRAN",
+        "Date/Publication": "2024-01-13 22:40:02 UTC"
+      }
+    },
     "png": {
       "Source": "CRAN",
       "Repository": "https://cloud.r-project.org",
@@ -5121,7 +5148,7 @@
       "checksum": "8799f3582b7bab5f4fd39bc454c02787"
     },
     "app.R": {
-      "checksum": "f3a6af3a66531f4206c35b2224613d40"
+      "checksum": "9b12361de69f4d90768e0405e232e9af"
     },
     "app_updt_21072026.R": {
       "checksum": "01cd36ceef5ca6e834e2201e5064a3b3"
@@ -5141,6 +5168,9 @@
     "district_performance_optimized_updt_21072026.R": {
       "checksum": "961002fd3cb5e81f29165299aab77956"
     },
+    "im_overview_module.R": {
+      "checksum": "daa398af3dc57d4b0679555711666041"
+    },
     "input/4434.rds": {
       "checksum": "b4efe49a926a484ac5db77ae391128ac"
     },
@@ -5152,6 +5182,21 @@
     },
     "input/5710.rds": {
       "checksum": "80592bcb74808b309c86d8e6116ee619"
+    },
+    "input/AFRO_IM_data.rds": {
+      "checksum": "99472f7b9cf5c837ffd9b4c102a8c807"
+    },
+    "input/AFRO_LQAS_combined.rds": {
+      "checksum": "65d91ae1eac2db1dc04619850a3d1be1"
+    },
+    "input/AFRO_LQAS_data_c.rds": {
+      "checksum": "642a10ecf02dcf58da5270c20e7a2f14"
+    },
+    "input/AFRO_admin_data.rds": {
+      "checksum": "325bc886556d55b6e5b5eb92f1e1476b"
+    },
+    "input/Scope.rds": {
+      "checksum": "efb5b3613f774aca0512288abda14111"
     },
     "input/africa_countries.rds": {
       "checksum": "8b35945fb90d4625a62646738aeca39a"
@@ -5165,15 +5210,6 @@
     "input/africa_provinces_simplified.rds": {
       "checksum": "a6ce2352b4f2854ca336a483d47e2804"
     },
-    "input/AFRO_admin_data.rds": {
-      "checksum": "325bc886556d55b6e5b5eb92f1e1476b"
-    },
-    "input/AFRO_LQAS_combined.rds": {
-      "checksum": "65d91ae1eac2db1dc04619850a3d1be1"
-    },
-    "input/AFRO_LQAS_data_c.rds": {
-      "checksum": "642a10ecf02dcf58da5270c20e7a2f14"
-    },
     "input/ambiguous_district_pairs.rds": {
       "checksum": "11b083cc5c54d56f979a7d34190e7bef"
     },
@@ -5182,9 +5218,6 @@
     },
     "input/performance_summary.csv": {
       "checksum": "6f31f6fab102e55102496a6504ffd8ba"
-    },
-    "input/Scope.rds": {
-      "checksum": "efb5b3613f774aca0512288abda14111"
     },
     "lqas_optimized_operations.R": {
       "checksum": "42f4f03aa2d82d5f4128cffab33d36e0"
