@@ -6787,15 +6787,25 @@ ui <- dashboardPage(
     # ============================================================
     tabItem(
       tabName = "im_overview",
-      if (IM_OVERVIEW_AVAILABLE) {
-        im_overview_ui("im")
-      } else {
-        tags$div(
-          class = "alert alert-warning",
-          "The IM Overview is not available in this deployment: the 'plotly' package ",
-          "or im_overview_module.R is missing."
+      # Same layout as the LQAS Repository Overview page: one page with in-page
+      # sub-tabs, the first one being "Overview".
+      tabsetPanel(
+        id = "im_subtabs",
+        type = "tabs",
+        tabPanel(
+          title = tagList(icon("dashboard"), "Overview"),
+          value = "im_overview_main",
+          if (IM_OVERVIEW_AVAILABLE) {
+            im_overview_ui("im")
+          } else {
+            tags$div(
+              class = "alert alert-warning",
+              "The IM Overview is not available in this deployment: the 'plotly' package ",
+              "or im_overview_module.R is missing."
+            )
+          }
         )
-      }
+      )
     ),
 
     # ============================================================
