@@ -4066,14 +4066,8 @@ ui <- dashboardPage(
                tabName = "powerbi_dashboard", 
                icon = icon("chart-line")),
       
-      # LQAS Repository Overview now groups three pages as sub-tabs. The tabNames
-      # are unchanged ("overview", "missed_children", "coverage"), so every page and
-      # every input$tabs check in the server keeps working exactly as before.
-      menuItem("LQAS Repository Overview", icon = icon("dashboard"), startExpanded = TRUE,
-               menuSubItem("Overview", tabName = "overview", icon = icon("dashboard")),
-               menuSubItem("Missed Children", tabName = "missed_children", icon = icon("child")),
-               menuSubItem("Coverage Analysis", tabName = "coverage", icon = icon("chart-line"))
-      ),
+      # Missed Children and Coverage Analysis are sub-tabs inside this page.
+      menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
       menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
       menuItem("District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
@@ -4912,162 +4906,387 @@ ui <- dashboardPage(
     # ============================================================
     tabItem(
       tabName = "overview",
-      fluidRow(
-        # ---- FILTER PANEL ----
-        conditionalPanel(
-          condition = "input.tabs == 'overview'",
-          box(
-            title = tags$div(icon("filter"), "Overview Filters"),
-            width = 3,
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            collapsed = FALSE,
-            style = "height: 90vh; overflow-y: auto;",
+      # LQAS Repository Overview is one page with three sub-tabs. Missed Children and
+      # Coverage Analysis used to be separate sidebar tabs; their content is unchanged,
+      # only nested here (their input.tabs conditions now also test the sub-tab).
+      tabsetPanel(
+        id = "overview_subtabs",
+        type = "tabs",
+        tabPanel(
+          title = tagList(icon("dashboard"), "Overview"),
+          value = "overview_main",
+            fluidRow(
+              # ---- FILTER PANEL ----
+              conditionalPanel(
+                condition = "input.tabs == 'overview'",
+                box(
+                  title = tags$div(icon("filter"), "Overview Filters"),
+                  width = 3,
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  collapsed = FALSE,
+                  style = "height: 90vh; overflow-y: auto;",
             
-            # ADDED: Block Type Selection
-            selectizeInput(
-              "overview_block_type", 
-              "Block Type:",
-              choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"), 
-              selected = "afro",
-              options = list(
-                placeholder = 'Select Block Type...',
-                dropdownParent = 'body'
-              )
-            ),
+                  # ADDED: Block Type Selection
+                  selectizeInput(
+                    "overview_block_type", 
+                    "Block Type:",
+                    choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"), 
+                    selected = "afro",
+                    options = list(
+                      placeholder = 'Select Block Type...',
+                      dropdownParent = 'body'
+                    )
+                  ),
             
-            # MODIFIED: Dynamic Block Selection
-            selectizeInput(
-              "overview_block", 
-              "Selected Block:",
-              choices = c("All", names(afro_blocks)), 
-              selected = "All",
-              options = list(
-                placeholder = 'Select Block...',
-                dropdownParent = 'body'
-              )
-            ),
+                  # MODIFIED: Dynamic Block Selection
+                  selectizeInput(
+                    "overview_block", 
+                    "Selected Block:",
+                    choices = c("All", names(afro_blocks)), 
+                    selected = "All",
+                    options = list(
+                      placeholder = 'Select Block...',
+                      dropdownParent = 'body'
+                    )
+                  ),
             
-            uiOutput("overview_countries_ui"),
-            uiOutput("overview_provinces_ui"),
+                  uiOutput("overview_countries_ui"),
+                  uiOutput("overview_provinces_ui"),
             
-            # UPDATED: Server-side optimized district selector
-            selectizeInput(
-              "overview_districts", 
-              "Districts (optional):",
-              choices = character(0),  # Start empty
-              selected = NULL,
-              multiple = TRUE,
-              options = list(
-                placeholder = 'Type to search districts...',
-                maxItems = 15,
-                dropdownParent = 'body',
-                openOnFocus = FALSE,
-                create = FALSE
-              )
-            ),
+                  # UPDATED: Server-side optimized district selector
+                  selectizeInput(
+                    "overview_districts", 
+                    "Districts (optional):",
+                    choices = character(0),  # Start empty
+                    selected = NULL,
+                    multiple = TRUE,
+                    options = list(
+                      placeholder = 'Type to search districts...',
+                      maxItems = 15,
+                      dropdownParent = 'body',
+                      openOnFocus = FALSE,
+                      create = FALSE
+                    )
+                  ),
             
-            selectizeInput(
-              "overview_time_type", 
-              "Timeframe Type:",
-              choices = c("Date Range" = "range", "Specific Year" = "years"),
-              selected = "range",
-              options = list(dropdownParent = 'body')
-            ),
+                  selectizeInput(
+                    "overview_time_type", 
+                    "Timeframe Type:",
+                    choices = c("Date Range" = "range", "Specific Year" = "years"),
+                    selected = "range",
+                    options = list(dropdownParent = 'body')
+                  ),
             
-            conditionalPanel(
-              condition = "input.overview_time_type == 'range'",
-              dateRangeInput(
-                "overview_daterange", "Select Date Range:",
-                start = Sys.Date() - 365,
-                end   = Sys.Date(),
-                format   = "yyyy-mm-dd",
-                startview = "year"
-              )
-            ),
+                  conditionalPanel(
+                    condition = "input.overview_time_type == 'range'",
+                    dateRangeInput(
+                      "overview_daterange", "Select Date Range:",
+                      start = Sys.Date() - 365,
+                      end   = Sys.Date(),
+                      format   = "yyyy-mm-dd",
+                      startview = "year"
+                    )
+                  ),
             
-            conditionalPanel(
-              condition = "input.overview_time_type == 'years'",
-              textInput(
-                "overview_years", "Year(s):", 
-                placeholder = "e.g. 2023, 2024 or 2023 2024",
-                value = format(Sys.Date(), "%Y")
+                  conditionalPanel(
+                    condition = "input.overview_time_type == 'years'",
+                    textInput(
+                      "overview_years", "Year(s):", 
+                      placeholder = "e.g. 2023, 2024 or 2023 2024",
+                      value = format(Sys.Date(), "%Y")
+                    ),
+                    helpText(
+                      "Enter years separated by commas or spaces", 
+                      style = "font-size: 11px; color: #666; margin-top: -10px;"
+                    )
+                  ),
+            
+                  checkboxGroupInput(
+                    "overview_perf_filter",
+                    "District Performance:",
+                    choices = c(
+                      "Always High Performing" = "high",
+                      "Never High Performing"  = "poor"
+                    ),
+                    selected = NULL,
+                    inline = FALSE
+                  ),
+            
+                  # ADDED: Debug checkbox
+                  checkboxInput("overview_debug", "Enable Debug Mode", value = FALSE),
+            
+                  actionButton(
+                    "overview_analyze", "🚀 Run Overview", 
+                    class = "btn-primary-custom",
+                    style = "margin-top: 15px;"
+                  )
+                )
               ),
-              helpText(
-                "Enter years separated by commas or spaces", 
-                style = "font-size: 11px; color: #666; margin-top: -10px;"
-              )
-            ),
-            
-            checkboxGroupInput(
-              "overview_perf_filter",
-              "District Performance:",
-              choices = c(
-                "Always High Performing" = "high",
-                "Never High Performing"  = "poor"
-              ),
-              selected = NULL,
-              inline = FALSE
-            ),
-            
-            # ADDED: Debug checkbox
-            checkboxInput("overview_debug", "Enable Debug Mode", value = FALSE),
-            
-            actionButton(
-              "overview_analyze", "🚀 Run Overview", 
-              class = "btn-primary-custom",
-              style = "margin-top: 15px;"
-            )
-          )
-        ),
         
-        # ---- RESULTS PANEL ----
-        conditionalPanel(
-          condition = "input.tabs == 'overview'",
-          box(
-            title = tags$div(icon("database"), "LQAS Repository Overview"),
-            width = 9,
-            status = "info",
-            solidHeader = TRUE,
-            collapsible = FALSE,
+              # ---- RESULTS PANEL ----
+              conditionalPanel(
+                condition = "input.tabs == 'overview'",
+                box(
+                  title = tags$div(icon("database"), "LQAS Repository Overview"),
+                  width = 9,
+                  status = "info",
+                  solidHeader = TRUE,
+                  collapsible = FALSE,
             
-            # 🔹 AUTO-FIT, ALIGNED VALUE BOXES
-            div(
-              class = "valuebox-flex-container",
-              valueBoxOutput("overview_total_campaigns"),
-              valueBoxOutput("overview_total_countries"),
-              valueBoxOutput("overview_total_provinces"),   # ⬅️ Provinces box
-              valueBoxOutput("overview_total_districts"),
-              valueBoxOutput("overview_data_period")
-            ),
+                  # 🔹 AUTO-FIT, ALIGNED VALUE BOXES
+                  div(
+                    class = "valuebox-flex-container",
+                    valueBoxOutput("overview_total_campaigns"),
+                    valueBoxOutput("overview_total_countries"),
+                    valueBoxOutput("overview_total_provinces"),   # ⬅️ Provinces box
+                    valueBoxOutput("overview_total_districts"),
+                    valueBoxOutput("overview_data_period")
+                  ),
             
-            # ADDED: Debug info panel
-            conditionalPanel(
-              condition = "input.overview_debug == true",
-              wellPanel(
-                h4("🔍 Debug Information"),
-                verbatimTextOutput("overview_debug_info"),
-                style = "background-color: #f8f9fa; margin-bottom: 20px;"
-              )
-            ),
+                  # ADDED: Debug info panel
+                  conditionalPanel(
+                    condition = "input.overview_debug == true",
+                    wellPanel(
+                      h4("🔍 Debug Information"),
+                      verbatimTextOutput("overview_debug_info"),
+                      style = "background-color: #f8f9fa; margin-bottom: 20px;"
+                    )
+                  ),
             
-            div(
-              class = "analysis-controls",
-              h4(icon("table"), "Data Explorer"),
-              DTOutput("overview_explorer_table")
-            ),
+                  div(
+                    class = "analysis-controls",
+                    h4(icon("table"), "Data Explorer"),
+                    DTOutput("overview_explorer_table")
+                  ),
             
-            div(
-              style = "text-align: center; margin-top: 20px;",
-              downloadButton(
-                "download_overview_data", 
-                "📥 Download Filtered Data", 
-                class = "btn-primary-custom",
-                style = "width: 300px;"
+                  div(
+                    style = "text-align: center; margin-top: 20px;",
+                    downloadButton(
+                      "download_overview_data", 
+                      "📥 Download Filtered Data", 
+                      class = "btn-primary-custom",
+                      style = "width: 300px;"
+                    )
+                  )
+                )
               )
             )
-          )
+        ),
+        tabPanel(
+          title = tagList(icon("child"), "Missed Children"),
+          value = "missed_children",
+            fluidRow(
+              conditionalPanel(
+                condition = "input.tabs == 'overview' && input.overview_subtabs == 'missed_children'",
+                column(
+                  width = 3,
+                  box(
+                    title = tags$div(icon("search"), "Missed Children Analysis"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "primary",
+              
+                    # ADDED: Block Type Selection
+                    selectInput("missed_block_type", "Block Type:",
+                                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                                selected = "afro"),
+              
+                    # MODIFIED: Dynamic Block Selection
+                    selectInput("missed_block", "Selected Block:",
+                                choices = c("All", names(afro_blocks)), 
+                                selected = "All"),
+              
+                    selectInput("missed_time_type", "Time Period Type:",
+                                choices = c("Last X Months" = "x_months",
+                                            "Specific Quarter" = "quarter", 
+                                            "Last N Quarters" = "last_quarters"),
+                                selected = "x_months"),
+              
+                    conditionalPanel(
+                      condition = "input.missed_time_type == 'x_months'",
+                      numericInput("missed_months", "Number of Months:", 
+                                   value = 12, min = 1, max = 24)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.missed_time_type == 'quarter'",
+                      numericInput("missed_year", "Year:", 
+                                   value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
+                      selectInput("missed_quarter", "Quarter:", choices = 1:4)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.missed_time_type == 'last_quarters'",
+                      selectInput("missed_quarters", "Last N Quarters:", 
+                                  choices = 1:4, selected = 2)
+                    ),
+              
+                    uiOutput("missed_countries_ui"),
+              
+                    actionButton("missed_analyze", "🔍 Analyze Missed Children", 
+                                 class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
+              
+                    # Download Filtered Data Button
+                    conditionalPanel(
+                      condition = "output.missed_analysis_exists",
+                      div(style = "text-align:center; margin-top:10px;",
+                          downloadButton("download_missed_filtered_data", 
+                                         "📥 Download Filtered Data", 
+                                         class = "btn-success", 
+                                         style = "width:100%; font-weight:bold;")
+                      )
+                    )
+                  )
+                )
+              ),
+        
+              conditionalPanel(
+                condition = "input.tabs == 'overview' && input.overview_subtabs == 'missed_children'",
+                column(
+                  width = 9,
+                  fluidRow(
+                    valueBoxOutput("missed_overall_rate", width = 4),
+                    valueBoxOutput("missed_boys_rate", width = 4),
+                    valueBoxOutput("missed_girls_rate", width = 4)
+                  ),
+            
+                  box(
+                    title = tags$div(icon("chart-bar"), "Missed Children Analysis Results"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "info",
+              
+                    tabsetPanel(
+                      tabPanel(
+                        tags$div(icon("table"), "Summary Table"), 
+                        uiOutput("missed_flextable_ui"),
+                        fluidRow(
+                          column(6,
+                                 downloadButton("download_missed_table", 
+                                                "📊 Download Table", 
+                                                class = "btn-primary-custom")
+                          ),
+                          column(6,
+                                 downloadButton("download_missed_data", 
+                                                "💾 Download Raw Data", 
+                                                class = "btn-primary-custom")
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+        ),
+        tabPanel(
+          title = tagList(icon("chart-line"), "Coverage Analysis"),
+          value = "coverage",
+            fluidRow(
+              conditionalPanel(
+                condition = "input.tabs == 'overview' && input.overview_subtabs == 'coverage'",
+                column(
+                  width = 3,
+                  box(
+                    title = tags$div(icon("cog"), "Coverage Analysis Settings"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "primary",
+              
+                    # ADDED: Block Type Selection
+                    selectInput("coverage_block_type", "Block Type:",
+                                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                                selected = "afro"),
+              
+                    # MODIFIED: Dynamic Block Selection
+                    selectInput("coverage_block", "Selected Block:",
+                                choices = c("All", names(afro_blocks)), 
+                                selected = "All"),
+              
+                    selectInput("coverage_time_type", "Time Period Type:",
+                                choices = c("Last X Months" = "x_months",
+                                            "Specific Quarter" = "quarter",
+                                            "Last N Quarters" = "last_quarters"),
+                                selected = "x_months"),
+              
+                    conditionalPanel(
+                      condition = "input.coverage_time_type == 'x_months'",
+                      numericInput("coverage_months", "Number of Months:", 
+                                   value = 12, min = 1, max = 24)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.coverage_time_type == 'quarter'",
+                      numericInput("coverage_year", "Year:", 
+                                   value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
+                      selectInput("coverage_quarter", "Quarter:", choices = 1:4)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.coverage_time_type == 'last_quarters'",
+                      selectInput("coverage_quarters", "Last N Quarters:", 
+                                  choices = 1:4, selected = 2)
+                    ),
+              
+                    uiOutput("coverage_countries_ui"),
+              
+                    actionButton("coverage_analyze", "📊 Analyze Coverage", 
+                                 class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
+              
+                    # Download Filtered Data Button
+                    conditionalPanel(
+                      condition = "output.coverage_analysis_exists",
+                      div(style = "text-align:center; margin-top:10px;",
+                          downloadButton("download_coverage_filtered_data", 
+                                         "📥 Download Filtered Data", 
+                                         class = "btn-success", 
+                                         style = "width:100%; font-weight:bold;")
+                      )
+                    )
+                  )
+                )
+              ),
+        
+              conditionalPanel(
+                condition = "input.tabs == 'overview' && input.overview_subtabs == 'coverage'",
+                column(
+                  width = 9,
+                  fluidRow(
+                    valueBoxOutput("coverage_overall", width = 4),
+                    valueBoxOutput("coverage_boys", width = 4),
+                    valueBoxOutput("coverage_girls", width = 4)
+                  ),
+            
+                  box(
+                    title = tags$div(icon("chart-line"), "Coverage Analysis Results"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "info",
+              
+                    tabsetPanel(
+                      tabPanel(
+                        tags$div(icon("table"), "Coverage Table"), 
+                        uiOutput("coverage_flextable_ui"),
+                        fluidRow(
+                          column(6,
+                                 downloadButton("download_coverage_table", 
+                                                "📊 Download Table", 
+                                                class = "btn-primary-custom")
+                          ),
+                          column(6,
+                                 downloadButton("download_coverage_data", 
+                                                "💾 Download Raw Data", 
+                                                class = "btn-primary-custom")
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
         )
       )
     ),
@@ -5325,225 +5544,7 @@ ui <- dashboardPage(
       )
     ),
     
-    # ============================================================
-    # 👶 MISSED CHILDREN (Updated with Block Type Selection)
-    # ============================================================
-    tabItem(
-      tabName = "missed_children",
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'missed_children'",
-          column(
-            width = 3,
-            box(
-              title = tags$div(icon("search"), "Missed Children Analysis"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "primary",
-              
-              # ADDED: Block Type Selection
-              selectInput("missed_block_type", "Block Type:",
-                          choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                          selected = "afro"),
-              
-              # MODIFIED: Dynamic Block Selection
-              selectInput("missed_block", "Selected Block:",
-                          choices = c("All", names(afro_blocks)), 
-                          selected = "All"),
-              
-              selectInput("missed_time_type", "Time Period Type:",
-                          choices = c("Last X Months" = "x_months",
-                                      "Specific Quarter" = "quarter", 
-                                      "Last N Quarters" = "last_quarters"),
-                          selected = "x_months"),
-              
-              conditionalPanel(
-                condition = "input.missed_time_type == 'x_months'",
-                numericInput("missed_months", "Number of Months:", 
-                             value = 12, min = 1, max = 24)
-              ),
-              
-              conditionalPanel(
-                condition = "input.missed_time_type == 'quarter'",
-                numericInput("missed_year", "Year:", 
-                             value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
-                selectInput("missed_quarter", "Quarter:", choices = 1:4)
-              ),
-              
-              conditionalPanel(
-                condition = "input.missed_time_type == 'last_quarters'",
-                selectInput("missed_quarters", "Last N Quarters:", 
-                            choices = 1:4, selected = 2)
-              ),
-              
-              uiOutput("missed_countries_ui"),
-              
-              actionButton("missed_analyze", "🔍 Analyze Missed Children", 
-                           class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
-              
-              # Download Filtered Data Button
-              conditionalPanel(
-                condition = "output.missed_analysis_exists",
-                div(style = "text-align:center; margin-top:10px;",
-                    downloadButton("download_missed_filtered_data", 
-                                   "📥 Download Filtered Data", 
-                                   class = "btn-success", 
-                                   style = "width:100%; font-weight:bold;")
-                )
-              )
-            )
-          )
-        ),
-        
-        conditionalPanel(
-          condition = "input.tabs == 'missed_children'",
-          column(
-            width = 9,
-            fluidRow(
-              valueBoxOutput("missed_overall_rate", width = 4),
-              valueBoxOutput("missed_boys_rate", width = 4),
-              valueBoxOutput("missed_girls_rate", width = 4)
-            ),
-            
-            box(
-              title = tags$div(icon("chart-bar"), "Missed Children Analysis Results"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "info",
-              
-              tabsetPanel(
-                tabPanel(
-                  tags$div(icon("table"), "Summary Table"), 
-                  uiOutput("missed_flextable_ui"),
-                  fluidRow(
-                    column(6,
-                           downloadButton("download_missed_table", 
-                                          "📊 Download Table", 
-                                          class = "btn-primary-custom")
-                    ),
-                    column(6,
-                           downloadButton("download_missed_data", 
-                                          "💾 Download Raw Data", 
-                                          class = "btn-primary-custom")
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
     
-    # ============================================================
-    # 📈 COVERAGE ANALYSIS (Updated with Block Type Selection)
-    # ============================================================
-    tabItem(
-      tabName = "coverage",
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'coverage'",
-          column(
-            width = 3,
-            box(
-              title = tags$div(icon("cog"), "Coverage Analysis Settings"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "primary",
-              
-              # ADDED: Block Type Selection
-              selectInput("coverage_block_type", "Block Type:",
-                          choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                          selected = "afro"),
-              
-              # MODIFIED: Dynamic Block Selection
-              selectInput("coverage_block", "Selected Block:",
-                          choices = c("All", names(afro_blocks)), 
-                          selected = "All"),
-              
-              selectInput("coverage_time_type", "Time Period Type:",
-                          choices = c("Last X Months" = "x_months",
-                                      "Specific Quarter" = "quarter",
-                                      "Last N Quarters" = "last_quarters"),
-                          selected = "x_months"),
-              
-              conditionalPanel(
-                condition = "input.coverage_time_type == 'x_months'",
-                numericInput("coverage_months", "Number of Months:", 
-                             value = 12, min = 1, max = 24)
-              ),
-              
-              conditionalPanel(
-                condition = "input.coverage_time_type == 'quarter'",
-                numericInput("coverage_year", "Year:", 
-                             value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
-                selectInput("coverage_quarter", "Quarter:", choices = 1:4)
-              ),
-              
-              conditionalPanel(
-                condition = "input.coverage_time_type == 'last_quarters'",
-                selectInput("coverage_quarters", "Last N Quarters:", 
-                            choices = 1:4, selected = 2)
-              ),
-              
-              uiOutput("coverage_countries_ui"),
-              
-              actionButton("coverage_analyze", "📊 Analyze Coverage", 
-                           class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
-              
-              # Download Filtered Data Button
-              conditionalPanel(
-                condition = "output.coverage_analysis_exists",
-                div(style = "text-align:center; margin-top:10px;",
-                    downloadButton("download_coverage_filtered_data", 
-                                   "📥 Download Filtered Data", 
-                                   class = "btn-success", 
-                                   style = "width:100%; font-weight:bold;")
-                )
-              )
-            )
-          )
-        ),
-        
-        conditionalPanel(
-          condition = "input.tabs == 'coverage'",
-          column(
-            width = 9,
-            fluidRow(
-              valueBoxOutput("coverage_overall", width = 4),
-              valueBoxOutput("coverage_boys", width = 4),
-              valueBoxOutput("coverage_girls", width = 4)
-            ),
-            
-            box(
-              title = tags$div(icon("chart-line"), "Coverage Analysis Results"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "info",
-              
-              tabsetPanel(
-                tabPanel(
-                  tags$div(icon("table"), "Coverage Table"), 
-                  uiOutput("coverage_flextable_ui"),
-                  fluidRow(
-                    column(6,
-                           downloadButton("download_coverage_table", 
-                                          "📊 Download Table", 
-                                          class = "btn-primary-custom")
-                    ),
-                    column(6,
-                           downloadButton("download_coverage_data", 
-                                          "💾 Download Raw Data", 
-                                          class = "btn-primary-custom")
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
     
     
     # ============================================================
@@ -7151,6 +7152,12 @@ vbox_fun <- function(value, subtitle, icon_name, color = "blue") {
 # ============================================================
 
 server <- function(input, output, session) {
+  
+  # TRUE when the LQAS Repository Overview page is open on the given sub-tab
+  # ("overview_main", "missed_children" or "coverage").
+  overview_subtab_is <- function(name) {
+    identical(input$tabs, "overview") && identical(input$overview_subtabs, name)
+  }
   
   options(error = function() {
     cat("\n--- Full traceback ---\n")
@@ -8849,7 +8856,8 @@ server <- function(input, output, session) {
   # Run analysis
   # ---------------------------
   observeEvent(input$missed_analyze, {
-    if (!is.null(input$tabs) && input$tabs != "missed_children") return()
+    # Only run when the Missed Children sub-tab (inside LQAS Repository Overview) is open
+    if (!is.null(input$tabs) && !overview_subtab_is("missed_children")) return()
     
     showNotification("🔍 Analyzing missed children data...", type = "message", duration = 3)
     
@@ -9283,7 +9291,7 @@ server <- function(input, output, session) {
   
   # Main analysis function - UPDATED with dynamic block switching
   observeEvent(input$coverage_analyze, {
-    if (input$tabs != "coverage") return()  # Only run if coverage tab is active
+    if (!overview_subtab_is("coverage")) return()  # Only run if the Coverage Analysis sub-tab is open
     
     showNotification("📊 Analyzing coverage data...", type = "message", duration = 3)
     
