@@ -4533,9 +4533,31 @@ ui <- dashboardPage(
     /* Dark-mode tweaks for KPI cards */
     .dark-mode .valuebox-flex-container .small-box,
     .dark-mode .content .small-box {
+      /* Dark overlay on top of the AdminLTE colour (bg-aqua, bg-green, ...)
+         so light text keeps a readable contrast on every card colour. */
       background: radial-gradient(circle at top left,
-                                  rgba(59, 130, 246, 0.22),
-                                  rgba(15, 23, 42, 0.92));
+                                  rgba(2, 6, 23, 0.62),
+                                  rgba(2, 6, 23, 0.90));
+    }
+
+    /* Figures and labels: explicit high-contrast light text in dark mode */
+    .dark-mode .valuebox-flex-container .small-box .inner,
+    .dark-mode .content .small-box .inner {
+      color: #ffffff;
+    }
+
+    .dark-mode .valuebox-flex-container .small-box .inner h3,
+    .dark-mode .content .small-box .inner h3 {
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+    }
+
+    .dark-mode .valuebox-flex-container .small-box .inner p,
+    .dark-mode .content .small-box .inner p,
+    .dark-mode .content .small-box .inner p span {
+      color: #f1f5f9;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
     }
 
     .dark-mode .valuebox-flex-container .small-box .icon,
