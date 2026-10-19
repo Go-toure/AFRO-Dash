@@ -4034,10 +4034,15 @@ ui <- dashboardPage(
       Shiny.setInputValue('go_home', Math.random());
     ",
         
-        tags$img(
-          src = 'who_afro_logo.png',
-          height = '60px',
-          style = 'margin-bottom: 5px;'
+        # The logo is a WHITE WHO AFRO logo on a transparent background, so it sits on
+        # a WHO-blue banner (on the light header it would be invisible).
+        tags$div(
+          style = 'background-color: #0072B2; border-radius: 6px; padding: 4px 0; margin-bottom: 6px;',
+          tags$img(
+            src = 'who_afro_logo.png',
+            alt = 'WHO AFRO',
+            style = 'display: block; height: 84px; max-width: 100%; margin: 0 auto; object-fit: contain;'
+          )
         ),
         
         tags$h4(
