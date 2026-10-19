@@ -13,6 +13,13 @@ invisible(tryCatch(suppressWarnings(Sys.setlocale("LC_TIME", "C")), error = func
 # ---- Version and metadata ----
 DASHBOARD_VERSION <- "v1.0"
 DASHBOARD_DATE <- format(Sys.Date(), "%B %Y")
+# Version tag for the sidebar logo URL. Browsers cache static files by URL, so after
+# the logo file is replaced they keep showing the old image; tying the URL to the
+# file's content makes every logo change show up immediately.
+LOGO_VERSION <- tryCatch({
+  v <- unname(tools::md5sum("www/who_afro_logo.png"))
+  if (is.na(v)) "1" else substr(v, 1, 8)
+}, error = function(e) "1")
 
 # ---- Explicit package loading (required for deployment) ----
 library(future)
@@ -4039,7 +4046,7 @@ ui <- dashboardPage(
         tags$div(
           style = 'background-color: #0072B2; border-radius: 6px; padding: 4px 0; margin-bottom: 6px;',
           tags$img(
-            src = 'who_afro_logo.png',
+            src = paste0('who_afro_logo.png?v=', LOGO_VERSION),
             alt = 'WHO AFRO',
             style = 'display: block; height: 84px; max-width: 100%; margin: 0 auto; object-fit: contain;'
           )
