@@ -255,6 +255,15 @@ if (IM_OVERVIEW_AVAILABLE) {
   cat("IM Overview tab disabled (plotly package or im_overview_module.R not found)\n")
 }
 
+# Snapshot landing page (headline numbers for management / summits). Self-contained:
+# reads input/*.rds + input/AFRO_snapshot_stats_*.csv, needs no extra packages.
+SNAPSHOT_AVAILABLE <- file.exists("snapshot_module.R")
+if (SNAPSHOT_AVAILABLE) {
+  source("snapshot_module.R")
+} else {
+  cat("Snapshot page disabled (snapshot_module.R not found)\n")
+}
+
 cat("✅ External map functions loaded from optimized files\n")
 # ============================================================
 # ---- List numeric .rds files ----
@@ -4111,6 +4120,9 @@ ui <- dashboardPage(
         )
       ),
       
+      # Landing page: headline numbers of the monitoring programme and the campaigns
+      menuItem("Snapshot", tabName = "snapshot", icon = icon("tachometer-alt"), selected = TRUE),
+      
       # NEW: Add Power BI Dashboard as the first menu item
       menuItem("Campaigns Overview (Power BI)", 
                tabName = "powerbi_dashboard", 
@@ -4976,6 +4988,18 @@ ui <- dashboardPage(
              textOutput("keep_alive")),
     
     
+    
+    # ============================================================
+    # SNAPSHOT - landing page (module in snapshot_module.R)
+    # ============================================================
+    tabItem(
+      tabName = "snapshot",
+      if (SNAPSHOT_AVAILABLE) {
+        snap_ui("snap")
+      } else {
+        tags$div(class = "alert alert-warning", "The Snapshot page is not available: snapshot_module.R is missing.")
+      }
+    ),
     
     # ============================================================
     # 📊 POWER BI DASHBOARD - Campaigns Overview
@@ -7300,6 +7324,7 @@ vbox_fun <- function(value, subtitle, icon_name, color = "blue") {
 server <- function(input, output, session) {
   
   # IM Overview tab (module defined in im_overview_module.R)
+  if (SNAPSHOT_AVAILABLE) snap_server("snap", blocks = afro_blocks)
   if (IM_OVERVIEW_AVAILABLE) {
     im_repository_server("imr")
     im_overview_server("im")
@@ -14684,7 +14709,7 @@ server <- function(input, output, session) {
   
   # ---- Go Home Handler (for logo click) ----
   observeEvent(input$go_home, {
-    updateTabItems(session, "tabs", "overview")
+    updateTabItems(session, "tabs", "snapshot")
   })
   
   # ============================================================
