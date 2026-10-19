@@ -4070,10 +4070,8 @@ ui <- dashboardPage(
       menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
       menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
+      # LQAS Summary Maps, Reasons Analysis and Unresolved Cases are sub-tabs inside this page.
       menuItem("LQAS District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
-      menuItem("LQAS Summary Maps", tabName = "lqas_maps", icon = icon("globe-africa")),
-      menuItem("Reasons Analysis", tabName = "reasons", icon = icon("search")),
-      menuItem("Unresolved Cases", tabName = "unresolved", icon = icon("exclamation-triangle")),
       menuItem("IM Settlement Maps", tabName = "settlement_maps", icon = icon("map")),
       menuItem("Generate Slides", tabName = "generate_slides", icon = icon("file-powerpoint")),
       menuItem("Quick Start Guide", tabName = "guide", icon = icon("info-circle")),
@@ -5553,974 +5551,310 @@ ui <- dashboardPage(
     
     tabItem(
       tabName = "district_perf",
-      
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'district_perf'",
-          
-          column(
-            width = 3,
-            
-            box(
-              title = tags$div(icon("cog"), "District Performance Settings"),
-              width = 12,
-              solidHeader = TRUE,
-              status = "primary",
-              collapsible = TRUE,
-              
-              selectInput(
-                "perf_block_type",
-                "Block Type:",
-                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                selected = "afro"
-              ),
-              
-              selectInput(
-                "perf_block",
-                "Selected Block:",
-                choices = c("All"),
-                selected = "All"
-              ),
-              
-              selectInput(
-                "perf_time_type",
-                "Time Filter:",
-                choices = c(
-                  "Last X Months" = "x_months",
-                  "Last X Consecutive Round(s)" = "x_data_months",
-                  "Specific Year" = "year",
-                  "Year + Last X Months" = "year_months",
-                  "Specific Year + Month(s)" = "year_month"
-                ),
-                selected = "x_months"
-              ),
-              
-              conditionalPanel(
-                condition = "input.perf_time_type == 'x_months'",
-                numericInput(
-                  "perf_months",
-                  "Number of Months:",
-                  value = 12,
-                  min = 1,
-                  max = 24
-                )
-              ),
-              
-              conditionalPanel(
-                condition = "input.perf_time_type == 'x_data_months'",
-                numericInput(
-                  "perf_data_months",
-                  "Last X Data Months:",
-                  value = 6,
-                  min = 1,
-                  max = 24
-                ),
-                helpText("This selects the last X months where each country has data. Gaps are allowed.")
-              ),
-              
-              conditionalPanel(
-                condition = "input.perf_time_type == 'year'",
-                numericInput(
-                  "perf_year",
-                  "Year:",
-                  value = as.numeric(format(Sys.Date(), "%Y")),
-                  min = 2020,
-                  max = as.numeric(format(Sys.Date(), "%Y"))
-                )
-              ),
-              
-              conditionalPanel(
-                condition = "input.perf_time_type == 'year_months'",
-                numericInput(
-                  "perf_year_months",
-                  "Year:",
-                  value = as.numeric(format(Sys.Date(), "%Y")),
-                  min = 2020,
-                  max = as.numeric(format(Sys.Date(), "%Y"))
-                ),
-                numericInput(
-                  "perf_months_year",
-                  "Last X Months in Year:",
-                  value = 6,
-                  min = 1,
-                  max = 12
-                )
-              ),
-              
-              conditionalPanel(
-                condition = "input.perf_time_type == 'year_month'",
-                
-                numericInput(
-                  "perf_year_month",
-                  "Year:",
-                  value = as.numeric(format(Sys.Date(), "%Y")),
-                  min = 2020,
-                  max = as.numeric(format(Sys.Date(), "%Y"))
-                ),
-                
-                selectizeInput(
-                  "perf_month_name",
-                  "Month(s):",
-                  choices = setNames(1:12, month.name),
-                  selected = as.integer(format(Sys.Date(), "%m")),
-                  multiple = TRUE,
-                  options = list(
-                    placeholder = "Select one or more months",
-                    plugins = list("remove_button"),
-                    dropdownParent = "body"
-                  )
-                ),
-                
-                tags$small("Tip: you can select multiple months, for example Oct–Dec.")
-              ),
-              
-              selectizeInput(
-                "perf_countries",
-                "Countries (Optional):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(
-                  placeholder = "Select one or more countries",
-                  maxItems = 15,
-                  plugins = list("remove_button"),
-                  dropdownParent = "body"
-                )
-              ),
-              
-              selectizeInput(
-                "perf_provinces",
-                "Province(s):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(
-                  placeholder = "Select one or more provinces",
-                  maxItems = 20,
-                  plugins = list("remove_button"),
-                  dropdownParent = "body"
-                )
-              ),
-              
-              selectizeInput(
-                "perf_districts",
-                "District(s):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(
-                  placeholder = "Select one or more districts",
-                  maxItems = 30,
-                  plugins = list("remove_button"),
-                  dropdownParent = "body"
-                )
-              ),
-              
-              selectInput(
-                "perf_heatmap_geo_level",
-                "Heatmap Geography Level:",
-                choices = c(
-                  "Country" = "country",
-                  "Province" = "province"
-                ),
-                selected = "country"
-              ),
-              
-              shinyWidgets::materialSwitch(
-                inputId = "perf_show_district_labels",
-                label = "Show district names on maps",
-                value = FALSE,
-                status = "primary",
-                right = FALSE
-              ),
-              
-              checkboxGroupInput(
-                "perf_status_filter",
-                "Performance Status (Optional):",
-                choices = c(
-                  "Never High Performing" = "never_high",
-                  "Always High Performing" = "always_high"
-                ),
-                selected = character(0)
-              ),
-              
-              helpText("Note: Leave unselected to show all districts."),
-              
-              actionButton(
-                "perf_analyze",
-                "🗺️ Analyze Performance",
-                class = "btn-primary-custom",
-                style = "width:100%; font-weight:bold; margin-bottom:10px;"
-              ),
-              
-              conditionalPanel(
-                condition = "output.perf_analysis_exists",
-                div(
-                  style = "text-align:center; margin-top:10px;",
-                  downloadButton(
-                    "download_filtered_data",
-                    "📥 Download Filtered Data",
-                    class = "btn-success",
-                    style = "width:100%; font-weight:bold;"
-                  )
-                )
-              )
-            )
-          )
-        ),
-        
-        conditionalPanel(
-          condition = "input.tabs == 'district_perf'",
-          
-          column(
-            width = 9,
-            
+      # LQAS District Performance is one page with four sub-tabs. LQAS Summary Maps,
+      # Reasons Analysis and Unresolved Cases used to be separate sidebar tabs; their content is unchanged,
+      # only nested here (their input.tabs conditions now also test the sub-tab).
+      tabsetPanel(
+        id = "district_subtabs",
+        type = "tabs",
+        tabPanel(
+          title = tagList(icon("map-marked-alt"), "District Performance"),
+          value = "district_main",
             fluidRow(
-              valueBoxOutput("perf_total_districts", width = 4),
-              valueBoxOutput("perf_high_performing", width = 4),
-              valueBoxOutput("perf_poor_performing", width = 4)
-            ),
-            
-            box(
-              title = tags$div(icon("map"), "District Performance Results"),
-              width = 12,
-              solidHeader = TRUE,
-              status = "info",
-              collapsible = TRUE,
-              
-              tabsetPanel(
-                id = "perf_tabs",
-                
-                tabPanel(
-                  tags$div(icon("globe"), "Performance Maps"),
-                  
-                  div(
-                    style = "text-align:center;",
-                    shinycssloaders::withSpinner(
-                      plotOutput("perf_maps", height = "650px", width = "100%"),
-                      type = 8,
-                      color = "#0072BC",
-                      size = 1.2
-                    )
-                  ),
-                  
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_perf_maps",
-                      "🗺️ Download Maps",
-                      class = "btn-primary-custom",
-                      style = "width:200px;"
-                    )
-                  )
-                ),
-                
-                tabPanel(
-                  tags$div(icon("th"), "Faceted Heatmap"),
-                  
-                  div(
-                    style = "text-align:center;",
-                    shinycssloaders::withSpinner(
-                      plotOutput("perf_heatmap", height = "650px", width = "100%"),
-                      type = 8,
-                      color = "#0072BC",
-                      size = 1.2
-                    )
-                  ),
-                  
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_perf_heatmap",
-                      "🔥 Download Heatmap",
-                      class = "btn-primary-custom",
-                      style = "width:220px;"
-                    )
-                  )
-                ),
-                
-                tabPanel(
-                  tags$div(icon("table"), "Summary Table"),
-                  
-                  uiOutput("perf_summary_table_ui"),
-                  
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_perf_table",
-                      "📊 Download Table",
-                      class = "btn-primary-custom",
-                      style = "width:200px;"
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
-    
-    
-    
-    # ============================================================
-    # 🌍 LQAS SUMMARY MAPS — FULL UPDATED UI (LIVE + CONSISTENT)
-    # ✅ Province labels added as optional checkbox
-    # ============================================================
-    
-    tabItem(
-      tabName = "lqas_maps",
-      
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'lqas_maps'",
-          
-          column(
-            width = 3,
-            box(
-              title = tags$div(icon("cog"), "LQAS Map Settings"),
-              width = 12,
-              solidHeader = TRUE,
-              status = "primary",
-              
-              selectInput(
-                "lqas_block_type", "Block Type:",
-                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                selected = "afro"
-              ),
-              
-              selectInput(
-                "lqas_block", "Selected Block:",
-                choices = c("All", names(afro_blocks)),
-                selected = "All"
-              ),
-              
-              selectInput(
-                "lqas_time_type", "Timeframe Type:",
-                choices = c(
-                  "Last X Months"     = "months",
-                  "Specific Year(s)"  = "years",
-                  "All Data"          = "all"
-                ),
-                selected = "months"
-              ),
-              
               conditionalPanel(
-                condition = "input.lqas_time_type == 'months'",
-                numericInput("lqas_months", "Number of Months:", value = 6, min = 1, max = 24)
-              ),
-              
-              conditionalPanel(
-                condition = "input.lqas_time_type == 'years'",
-                textInput(
-                  "lqas_years", "Year(s):",
-                  placeholder = "e.g., 2023,2024",
-                  value = format(Sys.Date(), "%Y")
-                )
-              ),
-              
-              selectizeInput(
-                "lqas_countries", "Countries (Optional):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(plugins = list("remove_button"), dropdownParent = "body")
-              ),
-              
-              selectizeInput(
-                "lqas_provinces", "Province(s) (Optional):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(plugins = list("remove_button"), dropdownParent = "body")
-              ),
-              
-              selectizeInput(
-                "lqas_districts", "District(s) (Optional):",
-                choices = character(0),
-                multiple = TRUE,
-                options = list(plugins = list("remove_button"), dropdownParent = "body")
-              ),
-              
-              checkboxGroupInput(
-                "lqas_perf_filter",
-                "Performance Range (Optional):",
-                choices = c(
-                  "High Performing (80-100%)" = "high_performing",
-                  "Low Performing (0-25%)"    = "low_performing"
-                )
-              ),
-              
-              checkboxInput(
-                "lqas_show_province_labels",
-                "Show province labels on province map",
-                value = FALSE
-              ),
-              
-              actionButton(
-                "lqas_analyze",
-                "🌍 Generate / Refresh",
-                class = "btn-primary-custom"
-              ),
-              
-              div(
-                style = "text-align:center; margin-top:15px;",
-                downloadButton(
-                  "download_lqas_data",
-                  "📥 Download Filtered Data",
-                  class = "btn-success"
-                )
-              ),
-              
-              tags$hr(),
-              tags$div(
-                style = "font-size:12px; color:#6b7280;",
-                tags$b("Note: "),
-                "All tabs update LIVE as you change filters. ",
-                "Downloads always match the current filters."
-              )
-            )
-          ),
+                condition = "input.tabs == 'district_perf'",
           
-          column(
-            width = 9,
+                column(
+                  width = 3,
             
-            fluidRow(
-              valueBoxOutput("lqas_total_districts", 4),
-              valueBoxOutput("lqas_high_performance", 4),
-              valueBoxOutput("lqas_low_performance", 4)
-            ),
-            
-            box(
-              title = tags$div(icon("globe-africa"), "LQAS Summary Maps"),
-              width = 12,
-              solidHeader = TRUE,
-              status = "info",
+                  box(
+                    title = tags$div(icon("cog"), "District Performance Settings"),
+                    width = 12,
+                    solidHeader = TRUE,
+                    status = "primary",
+                    collapsible = TRUE,
               
-              tabsetPanel(
-                tabPanel(
-                  title = tags$div(icon("map"), "District Summary Map"),
-                  plotOutput("lqas_summary_map", height = "600px"),
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_lqas_map",
-                      "🗺️ Download District Map",
-                      class = "btn-primary-custom"
-                    )
-                  )
-                ),
+                    selectInput(
+                      "perf_block_type",
+                      "Block Type:",
+                      choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                      selected = "afro"
+                    ),
+              
+                    selectInput(
+                      "perf_block",
+                      "Selected Block:",
+                      choices = c("All"),
+                      selected = "All"
+                    ),
+              
+                    selectInput(
+                      "perf_time_type",
+                      "Time Filter:",
+                      choices = c(
+                        "Last X Months" = "x_months",
+                        "Last X Consecutive Round(s)" = "x_data_months",
+                        "Specific Year" = "year",
+                        "Year + Last X Months" = "year_months",
+                        "Specific Year + Month(s)" = "year_month"
+                      ),
+                      selected = "x_months"
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.perf_time_type == 'x_months'",
+                      numericInput(
+                        "perf_months",
+                        "Number of Months:",
+                        value = 12,
+                        min = 1,
+                        max = 24
+                      )
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.perf_time_type == 'x_data_months'",
+                      numericInput(
+                        "perf_data_months",
+                        "Last X Data Months:",
+                        value = 6,
+                        min = 1,
+                        max = 24
+                      ),
+                      helpText("This selects the last X months where each country has data. Gaps are allowed.")
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.perf_time_type == 'year'",
+                      numericInput(
+                        "perf_year",
+                        "Year:",
+                        value = as.numeric(format(Sys.Date(), "%Y")),
+                        min = 2020,
+                        max = as.numeric(format(Sys.Date(), "%Y"))
+                      )
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.perf_time_type == 'year_months'",
+                      numericInput(
+                        "perf_year_months",
+                        "Year:",
+                        value = as.numeric(format(Sys.Date(), "%Y")),
+                        min = 2020,
+                        max = as.numeric(format(Sys.Date(), "%Y"))
+                      ),
+                      numericInput(
+                        "perf_months_year",
+                        "Last X Months in Year:",
+                        value = 6,
+                        min = 1,
+                        max = 12
+                      )
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.perf_time_type == 'year_month'",
                 
-                tabPanel(
-                  title = tags$div(icon("layer-group"), "Province LQAS Summary Map"),
-                  div(
-                    style = "margin: 10px 0 12px 0; padding:10px 12px; background:#f8fafc; border-left:4px solid #1f4e79; border-radius:6px; font-size:12px; color:#374151;",
-                    tags$b("Definition: "),
-                    "Province high (%) = count of records where performance = 'high' / total count of performance records in the province for the selected period. ",
-                    "The map bins provinces into: 0-25%, 25-50%, 50-80%, 80-100%."
-                  ),
-                  plotOutput("lqas_province_summary_map", height = "600px"),
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_lqas_province_map",
-                      "🗺️ Download Province Map",
-                      class = "btn-primary-custom"
-                    )
-                  )
-                ),
+                      numericInput(
+                        "perf_year_month",
+                        "Year:",
+                        value = as.numeric(format(Sys.Date(), "%Y")),
+                        min = 2020,
+                        max = as.numeric(format(Sys.Date(), "%Y"))
+                      ),
                 
-                tabPanel(
-                  title = tags$div(icon("table"), "Performance Table"),
-                  uiOutput("lqas_summary_table_ui"),
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_lqas_table",
-                      "📊 Download Table as Image",
-                      class = "btn-primary-custom"
-                    )
-                  )
-                ),
-                
-                tabPanel(
-                  title = tags$div(icon("building"), "Province Summary"),
-                  fluidRow(
-                    column(
-                      width = 12,
-                      div(
-                        style = "display:flex; justify-content:space-between; align-items:center; margin: 10px 0 12px 0; gap:10px; flex-wrap:wrap;",
-                        tags$div(
-                          style = "font-weight:600; color:#374151;",
-                          "Power BI-like table: country, province, high (%)"
-                        ),
-                        div(
-                          style = "display:flex; gap:10px; flex-wrap:wrap;",
-                          downloadButton(
-                            "download_lqas_province_summary_image",
-                            "🖼️ Download Province Summary Image",
-                            class = "btn-primary-custom"
-                          ),
-                          downloadButton(
-                            "download_lqas_province_summary_excel",
-                            "📥 Download Province Summary Excel",
-                            class = "btn-success"
-                          )
+                      selectizeInput(
+                        "perf_month_name",
+                        "Month(s):",
+                        choices = setNames(1:12, month.name),
+                        selected = as.integer(format(Sys.Date(), "%m")),
+                        multiple = TRUE,
+                        options = list(
+                          placeholder = "Select one or more months",
+                          plugins = list("remove_button"),
+                          dropdownParent = "body"
                         )
                       ),
-                      div(
-                        style = "margin: 0 0 12px 0; padding:10px 12px; background:#f8fafc; border-left:4px solid #1f4e79; border-radius:6px; font-size:12px; color:#374151;",
-                        tags$b("Definition: "),
-                        "high (%) = count of records where performance = 'high' ",
-                        "/ total count of performance records in the province ",
-                        "for the selected period."
+                
+                      tags$small("Tip: you can select multiple months, for example Oct–Dec.")
+                    ),
+              
+                    selectizeInput(
+                      "perf_countries",
+                      "Countries (Optional):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(
+                        placeholder = "Select one or more countries",
+                        maxItems = 15,
+                        plugins = list("remove_button"),
+                        dropdownParent = "body"
+                      )
+                    ),
+              
+                    selectizeInput(
+                      "perf_provinces",
+                      "Province(s):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(
+                        placeholder = "Select one or more provinces",
+                        maxItems = 20,
+                        plugins = list("remove_button"),
+                        dropdownParent = "body"
+                      )
+                    ),
+              
+                    selectizeInput(
+                      "perf_districts",
+                      "District(s):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(
+                        placeholder = "Select one or more districts",
+                        maxItems = 30,
+                        plugins = list("remove_button"),
+                        dropdownParent = "body"
+                      )
+                    ),
+              
+                    selectInput(
+                      "perf_heatmap_geo_level",
+                      "Heatmap Geography Level:",
+                      choices = c(
+                        "Country" = "country",
+                        "Province" = "province"
                       ),
-                      uiOutput("lqas_province_summary_ui")
-                    )
-                  )
-                ),
-                
-                tabPanel(
-                  title = tags$div(icon("database"), "Data Preview"),
-                  DT::dataTableOutput("lqas_data_preview"),
-                  div(
-                    style = "text-align:center; margin-top:15px;",
-                    downloadButton(
-                      "download_lqas_data_preview",
-                      "📥 Download Preview Data",
-                      class = "btn-primary-custom"
-                    )
-                  )
-                ),
-                
-                tabPanel(
-                  title = tags$div(icon("th-large"), "Filtered Data (PowerBI view)"),
-                  div(
-                    style = "position:relative; z-index:9999; display:flex; justify-content:flex-end; margin: 8px 0 10px 0;",
+                      selected = "country"
+                    ),
+              
+                    shinyWidgets::materialSwitch(
+                      inputId = "perf_show_district_labels",
+                      label = "Show district names on maps",
+                      value = FALSE,
+                      status = "primary",
+                      right = FALSE
+                    ),
+              
+                    checkboxGroupInput(
+                      "perf_status_filter",
+                      "Performance Status (Optional):",
+                      choices = c(
+                        "Never High Performing" = "never_high",
+                        "Always High Performing" = "always_high"
+                      ),
+                      selected = character(0)
+                    ),
+              
+                    helpText("Note: Leave unselected to show all districts."),
+              
                     actionButton(
-                      "lqas_pbi_download_btn",
-                      "⬇️ Download mini-tables",
-                      style = "background:#00a65a; color:white; border:none; border-radius:6px; padding:8px 12px;"
-                    )
-                  ),
-                  uiOutput("lqas_powerbi_view_ui")
-                )
-              )
-            )
-          )
-        )
-      )
-    ),
-    
-    # ============================================================
-    # COMPREHENSIVE REASONS ANALYSIS UI - COMPLETE (FIXED)
-    # ============================================================
-    tabItem(
-      tabName = "reasons",
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'reasons'",
-          column(
-            width = 3,
-            box(
-              title = tags$div(icon("cog"), "Reasons Analysis Settings"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "primary",
+                      "perf_analyze",
+                      "🗺️ Analyze Performance",
+                      class = "btn-primary-custom",
+                      style = "width:100%; font-weight:bold; margin-bottom:10px;"
+                    ),
               
-              # Geographic Level Selection
-              selectInput("reasons_geo_level", "Geographic Level:",
-                          choices = c(
-                            "Country Level" = "country",
-                            "Province Level" = "province",
-                            "District Level" = "district"
-                          ),
-                          selected = "country"),
-              
-              # Visualization Type Selection
-              selectInput("reasons_viz_type", "Visualization Type:",
-                          choices = c(
-                            "Auto (smart selection)" = "auto",
-                            "🔥 Heatmap" = "heatmap",
-                            "📊 Grouped Bar Chart" = "bar",
-                            "📊 Stacked Bar Chart" = "stacked_bar",
-                            "🔲 Faceted Bar Chart" = "faceted_bar",
-                            "⚪ Bubble Chart" = "bubble",
-                            "🥧 Pie Chart" = "pie",
-                            "🍩 Donut Chart" = "donut",
-                            "🌳 Treemap" = "treemap",
-                            "☀️ Sunburst Chart" = "sunburst",
-                            "📡 Radar Chart" = "radar",
-                            "🍭 Lollipop Chart" = "lollipop",
-                            "💧 Waterfall Chart" = "waterfall"
-                          ),
-                          selected = "auto"),
-              
-              # Combined Overview inclusion
-              radioButtons("reasons_combined_choice", "Include in Combined Overview:",
-                           choices = c(
-                             "All three (Traditional + Non-Compliance + Absence)" = "all",
-                             "Traditional + Non-Compliance only" = "trad_nc",
-                             "Traditional + Absence only" = "trad_absence"
-                           ),
-                           selected = "all"),
-              
-              # Block Type Selection
-              selectInput("reasons_block_type", "Block Type:",
-                          choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                          selected = "afro"),
-              
-              # Dynamic Block Selection
-              selectInput("reasons_block", "Selected Block:",
-                          choices = c("All", names(afro_blocks)),
-                          selected = "All"),
-              
-              selectInput("reasons_time_type", "Time Period:",
-                          choices = c("Last X Months" = "x_months",
-                                      "Specific Month" = "specific_month"),
-                          selected = "x_months"),
-              
-              conditionalPanel(
-                condition = "input.reasons_time_type == 'x_months'",
-                numericInput("reasons_months", "Number of Months:", 
-                             value = 12, min = 1, max = 24)
-              ),
-              
-              conditionalPanel(
-                condition = "input.reasons_time_type == 'specific_month'",
-                numericInput("reasons_year", "Year:", 
-                             value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
-                selectInput("reasons_month", "Month:", 
-                            choices = setNames(1:12, month.name),
-                            selected = month(Sys.Date()))
-              ),
-              
-              uiOutput("reasons_countries_ui"),
-              
-              conditionalPanel(
-                condition = "input.reasons_geo_level == 'province' || input.reasons_geo_level == 'district'",
-                uiOutput("reasons_provinces_ui")
-              ),
-              
-              conditionalPanel(
-                condition = "input.reasons_geo_level == 'district'",
-                uiOutput("reasons_districts_ui")
-              ),
-              
-              actionButton("reasons_analyze", "🔍 Analyze Reasons", 
-                           class = "btn-primary-custom", 
-                           style = "width: 100%; margin-top: 10px;")
-            )
-          )
-        ),
-        
-        conditionalPanel(
-          condition = "input.tabs == 'reasons'",
-          column(
-            width = 9,
-            
-            fluidRow(
-              column(12,
-                     div(style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
-                         uiOutput("reasons_geo_indicator"),
-                         uiOutput("reasons_viz_indicator")
-                     )
-              )
-            ),
-            
-            tabsetPanel(
-              id = "reasons_main_tabs",
-              
-              # Combined Overview Tab
-              tabPanel(
-                title = tags$div(icon("chart-pie"), "Combined Overview"),
-                value = "combined_overview",
-                fluidRow(
-                  valueBoxOutput("reasons_total_units_all", width = 3),
-                  valueBoxOutput("reasons_total_categories_all", width = 3),
-                  valueBoxOutput("reasons_avg_percentage_all", width = 3),
-                  valueBoxOutput("reasons_viz_recommendation", width = 3)
-                ),
-                box(
-                  title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
-                  width = 12, solidHeader = TRUE, status = "info",
-                  plotOutput("reasons_combined_heatmap", height = "1100px"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_reasons_combined_plot", 
-                                     "📊 Download Combined Visualization", 
-                                     class = "btn-primary-custom")
-                  )
-                )
-              ),
-              
-              # Absence Reasons Tab
-              tabPanel(
-                title = tags$div(icon("user-clock"), "Absence Reasons"),
-                value = "absence_reasons",
-                fluidRow(
-                  valueBoxOutput("absence_total_units", width = 2),
-                  valueBoxOutput("absence_top_reason", width = 3),
-                  valueBoxOutput("absence_avg_pct", width = 2),
-                  valueBoxOutput("absence_total_cats", width = 2),
-                  valueBoxOutput("absence_viz_type", width = 3)
-                ),
-                box(
-                  title = tags$div(icon("chart-bar"), "Absence Reasons Visualization"), 
-                  width = 12, solidHeader = TRUE, status = "info",
-                  plotOutput("absence_heatmap", height = "600px"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_absence_plot", 
-                                     "📊 Download Absence Visualization", 
-                                     class = "btn-primary-custom")
-                  )
-                ),
-                tabsetPanel(
-                  tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("absence_table_pct")),
-                  tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("absence_table_raw")),
-                  tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("absence_top5_plot", height = "400px"))
-                )
-              ),
-              
-              # Non-Compliance Reasons Tab
-              tabPanel(
-                title = tags$div(icon("gavel"), "Non-Compliance Reasons"),
-                value = "nc_reasons",
-                fluidRow(
-                  valueBoxOutput("nc_total_units", width = 2),
-                  valueBoxOutput("nc_top_reason", width = 3),
-                  valueBoxOutput("nc_avg_pct", width = 2),
-                  valueBoxOutput("nc_total_cats", width = 2),
-                  valueBoxOutput("nc_viz_type", width = 3)
-                ),
-                box(
-                  title = tags$div(icon("chart-bar"), "Non-Compliance Reasons Visualization"), 
-                  width = 12, solidHeader = TRUE, status = "info",
-                  plotOutput("nc_heatmap", height = "600px"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_nc_plot", "📊 Download NC Visualization", class = "btn-primary-custom")
-                  )
-                ),
-                tabsetPanel(
-                  tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("nc_table_pct")),
-                  tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("nc_table_raw")),
-                  tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("nc_top5_plot", height = "400px"))
-                )
-              ),
-              
-              # Traditional Reasons Tab
-              tabPanel(
-                title = tags$div(icon("history"), "Traditional Reasons"),
-                value = "traditional_reasons",
-                fluidRow(
-                  valueBoxOutput("trad_total_units", width = 2),
-                  valueBoxOutput("trad_top_reason", width = 3),
-                  valueBoxOutput("trad_avg_pct", width = 2),
-                  valueBoxOutput("trad_total_cats", width = 2),
-                  valueBoxOutput("trad_viz_type", width = 3)
-                ),
-                box(
-                  title = tags$div(icon("chart-bar"), "Traditional Reasons Visualization"), 
-                  width = 12, solidHeader = TRUE, status = "info",
-                  plotOutput("traditional_heatmap", height = "600px"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_traditional_plot", "📊 Download Traditional Visualization", class = "btn-primary-custom")
-                  )
-                ),
-                tabsetPanel(
-                  tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("traditional_table_pct")),
-                  tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("traditional_table_raw")),
-                  tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("traditional_top5_plot", height = "400px"))
-                )
-              ),
-              
-              # Comparative Summary Tab
-              tabPanel(
-                title = tags$div(icon("chart-line"), "Comparative Summary"),
-                value = "comparative_summary",
-                fluidRow(
-                  valueBoxOutput("summary_absence_cats", width = 3),
-                  valueBoxOutput("summary_nc_cats", width = 3),
-                  valueBoxOutput("summary_trad_cats", width = 3),
-                  valueBoxOutput("summary_total_cats", width = 3)
-                ),
-                box(
-                  title = tags$div(icon("table"), "Comparative Metrics by Reason Type"), 
-                  width = 12, solidHeader = TRUE, status = "info",
-                  DTOutput("comparative_summary_table"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_comparative_summary", "💾 Download Comparison", class = "btn-primary-custom")
-                  )
-                ),
-                box(
-                  title = tags$div(icon("chart-bar"), "Top Reasons Comparison"), 
-                  width = 12, solidHeader = TRUE, status = "success",
-                  plotOutput("top_reasons_comparison", height = "500px")
-                )
-              ),
-              
-              # Hierarchical View Tab
-              tabPanel(
-                title = tags$div(icon("sitemap"), "Hierarchical View"),
-                value = "hierarchical_view",
-                box(
-                  title = tags$div(icon("sitemap"), "Country > Province > District Breakdown"), 
-                  width = 12, solidHeader = TRUE, status = "success",
-                  conditionalPanel(
-                    condition = "input.reasons_geo_level == 'country'",
-                    tabsetPanel(
-                      tabPanel(tags$div(icon("user-clock"), "Absence Reasons"), DTOutput("hierarchical_absence_table")),
-                      tabPanel(tags$div(icon("gavel"), "Non-Compliance Reasons"), DTOutput("hierarchical_nc_table")),
-                      tabPanel(tags$div(icon("history"), "Traditional Reasons"), DTOutput("hierarchical_traditional_table"))
-                    )
-                  ),
-                  conditionalPanel(
-                    condition = "input.reasons_geo_level != 'country'",
-                    div(style = "text-align: center; padding: 50px;",
-                        h4("Hierarchical view is available only at Country level"),
-                        p("Please select 'Country Level' in settings to see the hierarchical breakdown"))
-                  )
-                )
-              ),
-              
-              # Priority Drill‑down Tab (with bar chart + tables)
-              tabPanel(
-                title = tags$div(icon("sitemap"), "Priority Drill‑down"),
-                value = "priority_drilldown",
-                fluidRow(
-                  column(
-                    width = 3,
-                    box(
-                      title = "Drill‑down Settings", width = 12, solidHeader = TRUE, status = "warning",
-                      
-                      checkboxInput("drilldown_enable", "Enable Priority Drill‑down", value = FALSE),
-                      
-                      conditionalPanel(
-                        condition = "input.drilldown_enable == true",
-                        
-                        selectInput("drilldown_reason", "Priority Reason:",
-                                    choices = c("Child Absent" = "childabsent",
-                                                "Non‑compliance" = "non_compliance"),
-                                    selected = "childabsent"),
-                        
-                        numericInput("drilldown_priority_threshold", "Country Threshold (%)",
-                                     value = 30, min = 0, max = 100, step = 1),
-                        
-                        numericInput("drilldown_province_threshold", "Province Threshold (%)",
-                                     value = 10, min = 0, max = 100, step = 1),
-                        
-                        numericInput("drilldown_district_threshold", "District Threshold (%)",
-                                     value = 5, min = 0, max = 100, step = 1),
-                        
-                        checkboxInput("drilldown_dynamic", "Use dynamic (Pareto) thresholds?",
-                                      value = FALSE),
-                        
-                        helpText("Dynamic thresholds select top units until cumulative 80% is reached.")
-                      )
-                    )
-                  ),
-                  column(
-                    width = 9,
-                    
-                    # Priority Plot Box with Download Button
-                    box(
-                      title = div(
-                        "Priority Breakdown: Country → Province → District",
-                        div(style = "float:right; margin-left:10px;",
-                            downloadButton("download_priority_plot", 
-                                           label = "Download PNG", 
-                                           icon = icon("download"),
-                                           class = "btn-primary-custom btn-sm")
-                        )
-                      ), 
-                      width = 12,
-                      solidHeader = TRUE, 
-                      status = "success",
-                      plotOutput("priority_plot", height = "600px"),
-                      
-                      # Footnote placeholder - will be filled by server
+                    conditionalPanel(
+                      condition = "output.perf_analysis_exists",
                       div(
-                        style = "margin-top: 15px; padding: 12px; background-color: #f8f9fa; border-left: 4px solid #2c3e50; border-radius: 4px; font-size: 13px; line-height: 1.5;",
-                        uiOutput("priority_footnote")
-                      )
-                    ),
-                    
-                    # District Trend Analysis as Table
-                    conditionalPanel(
-                      condition = "input.drilldown_enable == true && output.drilldown_has_trend == true",
-                      box(
-                        title = div(
-                          "District Trend Analysis",
-                          div(style = "float:right; margin-left:10px;",
-                              downloadButton("download_trend_table", 
-                                             label = "Download Excel", 
-                                             icon = icon("file-excel"),
-                                             class = "btn-success-custom btn-sm")
-                          )
-                        ),
-                        width = 12,
-                        solidHeader = TRUE,
-                        status = "warning",
-                        DTOutput("district_trend_table", height = "400px"),
-                        div(
-                          style = "margin-top: 10px; font-size: 12px; color: #666;",
-                          "Monthly trend analysis showing child absent rates for selected districts. ",
-                          "Green = Decreasing trend, Red = Increasing trend, Gray = Stable."
+                        style = "text-align:center; margin-top:10px;",
+                        downloadButton(
+                          "download_filtered_data",
+                          "📥 Download Filtered Data",
+                          class = "btn-success",
+                          style = "width:100%; font-weight:bold;"
                         )
                       )
-                    ),
-                    
-                    # Block Summary - FIXED: using textOutput instead of input in UI
-                    conditionalPanel(
-                      condition = "input.drilldown_enable == true && output.drilldown_has_data == true",
-                      box(
-                        title = div(
-                          textOutput("block_summary_title"),
-                          div(style = "float:right; margin-left:10px;",
-                              downloadButton("download_block_summary", 
-                                             label = "Download Excel", 
-                                             icon = icon("file-excel"),
-                                             class = "btn-success-custom btn-sm")
+                    )
+                  )
+                )
+              ),
+        
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf'",
+          
+                column(
+                  width = 9,
+            
+                  fluidRow(
+                    valueBoxOutput("perf_total_districts", width = 4),
+                    valueBoxOutput("perf_high_performing", width = 4),
+                    valueBoxOutput("perf_poor_performing", width = 4)
+                  ),
+            
+                  box(
+                    title = tags$div(icon("map"), "District Performance Results"),
+                    width = 12,
+                    solidHeader = TRUE,
+                    status = "info",
+                    collapsible = TRUE,
+              
+                    tabsetPanel(
+                      id = "perf_tabs",
+                
+                      tabPanel(
+                        tags$div(icon("globe"), "Performance Maps"),
+                  
+                        div(
+                          style = "text-align:center;",
+                          shinycssloaders::withSpinner(
+                            plotOutput("perf_maps", height = "650px", width = "100%"),
+                            type = 8,
+                            color = "#0072BC",
+                            size = 1.2
                           )
                         ),
-                        width = 12,
-                        solidHeader = TRUE,
-                        status = "info",
-                        collapsible = TRUE,
-                        collapsed = FALSE,
-                        DTOutput("block_summary_table")
-                      )
-                    ),
-                    
-                    fluidRow(
-                      column(
-                        width = 6,
-                        box(
-                          title = div(
-                            "Selected Provinces",
-                            div(style = "float:right; margin-left:10px;",
-                                downloadButton("download_drilldown_provinces", 
-                                               label = "Download Excel", 
-                                               icon = icon("file-excel"),
-                                               class = "btn-success-custom btn-sm")
-                            )
-                          ), 
-                          width = 12, 
-                          collapsible = TRUE, 
-                          solidHeader = TRUE,
-                          DTOutput("drilldown_provinces")
+                  
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_perf_maps",
+                            "🗺️ Download Maps",
+                            class = "btn-primary-custom",
+                            style = "width:200px;"
+                          )
                         )
                       ),
-                      column(
-                        width = 6,
-                        box(
-                          title = div(
-                            "Selected Districts",
-                            div(style = "float:right; margin-left:10px;",
-                                downloadButton("download_drilldown_districts", 
-                                               label = "Download Excel", 
-                                               icon = icon("file-excel"),
-                                               class = "btn-success-custom btn-sm")
-                            )
-                          ), 
-                          width = 12, 
-                          collapsible = TRUE, 
-                          solidHeader = TRUE,
-                          DTOutput("drilldown_districts")
+                
+                      tabPanel(
+                        tags$div(icon("th"), "Faceted Heatmap"),
+                  
+                        div(
+                          style = "text-align:center;",
+                          shinycssloaders::withSpinner(
+                            plotOutput("perf_heatmap", height = "650px", width = "100%"),
+                            type = 8,
+                            color = "#0072BC",
+                            size = 1.2
+                          )
+                        ),
+                  
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_perf_heatmap",
+                            "🔥 Download Heatmap",
+                            class = "btn-primary-custom",
+                            style = "width:220px;"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        tags$div(icon("table"), "Summary Table"),
+                  
+                        uiOutput("perf_summary_table_ui"),
+                  
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_perf_table",
+                            "📊 Download Table",
+                            class = "btn-primary-custom",
+                            style = "width:200px;"
+                          )
                         )
                       )
                     )
@@ -6528,147 +5862,812 @@ ui <- dashboardPage(
                 )
               )
             )
-          )
-        )
-      )
-    ),
-    
-    # ============================================================
-    # ⚠️ UNRESOLVED CASES (Updated with Block Type Selection)
-    # ============================================================
-    tabItem(
-      tabName = "unresolved",
-      fluidRow(
-        conditionalPanel(
-          condition = "input.tabs == 'unresolved'",
-          column(
-            width = 3,
-            box(
-              title = tags$div(icon("cog"), "Unresolved Cases Settings"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "primary",
-              
-              selectInput("unresolved_time_type", "Timeframe Type:",
-                          choices = c("Last X Months" = "months", 
-                                      "Specific Year" = "year",
-                                      "All Data" = "all"),
-                          selected = "months"),
-              
-              conditionalPanel(
-                condition = "input.unresolved_time_type == 'months'",
-                numericInput("unresolved_months", "Number of Months:", 
-                             value = 6, min = 1, max = 24)
-              ),
-              
-              conditionalPanel(
-                condition = "input.unresolved_time_type == 'year'",
-                numericInput("unresolved_year", "Year:", 
-                             value = year(Sys.Date()), min = 2020, max = year(Sys.Date()))
-              ),
-              
-              # ADDED: Block Type Selection
-              selectInput("unresolved_block_type", "Block Type:",
-                          choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
-                          selected = "afro"),
-              
-              # MODIFIED: Dynamic Block Selection
-              selectInput("unresolved_block", "Selected Block:",
-                          choices = c("All", names(afro_blocks)),
-                          selected = "All"),
-              
-              # Country filter - DROPDOWN
-              selectizeInput("unresolved_countries", "Countries (Optional):",
-                             choices = character(0),
-                             multiple = TRUE,
-                             options = list(
-                               placeholder = 'Select one or more countries',
-                               maxItems = 15,
-                               plugins = list('remove_button'),
-                               dropdownParent = 'body'
-                             )),
-              
-              # Province filter - DROPDOWN
-              selectizeInput("unresolved_provinces", "Province(s) (Optional):",
-                             choices = character(0),
-                             multiple = TRUE,
-                             options = list(
-                               placeholder = 'Select one or more provinces',
-                               maxItems = 20,
-                               plugins = list('remove_button'),
-                               dropdownParent = 'body'
-                             )),
-              
-              # District filter - DROPDOWN
-              selectizeInput("unresolved_districts", "District(s) (Optional):",
-                             choices = character(0),
-                             multiple = TRUE,
-                             options = list(
-                               placeholder = 'Select one or more districts',
-                               maxItems = 30,
-                               plugins = list('remove_button'),
-                               dropdownParent = 'body'
-                             )),
-              
-              # Filter status display
-              tags$div(
-                style = "margin-top: 10px; font-size: 12px; color: #666;",
-                textOutput("unresolved_filter_status")
-              ),
-              
-              selectInput("unresolved_reason", "Select Reason:",
-                          choices = c("Non compliance", "Child absent", "House not visited", 
-                                      "Child was asleep", "Child is visitor", "Vaccinated NFM",
-                                      "Child not born", "Security", "Other"),
-                          selected = "Non compliance"),
-              
-              actionButton("unresolved_analyze", "⚠️ Analyze Unresolved Cases", 
-                           class = "btn-primary-custom")
-            )
-          )
         ),
-        
-        conditionalPanel(
-          condition = "input.tabs == 'unresolved'",
-          column(
-            width = 9,
+        tabPanel(
+          title = tagList(icon("globe-africa"), "LQAS Summary Maps"),
+          value = "lqas_maps",
             fluidRow(
-              valueBoxOutput("unresolved_total_cases", width = 4),
-              valueBoxOutput("unresolved_countries_box", width = 4),
-              valueBoxOutput("unresolved_districts_box", width = 4)
-            ),
-            
-            box(
-              title = tags$div(icon("exclamation-triangle"), "Unresolved Cases Analysis"), 
-              width = 12, 
-              solidHeader = TRUE, 
-              status = "info",
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf' && input.district_subtabs == 'lqas_maps'",
+          
+                column(
+                  width = 3,
+                  box(
+                    title = tags$div(icon("cog"), "LQAS Map Settings"),
+                    width = 12,
+                    solidHeader = TRUE,
+                    status = "primary",
               
-              tabsetPanel(
-                tabPanel(
-                  tags$div(icon("map"), "Reason Map"), 
-                  plotOutput("unresolved_map", height = "600px"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_unresolved_map", 
-                                     "🗺️ Download Map", 
-                                     class = "btn-primary-custom")
+                    selectInput(
+                      "lqas_block_type", "Block Type:",
+                      choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                      selected = "afro"
+                    ),
+              
+                    selectInput(
+                      "lqas_block", "Selected Block:",
+                      choices = c("All", names(afro_blocks)),
+                      selected = "All"
+                    ),
+              
+                    selectInput(
+                      "lqas_time_type", "Timeframe Type:",
+                      choices = c(
+                        "Last X Months"     = "months",
+                        "Specific Year(s)"  = "years",
+                        "All Data"          = "all"
+                      ),
+                      selected = "months"
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.lqas_time_type == 'months'",
+                      numericInput("lqas_months", "Number of Months:", value = 6, min = 1, max = 24)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.lqas_time_type == 'years'",
+                      textInput(
+                        "lqas_years", "Year(s):",
+                        placeholder = "e.g., 2023,2024",
+                        value = format(Sys.Date(), "%Y")
+                      )
+                    ),
+              
+                    selectizeInput(
+                      "lqas_countries", "Countries (Optional):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(plugins = list("remove_button"), dropdownParent = "body")
+                    ),
+              
+                    selectizeInput(
+                      "lqas_provinces", "Province(s) (Optional):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(plugins = list("remove_button"), dropdownParent = "body")
+                    ),
+              
+                    selectizeInput(
+                      "lqas_districts", "District(s) (Optional):",
+                      choices = character(0),
+                      multiple = TRUE,
+                      options = list(plugins = list("remove_button"), dropdownParent = "body")
+                    ),
+              
+                    checkboxGroupInput(
+                      "lqas_perf_filter",
+                      "Performance Range (Optional):",
+                      choices = c(
+                        "High Performing (80-100%)" = "high_performing",
+                        "Low Performing (0-25%)"    = "low_performing"
+                      )
+                    ),
+              
+                    checkboxInput(
+                      "lqas_show_province_labels",
+                      "Show province labels on province map",
+                      value = FALSE
+                    ),
+              
+                    actionButton(
+                      "lqas_analyze",
+                      "🌍 Generate / Refresh",
+                      class = "btn-primary-custom"
+                    ),
+              
+                    div(
+                      style = "text-align:center; margin-top:15px;",
+                      downloadButton(
+                        "download_lqas_data",
+                        "📥 Download Filtered Data",
+                        class = "btn-success"
+                      )
+                    ),
+              
+                    tags$hr(),
+                    tags$div(
+                      style = "font-size:12px; color:#6b7280;",
+                      tags$b("Note: "),
+                      "All tabs update LIVE as you change filters. ",
+                      "Downloads always match the current filters."
+                    )
                   )
                 ),
-                tabPanel(
-                  tags$div(icon("table"), "Summary Data"), 
-                  DTOutput("unresolved_data_table"),
-                  div(style = "text-align: center; margin-top: 15px;",
-                      downloadButton("download_unresolved_data", 
-                                     "💾 Download Data", 
-                                     class = "btn-primary-custom")
+          
+                column(
+                  width = 9,
+            
+                  fluidRow(
+                    valueBoxOutput("lqas_total_districts", 4),
+                    valueBoxOutput("lqas_high_performance", 4),
+                    valueBoxOutput("lqas_low_performance", 4)
+                  ),
+            
+                  box(
+                    title = tags$div(icon("globe-africa"), "LQAS Summary Maps"),
+                    width = 12,
+                    solidHeader = TRUE,
+                    status = "info",
+              
+                    tabsetPanel(
+                      tabPanel(
+                        title = tags$div(icon("map"), "District Summary Map"),
+                        plotOutput("lqas_summary_map", height = "600px"),
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_lqas_map",
+                            "🗺️ Download District Map",
+                            class = "btn-primary-custom"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        title = tags$div(icon("layer-group"), "Province LQAS Summary Map"),
+                        div(
+                          style = "margin: 10px 0 12px 0; padding:10px 12px; background:#f8fafc; border-left:4px solid #1f4e79; border-radius:6px; font-size:12px; color:#374151;",
+                          tags$b("Definition: "),
+                          "Province high (%) = count of records where performance = 'high' / total count of performance records in the province for the selected period. ",
+                          "The map bins provinces into: 0-25%, 25-50%, 50-80%, 80-100%."
+                        ),
+                        plotOutput("lqas_province_summary_map", height = "600px"),
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_lqas_province_map",
+                            "🗺️ Download Province Map",
+                            class = "btn-primary-custom"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        title = tags$div(icon("table"), "Performance Table"),
+                        uiOutput("lqas_summary_table_ui"),
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_lqas_table",
+                            "📊 Download Table as Image",
+                            class = "btn-primary-custom"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        title = tags$div(icon("building"), "Province Summary"),
+                        fluidRow(
+                          column(
+                            width = 12,
+                            div(
+                              style = "display:flex; justify-content:space-between; align-items:center; margin: 10px 0 12px 0; gap:10px; flex-wrap:wrap;",
+                              tags$div(
+                                style = "font-weight:600; color:#374151;",
+                                "Power BI-like table: country, province, high (%)"
+                              ),
+                              div(
+                                style = "display:flex; gap:10px; flex-wrap:wrap;",
+                                downloadButton(
+                                  "download_lqas_province_summary_image",
+                                  "🖼️ Download Province Summary Image",
+                                  class = "btn-primary-custom"
+                                ),
+                                downloadButton(
+                                  "download_lqas_province_summary_excel",
+                                  "📥 Download Province Summary Excel",
+                                  class = "btn-success"
+                                )
+                              )
+                            ),
+                            div(
+                              style = "margin: 0 0 12px 0; padding:10px 12px; background:#f8fafc; border-left:4px solid #1f4e79; border-radius:6px; font-size:12px; color:#374151;",
+                              tags$b("Definition: "),
+                              "high (%) = count of records where performance = 'high' ",
+                              "/ total count of performance records in the province ",
+                              "for the selected period."
+                            ),
+                            uiOutput("lqas_province_summary_ui")
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        title = tags$div(icon("database"), "Data Preview"),
+                        DT::dataTableOutput("lqas_data_preview"),
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_lqas_data_preview",
+                            "📥 Download Preview Data",
+                            class = "btn-primary-custom"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
+                        title = tags$div(icon("th-large"), "Filtered Data (PowerBI view)"),
+                        div(
+                          style = "position:relative; z-index:9999; display:flex; justify-content:flex-end; margin: 8px 0 10px 0;",
+                          actionButton(
+                            "lqas_pbi_download_btn",
+                            "⬇️ Download mini-tables",
+                            style = "background:#00a65a; color:white; border:none; border-radius:6px; padding:8px 12px;"
+                          )
+                        ),
+                        uiOutput("lqas_powerbi_view_ui")
+                      )
+                    )
                   )
                 )
               )
             )
-          )
+        ),
+        tabPanel(
+          title = tagList(icon("search"), "Reasons Analysis"),
+          value = "reasons",
+            fluidRow(
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf' && input.district_subtabs == 'reasons'",
+                column(
+                  width = 3,
+                  box(
+                    title = tags$div(icon("cog"), "Reasons Analysis Settings"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "primary",
+              
+                    # Geographic Level Selection
+                    selectInput("reasons_geo_level", "Geographic Level:",
+                                choices = c(
+                                  "Country Level" = "country",
+                                  "Province Level" = "province",
+                                  "District Level" = "district"
+                                ),
+                                selected = "country"),
+              
+                    # Visualization Type Selection
+                    selectInput("reasons_viz_type", "Visualization Type:",
+                                choices = c(
+                                  "Auto (smart selection)" = "auto",
+                                  "🔥 Heatmap" = "heatmap",
+                                  "📊 Grouped Bar Chart" = "bar",
+                                  "📊 Stacked Bar Chart" = "stacked_bar",
+                                  "🔲 Faceted Bar Chart" = "faceted_bar",
+                                  "⚪ Bubble Chart" = "bubble",
+                                  "🥧 Pie Chart" = "pie",
+                                  "🍩 Donut Chart" = "donut",
+                                  "🌳 Treemap" = "treemap",
+                                  "☀️ Sunburst Chart" = "sunburst",
+                                  "📡 Radar Chart" = "radar",
+                                  "🍭 Lollipop Chart" = "lollipop",
+                                  "💧 Waterfall Chart" = "waterfall"
+                                ),
+                                selected = "auto"),
+              
+                    # Combined Overview inclusion
+                    radioButtons("reasons_combined_choice", "Include in Combined Overview:",
+                                 choices = c(
+                                   "All three (Traditional + Non-Compliance + Absence)" = "all",
+                                   "Traditional + Non-Compliance only" = "trad_nc",
+                                   "Traditional + Absence only" = "trad_absence"
+                                 ),
+                                 selected = "all"),
+              
+                    # Block Type Selection
+                    selectInput("reasons_block_type", "Block Type:",
+                                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                                selected = "afro"),
+              
+                    # Dynamic Block Selection
+                    selectInput("reasons_block", "Selected Block:",
+                                choices = c("All", names(afro_blocks)),
+                                selected = "All"),
+              
+                    selectInput("reasons_time_type", "Time Period:",
+                                choices = c("Last X Months" = "x_months",
+                                            "Specific Month" = "specific_month"),
+                                selected = "x_months"),
+              
+                    conditionalPanel(
+                      condition = "input.reasons_time_type == 'x_months'",
+                      numericInput("reasons_months", "Number of Months:", 
+                                   value = 12, min = 1, max = 24)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.reasons_time_type == 'specific_month'",
+                      numericInput("reasons_year", "Year:", 
+                                   value = year(Sys.Date()), min = 2020, max = year(Sys.Date())),
+                      selectInput("reasons_month", "Month:", 
+                                  choices = setNames(1:12, month.name),
+                                  selected = month(Sys.Date()))
+                    ),
+              
+                    uiOutput("reasons_countries_ui"),
+              
+                    conditionalPanel(
+                      condition = "input.reasons_geo_level == 'province' || input.reasons_geo_level == 'district'",
+                      uiOutput("reasons_provinces_ui")
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.reasons_geo_level == 'district'",
+                      uiOutput("reasons_districts_ui")
+                    ),
+              
+                    actionButton("reasons_analyze", "🔍 Analyze Reasons", 
+                                 class = "btn-primary-custom", 
+                                 style = "width: 100%; margin-top: 10px;")
+                  )
+                )
+              ),
+        
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf' && input.district_subtabs == 'reasons'",
+                column(
+                  width = 9,
+            
+                  fluidRow(
+                    column(12,
+                           div(style = "background-color: #e8f4f8; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+                               uiOutput("reasons_geo_indicator"),
+                               uiOutput("reasons_viz_indicator")
+                           )
+                    )
+                  ),
+            
+                  tabsetPanel(
+                    id = "reasons_main_tabs",
+              
+                    # Combined Overview Tab
+                    tabPanel(
+                      title = tags$div(icon("chart-pie"), "Combined Overview"),
+                      value = "combined_overview",
+                      fluidRow(
+                        valueBoxOutput("reasons_total_units_all", width = 3),
+                        valueBoxOutput("reasons_total_categories_all", width = 3),
+                        valueBoxOutput("reasons_avg_percentage_all", width = 3),
+                        valueBoxOutput("reasons_viz_recommendation", width = 3)
+                      ),
+                      box(
+                        title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
+                        width = 12, solidHeader = TRUE, status = "info",
+                        plotOutput("reasons_combined_heatmap", height = "1100px"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_reasons_combined_plot", 
+                                           "📊 Download Combined Visualization", 
+                                           class = "btn-primary-custom")
+                        )
+                      )
+                    ),
+              
+                    # Absence Reasons Tab
+                    tabPanel(
+                      title = tags$div(icon("user-clock"), "Absence Reasons"),
+                      value = "absence_reasons",
+                      fluidRow(
+                        valueBoxOutput("absence_total_units", width = 2),
+                        valueBoxOutput("absence_top_reason", width = 3),
+                        valueBoxOutput("absence_avg_pct", width = 2),
+                        valueBoxOutput("absence_total_cats", width = 2),
+                        valueBoxOutput("absence_viz_type", width = 3)
+                      ),
+                      box(
+                        title = tags$div(icon("chart-bar"), "Absence Reasons Visualization"), 
+                        width = 12, solidHeader = TRUE, status = "info",
+                        plotOutput("absence_heatmap", height = "600px"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_absence_plot", 
+                                           "📊 Download Absence Visualization", 
+                                           class = "btn-primary-custom")
+                        )
+                      ),
+                      tabsetPanel(
+                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("absence_table_pct")),
+                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("absence_table_raw")),
+                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("absence_top5_plot", height = "400px"))
+                      )
+                    ),
+              
+                    # Non-Compliance Reasons Tab
+                    tabPanel(
+                      title = tags$div(icon("gavel"), "Non-Compliance Reasons"),
+                      value = "nc_reasons",
+                      fluidRow(
+                        valueBoxOutput("nc_total_units", width = 2),
+                        valueBoxOutput("nc_top_reason", width = 3),
+                        valueBoxOutput("nc_avg_pct", width = 2),
+                        valueBoxOutput("nc_total_cats", width = 2),
+                        valueBoxOutput("nc_viz_type", width = 3)
+                      ),
+                      box(
+                        title = tags$div(icon("chart-bar"), "Non-Compliance Reasons Visualization"), 
+                        width = 12, solidHeader = TRUE, status = "info",
+                        plotOutput("nc_heatmap", height = "600px"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_nc_plot", "📊 Download NC Visualization", class = "btn-primary-custom")
+                        )
+                      ),
+                      tabsetPanel(
+                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("nc_table_pct")),
+                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("nc_table_raw")),
+                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("nc_top5_plot", height = "400px"))
+                      )
+                    ),
+              
+                    # Traditional Reasons Tab
+                    tabPanel(
+                      title = tags$div(icon("history"), "Traditional Reasons"),
+                      value = "traditional_reasons",
+                      fluidRow(
+                        valueBoxOutput("trad_total_units", width = 2),
+                        valueBoxOutput("trad_top_reason", width = 3),
+                        valueBoxOutput("trad_avg_pct", width = 2),
+                        valueBoxOutput("trad_total_cats", width = 2),
+                        valueBoxOutput("trad_viz_type", width = 3)
+                      ),
+                      box(
+                        title = tags$div(icon("chart-bar"), "Traditional Reasons Visualization"), 
+                        width = 12, solidHeader = TRUE, status = "info",
+                        plotOutput("traditional_heatmap", height = "600px"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_traditional_plot", "📊 Download Traditional Visualization", class = "btn-primary-custom")
+                        )
+                      ),
+                      tabsetPanel(
+                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("traditional_table_pct")),
+                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("traditional_table_raw")),
+                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("traditional_top5_plot", height = "400px"))
+                      )
+                    ),
+              
+                    # Comparative Summary Tab
+                    tabPanel(
+                      title = tags$div(icon("chart-line"), "Comparative Summary"),
+                      value = "comparative_summary",
+                      fluidRow(
+                        valueBoxOutput("summary_absence_cats", width = 3),
+                        valueBoxOutput("summary_nc_cats", width = 3),
+                        valueBoxOutput("summary_trad_cats", width = 3),
+                        valueBoxOutput("summary_total_cats", width = 3)
+                      ),
+                      box(
+                        title = tags$div(icon("table"), "Comparative Metrics by Reason Type"), 
+                        width = 12, solidHeader = TRUE, status = "info",
+                        DTOutput("comparative_summary_table"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_comparative_summary", "💾 Download Comparison", class = "btn-primary-custom")
+                        )
+                      ),
+                      box(
+                        title = tags$div(icon("chart-bar"), "Top Reasons Comparison"), 
+                        width = 12, solidHeader = TRUE, status = "success",
+                        plotOutput("top_reasons_comparison", height = "500px")
+                      )
+                    ),
+              
+                    # Hierarchical View Tab
+                    tabPanel(
+                      title = tags$div(icon("sitemap"), "Hierarchical View"),
+                      value = "hierarchical_view",
+                      box(
+                        title = tags$div(icon("sitemap"), "Country > Province > District Breakdown"), 
+                        width = 12, solidHeader = TRUE, status = "success",
+                        conditionalPanel(
+                          condition = "input.reasons_geo_level == 'country'",
+                          tabsetPanel(
+                            tabPanel(tags$div(icon("user-clock"), "Absence Reasons"), DTOutput("hierarchical_absence_table")),
+                            tabPanel(tags$div(icon("gavel"), "Non-Compliance Reasons"), DTOutput("hierarchical_nc_table")),
+                            tabPanel(tags$div(icon("history"), "Traditional Reasons"), DTOutput("hierarchical_traditional_table"))
+                          )
+                        ),
+                        conditionalPanel(
+                          condition = "input.reasons_geo_level != 'country'",
+                          div(style = "text-align: center; padding: 50px;",
+                              h4("Hierarchical view is available only at Country level"),
+                              p("Please select 'Country Level' in settings to see the hierarchical breakdown"))
+                        )
+                      )
+                    ),
+              
+                    # Priority Drill‑down Tab (with bar chart + tables)
+                    tabPanel(
+                      title = tags$div(icon("sitemap"), "Priority Drill‑down"),
+                      value = "priority_drilldown",
+                      fluidRow(
+                        column(
+                          width = 3,
+                          box(
+                            title = "Drill‑down Settings", width = 12, solidHeader = TRUE, status = "warning",
+                      
+                            checkboxInput("drilldown_enable", "Enable Priority Drill‑down", value = FALSE),
+                      
+                            conditionalPanel(
+                              condition = "input.drilldown_enable == true",
+                        
+                              selectInput("drilldown_reason", "Priority Reason:",
+                                          choices = c("Child Absent" = "childabsent",
+                                                      "Non‑compliance" = "non_compliance"),
+                                          selected = "childabsent"),
+                        
+                              numericInput("drilldown_priority_threshold", "Country Threshold (%)",
+                                           value = 30, min = 0, max = 100, step = 1),
+                        
+                              numericInput("drilldown_province_threshold", "Province Threshold (%)",
+                                           value = 10, min = 0, max = 100, step = 1),
+                        
+                              numericInput("drilldown_district_threshold", "District Threshold (%)",
+                                           value = 5, min = 0, max = 100, step = 1),
+                        
+                              checkboxInput("drilldown_dynamic", "Use dynamic (Pareto) thresholds?",
+                                            value = FALSE),
+                        
+                              helpText("Dynamic thresholds select top units until cumulative 80% is reached.")
+                            )
+                          )
+                        ),
+                        column(
+                          width = 9,
+                    
+                          # Priority Plot Box with Download Button
+                          box(
+                            title = div(
+                              "Priority Breakdown: Country → Province → District",
+                              div(style = "float:right; margin-left:10px;",
+                                  downloadButton("download_priority_plot", 
+                                                 label = "Download PNG", 
+                                                 icon = icon("download"),
+                                                 class = "btn-primary-custom btn-sm")
+                              )
+                            ), 
+                            width = 12,
+                            solidHeader = TRUE, 
+                            status = "success",
+                            plotOutput("priority_plot", height = "600px"),
+                      
+                            # Footnote placeholder - will be filled by server
+                            div(
+                              style = "margin-top: 15px; padding: 12px; background-color: #f8f9fa; border-left: 4px solid #2c3e50; border-radius: 4px; font-size: 13px; line-height: 1.5;",
+                              uiOutput("priority_footnote")
+                            )
+                          ),
+                    
+                          # District Trend Analysis as Table
+                          conditionalPanel(
+                            condition = "input.drilldown_enable == true && output.drilldown_has_trend == true",
+                            box(
+                              title = div(
+                                "District Trend Analysis",
+                                div(style = "float:right; margin-left:10px;",
+                                    downloadButton("download_trend_table", 
+                                                   label = "Download Excel", 
+                                                   icon = icon("file-excel"),
+                                                   class = "btn-success-custom btn-sm")
+                                )
+                              ),
+                              width = 12,
+                              solidHeader = TRUE,
+                              status = "warning",
+                              DTOutput("district_trend_table", height = "400px"),
+                              div(
+                                style = "margin-top: 10px; font-size: 12px; color: #666;",
+                                "Monthly trend analysis showing child absent rates for selected districts. ",
+                                "Green = Decreasing trend, Red = Increasing trend, Gray = Stable."
+                              )
+                            )
+                          ),
+                    
+                          # Block Summary - FIXED: using textOutput instead of input in UI
+                          conditionalPanel(
+                            condition = "input.drilldown_enable == true && output.drilldown_has_data == true",
+                            box(
+                              title = div(
+                                textOutput("block_summary_title"),
+                                div(style = "float:right; margin-left:10px;",
+                                    downloadButton("download_block_summary", 
+                                                   label = "Download Excel", 
+                                                   icon = icon("file-excel"),
+                                                   class = "btn-success-custom btn-sm")
+                                )
+                              ),
+                              width = 12,
+                              solidHeader = TRUE,
+                              status = "info",
+                              collapsible = TRUE,
+                              collapsed = FALSE,
+                              DTOutput("block_summary_table")
+                            )
+                          ),
+                    
+                          fluidRow(
+                            column(
+                              width = 6,
+                              box(
+                                title = div(
+                                  "Selected Provinces",
+                                  div(style = "float:right; margin-left:10px;",
+                                      downloadButton("download_drilldown_provinces", 
+                                                     label = "Download Excel", 
+                                                     icon = icon("file-excel"),
+                                                     class = "btn-success-custom btn-sm")
+                                  )
+                                ), 
+                                width = 12, 
+                                collapsible = TRUE, 
+                                solidHeader = TRUE,
+                                DTOutput("drilldown_provinces")
+                              )
+                            ),
+                            column(
+                              width = 6,
+                              box(
+                                title = div(
+                                  "Selected Districts",
+                                  div(style = "float:right; margin-left:10px;",
+                                      downloadButton("download_drilldown_districts", 
+                                                     label = "Download Excel", 
+                                                     icon = icon("file-excel"),
+                                                     class = "btn-success-custom btn-sm")
+                                  )
+                                ), 
+                                width = 12, 
+                                collapsible = TRUE, 
+                                solidHeader = TRUE,
+                                DTOutput("drilldown_districts")
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+        ),
+        tabPanel(
+          title = tagList(icon("exclamation-triangle"), "Unresolved Cases"),
+          value = "unresolved",
+            fluidRow(
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf' && input.district_subtabs == 'unresolved'",
+                column(
+                  width = 3,
+                  box(
+                    title = tags$div(icon("cog"), "Unresolved Cases Settings"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "primary",
+              
+                    selectInput("unresolved_time_type", "Timeframe Type:",
+                                choices = c("Last X Months" = "months", 
+                                            "Specific Year" = "year",
+                                            "All Data" = "all"),
+                                selected = "months"),
+              
+                    conditionalPanel(
+                      condition = "input.unresolved_time_type == 'months'",
+                      numericInput("unresolved_months", "Number of Months:", 
+                                   value = 6, min = 1, max = 24)
+                    ),
+              
+                    conditionalPanel(
+                      condition = "input.unresolved_time_type == 'year'",
+                      numericInput("unresolved_year", "Year:", 
+                                   value = year(Sys.Date()), min = 2020, max = year(Sys.Date()))
+                    ),
+              
+                    # ADDED: Block Type Selection
+                    selectInput("unresolved_block_type", "Block Type:",
+                                choices = c("AFRO Blocks" = "afro", "IST Blocks" = "ist"),
+                                selected = "afro"),
+              
+                    # MODIFIED: Dynamic Block Selection
+                    selectInput("unresolved_block", "Selected Block:",
+                                choices = c("All", names(afro_blocks)),
+                                selected = "All"),
+              
+                    # Country filter - DROPDOWN
+                    selectizeInput("unresolved_countries", "Countries (Optional):",
+                                   choices = character(0),
+                                   multiple = TRUE,
+                                   options = list(
+                                     placeholder = 'Select one or more countries',
+                                     maxItems = 15,
+                                     plugins = list('remove_button'),
+                                     dropdownParent = 'body'
+                                   )),
+              
+                    # Province filter - DROPDOWN
+                    selectizeInput("unresolved_provinces", "Province(s) (Optional):",
+                                   choices = character(0),
+                                   multiple = TRUE,
+                                   options = list(
+                                     placeholder = 'Select one or more provinces',
+                                     maxItems = 20,
+                                     plugins = list('remove_button'),
+                                     dropdownParent = 'body'
+                                   )),
+              
+                    # District filter - DROPDOWN
+                    selectizeInput("unresolved_districts", "District(s) (Optional):",
+                                   choices = character(0),
+                                   multiple = TRUE,
+                                   options = list(
+                                     placeholder = 'Select one or more districts',
+                                     maxItems = 30,
+                                     plugins = list('remove_button'),
+                                     dropdownParent = 'body'
+                                   )),
+              
+                    # Filter status display
+                    tags$div(
+                      style = "margin-top: 10px; font-size: 12px; color: #666;",
+                      textOutput("unresolved_filter_status")
+                    ),
+              
+                    selectInput("unresolved_reason", "Select Reason:",
+                                choices = c("Non compliance", "Child absent", "House not visited", 
+                                            "Child was asleep", "Child is visitor", "Vaccinated NFM",
+                                            "Child not born", "Security", "Other"),
+                                selected = "Non compliance"),
+              
+                    actionButton("unresolved_analyze", "⚠️ Analyze Unresolved Cases", 
+                                 class = "btn-primary-custom")
+                  )
+                )
+              ),
+        
+              conditionalPanel(
+                condition = "input.tabs == 'district_perf' && input.district_subtabs == 'unresolved'",
+                column(
+                  width = 9,
+                  fluidRow(
+                    valueBoxOutput("unresolved_total_cases", width = 4),
+                    valueBoxOutput("unresolved_countries_box", width = 4),
+                    valueBoxOutput("unresolved_districts_box", width = 4)
+                  ),
+            
+                  box(
+                    title = tags$div(icon("exclamation-triangle"), "Unresolved Cases Analysis"), 
+                    width = 12, 
+                    solidHeader = TRUE, 
+                    status = "info",
+              
+                    tabsetPanel(
+                      tabPanel(
+                        tags$div(icon("map"), "Reason Map"), 
+                        plotOutput("unresolved_map", height = "600px"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_unresolved_map", 
+                                           "🗺️ Download Map", 
+                                           class = "btn-primary-custom")
+                        )
+                      ),
+                      tabPanel(
+                        tags$div(icon("table"), "Summary Data"), 
+                        DTOutput("unresolved_data_table"),
+                        div(style = "text-align: center; margin-top: 15px;",
+                            downloadButton("download_unresolved_data", 
+                                           "💾 Download Data", 
+                                           class = "btn-primary-custom")
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
         )
       )
     ),
+    
+    
+    
+    
+    
     
     # ============================================================
     # 🗺️ IM SETTLEMENT MAPS (Includes both Map and Data Explorer)
@@ -7034,17 +7033,13 @@ ui <- dashboardPage(
                      tags$div(class = "col-md-6",
                               tags$ul(
                                 tags$li(tags$b("SIA Scope Analysis:"), " View vaccination campaign scope and coverage by geographic area"),
-                                tags$li(tags$b("Missed Children:"), " Analyze children missed during vaccination campaigns"),
-                                tags$li(tags$b("Coverage Analysis:"), " Examine vaccination coverage rates by gender and geography"),
-                                tags$li(tags$b("🗺️ LQAS District Performance:"), " Monitor LQAS performance at district level"),
+                                tags$li(tags$b("LQAS Repository Overview:"), " Repository overview, with Missed Children and Coverage Analysis as sub-tabs"),
+                                tags$li(tags$b("🗺️ LQAS District Performance:"), " Monitor LQAS performance at district level, with LQAS Summary Maps, Reasons Analysis and Unresolved Cases as sub-tabs"),
                                 tags$li(tags$b("🌍 IM Settlement Maps:"), " Visualize settlement-level footprint maps to locate missed children and guide field teams effectively")
                               )
                      ),
                      tags$div(class = "col-md-6",
                               tags$ul(
-                                tags$li(tags$b("🌍 LQAS Summary Maps:"), " Visual overview of campaign performance"),
-                                tags$li(tags$b("Reasons Analysis:"), " Understand reasons for non-vaccination"),
-                                tags$li(tags$b("Unresolved Cases:"), " Track unresolved non-compliance cases"),
                                 tags$li(tags$b("Admin Data:"), " Comprehensive administrative data overview"),
                                 tags$li(tags$b("Dynamic Reports & Exports:"), " Download results as maps, tables, or PowerPoint summaries")
                               )
@@ -7157,6 +7152,12 @@ server <- function(input, output, session) {
   # ("overview_main", "missed_children" or "coverage").
   overview_subtab_is <- function(name) {
     identical(input$tabs, "overview") && identical(input$overview_subtabs, name)
+  }
+  
+  # TRUE when the LQAS District Performance page is open on the given sub-tab
+  # ("district_main", "lqas_maps", "reasons" or "unresolved").
+  district_subtab_is <- function(name) {
+    identical(input$tabs, "district_perf") && identical(input$district_subtabs, name)
   }
   
   options(error = function() {
@@ -7281,7 +7282,7 @@ server <- function(input, output, session) {
   # Enhanced memory management for LQAS analysis
   observe({
     # Clean up LQAS analysis when tab changes
-    if (input$tabs != "lqas_maps" && !is.null(lqas_analysis())) {
+    if (!district_subtab_is("lqas_maps") && !is.null(lqas_analysis())) {
       lqas_analysis(NULL)
       force_gc()
     }
@@ -9844,7 +9845,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$perf_analyze, {
     
-    if (!identical(input$tabs, "district_perf")) return()
+    if (!district_subtab_is("district_main")) return()
     if (isTRUE(district_perf_running())) return()
     
     req(dat)
@@ -10638,7 +10639,7 @@ server <- function(input, output, session) {
   # Run analysis
   # ============================================================
   observeEvent(input$lqas_analyze, {
-    if (input$tabs != "lqas_maps") return()
+    if (!district_subtab_is("lqas_maps")) return()
     
     showNotification("🔄 Running optimized LQAS analysis...", type = "message", duration = 3)
     
@@ -11504,7 +11505,7 @@ server <- function(input, output, session) {
   
   # Main analysis execution
   observeEvent(input$reasons_analyze, {
-    if (input$tabs != "reasons") return()
+    if (!district_subtab_is("reasons")) return()
     
     safe_analysis({
       x_months <- if (input$reasons_time_type == "x_months") input$reasons_months else NULL
@@ -13121,7 +13122,7 @@ server <- function(input, output, session) {
 
   # Unresolved Cases Analysis with dynamic block switching
   observeEvent(input$unresolved_analyze, {
-    if (input$tabs != "unresolved") return()  # Only run if unresolved cases tab is active
+    if (!district_subtab_is("unresolved")) return()  # Only run if the Unresolved Cases sub-tab is open
 
     # Show loading state
     showNotification("🔄 Running optimized unresolved cases analysis...", type = "message", duration = 3)
@@ -13153,7 +13154,7 @@ server <- function(input, output, session) {
   # front. No-op if nothing has been analyzed yet, or if that reason's plot
   # is already cached from a previous build.
   observeEvent(input$unresolved_reason, {
-    if (input$tabs != "unresolved") return()
+    if (!district_subtab_is("unresolved")) return()
     current <- unresolved_analysis()
     req(current)
     if (is.null(current$processed_data) || nrow(current$processed_data) == 0) return()
