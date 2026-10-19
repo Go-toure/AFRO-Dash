@@ -20,6 +20,11 @@ LOGO_VERSION <- tryCatch({
   v <- unname(tools::md5sum("www/who_afro_logo.png"))
   if (is.na(v)) "1" else substr(v, 1, 8)
 }, error = function(e) "1")
+# URL of a file in www/ tagged with its content, so a replaced image is never served stale from cache.
+www_asset <- function(file) {
+  v <- tryCatch(unname(tools::md5sum(file.path("www", file))), error = function(e) NA_character_)
+  if (length(v) == 0 || is.na(v)) file else paste0(file, "?v=", substr(v, 1, 8))
+}
 
 # ---- Explicit package loading (required for deployment) ----
 library(future)
@@ -4091,6 +4096,16 @@ ui <- dashboardPage(
       # Performance indicators - UPDATED
       tags$div(
         style = "position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;",
+        # AFRO GIS Centre logo
+        tags$div(
+          style = "text-align: center; margin-bottom: 10px;",
+          tags$img(
+            src = www_asset("gis_centre.jpeg"),
+            alt = "AFRO GIS Centre",
+            title = "AFRO GIS Centre",
+            style = "height: 88px; width: auto; border-radius: 6px;"
+          )
+        ),
         tags$small(
           style = "color: #6c757d;",
           tags$div("💾 Stable Data Loading", style = "margin-bottom: 5px;"),
@@ -7025,6 +7040,12 @@ ui <- dashboardPage(
                   style = "border: 3px solid #0072B2; border-radius: 12px; margin-top: 10px;"
                 ),
                 br(), br(),
+                tags$img(
+                  src = www_asset("gis_centre.jpeg"),
+                  alt = "AFRO GIS Centre",
+                  title = "AFRO GIS Centre",
+                  style = "height: 90px; width: auto; margin-bottom: 8px;"
+                ),
                 tags$p(
                   style = "text-align:center; font-size:13px; color:gray;",
                   paste0("© WHO AFRO | ", DASHBOARD_VERSION, " | Updated ", DASHBOARD_DATE)
