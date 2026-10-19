@@ -506,6 +506,28 @@ optimize_data_types <- function(data) {
 # ============================================================
 # 🧩 Helper: Standardize Admin Data (works for both sources)
 # ============================================================
+# Canonical country names for the admin data. The admin file mixes English and
+# French spellings (e.g. "REPUBLIQUE CENTRAFRIQUE" next to "CENTRAL AFRICAN
+# REPUBLIC"), and the accents/apostrophes made them miss the block lists and the
+# CAR / DRC aliases. Matching ignores case, accents, spaces and punctuation.
+canonical_country_name <- function(x) {
+  x <- toupper(trimws(as.character(x)))
+  # accents -> plain letters (written as \u escapes so the file stays ASCII-safe)
+  key <- chartr("\u00c9\u00c8\u00ca\u00cb\u00d4\u00ce\u00cf\u00c0\u00c2\u00c7",
+                "EEEEOIIAAC", x)
+  key <- gsub("[^A-Z]", "", key)
+  map <- c(
+    "REPUBLIQUECENTRAFRIQUE"    = "CENTRAL AFRICAN REPUBLIC",
+    "REPUBLIQUECENTRAFRICAINE"  = "CENTRAL AFRICAN REPUBLIC",
+    "CENTRAFRIQUE"              = "CENTRAL AFRICAN REPUBLIC",
+    "CENTRAFRICAINE"            = "CENTRAL AFRICAN REPUBLIC",
+    "CAMEROUN"                  = "CAMEROON",
+    "COTEDIVOIRE"               = "COTE D IVOIRE"
+  )
+  hit <- unname(map[key])
+  ifelse(!is.na(hit), hit, x)
+}
+
 standardize_admin_data <- function(admin_data) {
   if (is.null(admin_data) || nrow(admin_data) == 0) return(admin_data)
   
@@ -530,7 +552,7 @@ standardize_admin_data <- function(admin_data) {
   
   admin_data <- admin_data |>
     dplyr::mutate(
-      Country  = if ("Country"  %in% names(admin_data)) trimws(as.character(Country))  else NA_character_,
+      Country  = if ("Country"  %in% names(admin_data)) canonical_country_name(Country)  else NA_character_,
       Province = if ("Province" %in% names(admin_data)) trimws(as.character(Province)) else NA_character_,
       District = if ("District" %in% names(admin_data)) trimws(as.character(District)) else NA_character_
     )
