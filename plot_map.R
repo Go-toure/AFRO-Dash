@@ -69,7 +69,68 @@ imset_osm_layers <- function(bb) {
   res
 }
 
-create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
+
+# ---- Raster tile background (satellite photo or OpenStreetMap map tiles) ---------
+# Tiles are fetched in parallel with curl (short timeouts), stitched into one image and drawn under
+# the routes. Satellite tiles show the houses themselves. Any failure returns NULL + a reason.
+IMSET_TILES <- list(
+  sat    = list(url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d", zmax = 17, kind = "jpg",
+                label = "Esri World Imagery"),
+  osmtile = list(url = "https://tile.openstreetmap.org/%d/%d/%d.png", zmax = 19, kind = "png", label = "OpenStreetMap tiles"))
+
+imset_tile_x <- function(lon, z) floor((lon + 180) / 360 * 2^z)
+imset_tile_y <- function(lat, z) floor((1 - asinh(tan(lat * pi / 180)) / pi) / 2 * 2^z)
+imset_tile_lon <- function(x, z) x / 2^z * 360 - 180
+imset_tile_lat <- function(y, z) atan(sinh(pi * (1 - 2 * y / 2^z))) * 180 / pi
+
+imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 30) {
+  cfg <- IMSET_TILES[[src]]
+  z <- cfg$zmax
+  repeat {
+    x0 <- imset_tile_x(bb[["xmin"]], z); x1 <- imset_tile_x(bb[["xmax"]], z)
+    y0 <- imset_tile_y(bb[["ymax"]], z); y1 <- imset_tile_y(bb[["ymin"]], z)
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= max_tiles || z <= 10) break
+    z <- z - 1
+  }
+  ck <- paste("tile", src, z, x0, x1, y0, y1)
+  if (exists(ck, envir = .imset_osm_cache, inherits = FALSE)) return(get(ck, envir = .imset_osm_cache))
+  xs <- x0:x1; ys <- y0:y1
+  grid <- expand.grid(x = xs, y = ys)
+  res <- vector("list", nrow(grid)); errs <- character(0)
+  pool <- curl::new_pool(total_con = 8, host_con = 8)
+  for (i in seq_len(nrow(grid))) local({
+    ii <- i
+    h <- curl::new_handle(timeout = 12, connecttimeout = 8, useragent = "AFRO-SIA-Dashboard (WHO AFRO)", failonerror = FALSE)
+    curl::curl_fetch_multi(sprintf(cfg$url, z, grid$x[ii], grid$y[ii]),
+      done = function(r) { if (r$status_code == 200) res[[ii]] <<- r$content else errs <<- c(errs, paste0("HTTP ", r$status_code)) },
+      fail = function(msg) errs <<- c(errs, substr(as.character(msg), 1, 70)), pool = pool, handle = h)
+  })
+  tryCatch(curl::multi_run(timeout = total_s, pool = pool), error = function(e) errs <<- c(errs, conditionMessage(e)))
+  dec <- function(raw) {
+    a <- tryCatch(if (cfg$kind == "jpg") jpeg::readJPEG(raw) else png::readPNG(raw), error = function(e) NULL)
+    if (is.null(a) || length(dim(a)) != 3) return(NULL)
+    a[, , 1:3, drop = FALSE]
+  }
+  tl <- lapply(res, function(r) if (is.null(r)) NULL else dec(r))
+  ok <- !vapply(tl, is.null, logical(1))
+  if (!any(ok)) {
+    assign("last_err", paste0(cfg$label, ": ", if (length(errs)) paste(unique(errs), collapse = ", ") else "no tile received"), envir = .imset_osm_cache)
+    return(NULL)
+  }
+  ts <- dim(tl[[which(ok)[1]]])[1]
+  big <- array(0.85, dim = c(length(ys) * ts, length(xs) * ts, 3))
+  for (i in which(ok)) {
+    r0 <- (match(grid$y[i], ys) - 1) * ts; c0 <- (match(grid$x[i], xs) - 1) * ts
+    big[r0 + seq_len(ts), c0 + seq_len(ts), ] <- tl[[i]]
+  }
+  out <- list(img = big, xmin = imset_tile_lon(min(xs), z), xmax = imset_tile_lon(max(xs) + 1, z),
+              ymin = imset_tile_lat(max(ys) + 1, z), ymax = imset_tile_lat(min(ys), z),
+              z = z, missing = sum(!ok), label = cfg$label)
+  assign(ck, out, envir = .imset_osm_cache)
+  out
+}
+
+create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
   stopifnot(is.data.frame(rows), nrow(rows) > 0)
   routes <- rows
   n_all <- nrow(routes)
@@ -124,28 +185,38 @@ create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.margin = ggplot2::margin(0, 0, 0, 0))
 
-  # ---- OSM layers (optional: a missing server never stops the map) ----
-  lay <- if (isTRUE(osm)) imset_osm_layers(bb) else NULL
-  osm_note <- if (!isTRUE(osm)) " | OpenStreetMap layers switched off" else if (is.null(lay)) " | OpenStreetMap not reachable: roads/buildings not drawn" else ""
-
-  osm_detail <- if (isTRUE(osm) && is.null(lay)) get0("last_err", envir = .imset_osm_cache, ifnotfound = "") else ""
+  # ---- background: satellite / OSM tiles / OSM vector layers / none (a missing server never stops the map) ----
+  if (!bg %in% c("sat", "osmtile", "vector", "none")) bg <- "sat"
+  tl <- NULL; lay <- NULL
+  if (bg %in% c("sat", "osmtile")) tl <- imset_fetch_tiles(bb, bg)
+  if (bg == "vector") lay <- imset_osm_layers(bb)
+  osm_detail <- if (bg != "none" && is.null(tl) && is.null(lay)) get0("last_err", envir = .imset_osm_cache, ifnotfound = "") else ""
+  osm_note <- if (bg == "none") "" else if (!is.null(tl)) paste0(" | Background: ", tl$label) else if (!is.null(lay)) " | Background: OpenStreetMap vectors" else " | Background not available (see note below)"
+  on_img <- !is.null(tl) && bg == "sat"
   p <- ggplot2::ggplot()
+  if (!is.null(tl)) p <- p + ggplot2::annotation_raster(tl$img, xmin = tl$xmin, xmax = tl$xmax, ymin = tl$ymin, ymax = tl$ymax, interpolate = TRUE)
   if (!is.null(lay$buildings)) p <- p + ggplot2::geom_sf(data = lay$buildings, fill = "gray80", color = "gray50", linewidth = 0.2)
   if (!is.null(lay$minor))     p <- p + ggplot2::geom_sf(data = lay$minor, color = "gray50", linewidth = 0.3)
   if (!is.null(lay$major))     p <- p + ggplot2::geom_sf(data = lay$major, color = "black", linewidth = 0.4)
   if (!is.null(lay$water))     p <- p + ggplot2::geom_sf(data = lay$water, color = "blue", linewidth = 0.3)
+  seg_col <- if (on_img) "white" else "grey35"
+  if (on_img)   # white halo so the markers stay readable on photographs
+    p <- p +
+      ggplot2::geom_segment(data = routes, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END), color = "black", linewidth = 1.6, alpha = 0.5) +
+      ggplot2::geom_point(data = routes, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "white", fill = NA, size = 5.2, stroke = 3.6) +
+      ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = "white", fill = NA, size = 5.2, stroke = 3.6)
   p <- p +
     ggplot2::geom_segment(data = routes, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END),
-                          color = "grey35", linetype = "dashed", linewidth = 0.5) +
+                          color = seg_col, linetype = "dashed", linewidth = 0.6) +
     ggplot2::geom_point(data = routes, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "chocolate", fill = NA, size = 4, stroke = 2) +
-    ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = "yellow4", fill = NA, size = 4, stroke = 2)
+    ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = if (on_img) "yellow" else "yellow4", fill = NA, size = 4, stroke = 2)
   if (nrow(routes) > 1 && nrow(routes) <= 20)
-    p <- p + ggplot2::geom_text(data = routes, ggplot2::aes(x = LON, y = LAT, label = N), nudge_y = lat_margin * 0.12, size = 3.2, fontface = "bold")
+    p <- p + ggplot2::geom_text(data = routes, ggplot2::aes(x = LON, y = LAT, label = N), nudge_y = lat_margin * 0.12, size = 3.4, fontface = "bold", color = if (on_img) "white" else "black")
   sub <- paste0(nrow(routes), " monitor route(s) | ", sm("CHILDREN"), " children missed", gps_note, osm_note)
   p <- p +
     ggplot2::coord_sf(xlim = c(bb[["xmin"]], bb[["xmax"]]), ylim = c(bb[["ymin"]], bb[["ymax"]]), expand = FALSE) +
     ggplot2::theme_void() +
-    ggplot2::labs(title = paste0("Missed Children | ", u(rows$ROUND), " | ", u(rows$SETTLEMENT), " | ", u(rows$COUNTRY)), subtitle = sub, caption = if (nzchar(osm_detail)) paste(strwrap(paste0("OpenStreetMap request: ", osm_detail), 110), collapse = "\n") else NULL) +
+    ggplot2::labs(title = paste0("Missed Children | ", u(rows$ROUND), " | ", u(rows$SETTLEMENT), " | ", u(rows$COUNTRY)), subtitle = sub, caption = if (nzchar(osm_detail)) paste(strwrap(paste0("Background request failed - ", osm_detail), 110), collapse = "\n") else NULL) +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 16, face = "bold"),
                    plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 10, color = "grey30"),
                    plot.caption = ggplot2::element_text(hjust = 0, size = 7, color = "grey40"))
@@ -158,11 +229,11 @@ create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
   sb_x1 <- bb[["xmax"]] - 0.04 * bb_dx; sb_x0 <- sb_x1 - sb_deg; sb_y <- bb[["ymin"]] + 0.05 * bb_dy
   na_x <- bb[["xmin"]] + 0.05 * bb_dx; na_y0 <- bb[["ymax"]] - 0.18 * bb_dy
   p <- p +
-    ggplot2::annotate("segment", x = sb_x0, xend = sb_x1, y = sb_y, yend = sb_y, linewidth = 1.2, color = "black") +
-    ggplot2::annotate("segment", x = c(sb_x0, sb_x1), xend = c(sb_x0, sb_x1), y = sb_y - 0.012 * bb_dy, yend = sb_y + 0.012 * bb_dy, linewidth = 0.8, color = "black") +
-    ggplot2::annotate("text", x = (sb_x0 + sb_x1) / 2, y = sb_y + 0.03 * bb_dy, label = if (sb_m >= 1000) paste0(sb_m / 1000, " km") else paste0(sb_m, " m"), size = 3.2) +
-    ggplot2::annotate("segment", x = na_x, xend = na_x, y = na_y0, yend = na_y0 + 0.11 * bb_dy, linewidth = 0.9, color = "black",
+    ggplot2::annotate("segment", x = sb_x0, xend = sb_x1, y = sb_y, yend = sb_y, linewidth = 1.2, color = if (on_img) "white" else "black") +
+    ggplot2::annotate("segment", x = c(sb_x0, sb_x1), xend = c(sb_x0, sb_x1), y = sb_y - 0.012 * bb_dy, yend = sb_y + 0.012 * bb_dy, linewidth = 0.8, color = if (on_img) "white" else "black") +
+    ggplot2::annotate("text", x = (sb_x0 + sb_x1) / 2, y = sb_y + 0.03 * bb_dy, label = if (sb_m >= 1000) paste0(sb_m / 1000, " km") else paste0(sb_m, " m"), size = 3.2, color = if (on_img) "white" else "black") +
+    ggplot2::annotate("segment", x = na_x, xend = na_x, y = na_y0, yend = na_y0 + 0.11 * bb_dy, linewidth = 0.9, color = if (on_img) "white" else "black",
                       arrow = grid::arrow(length = grid::unit(0.14, "in"), type = "closed")) +
-    ggplot2::annotate("text", x = na_x, y = na_y0 + 0.145 * bb_dy, label = "N", fontface = "bold", size = 4)
+    ggplot2::annotate("text", x = na_x, y = na_y0 + 0.145 * bb_dy, label = "N", fontface = "bold", size = 4, color = if (on_img) "white" else "black")
   patchwork::wrap_plots(p, panel, widths = c(4, 1.5))
 }

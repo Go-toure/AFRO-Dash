@@ -400,14 +400,16 @@ imset_static_ui <- function(id) {
         shiny::selectInput(ns("settlement"), "Settlement", choices = NULL, width = "100%"),
         shiny::selectInput(ns("date"), "Visit date", choices = NULL, width = "100%"),
         shiny::numericInput(ns("bbox_m"), "Map margin (m)", value = 300, min = 50, max = 3000, step = 50, width = "100%"),
-        shiny::checkboxInput(ns("osm"), "Draw OpenStreetMap roads, water and buildings", value = TRUE)),
+        shiny::selectInput(ns("bg"), "Background", width = "100%",
+          choices = c("Satellite photo (shows houses)" = "sat", "OpenStreetMap map" = "osmtile",
+                      "OSM roads and buildings (slow)" = "vector", "None (routes only)" = "none"))),
       shiny::div(class = "imx-actions", style = "margin-bottom:10px;",
         shiny::actionButton(ns("generate"), "Generate map", class = "btn-primary"),
         shiny::downloadButton(ns("download_map"), "Download map (PNG)", class = "btn-default"),
         shiny::uiOutput(ns("sel_info"), inline = TRUE)),
       shiny::div(class = "imx-panel",
         shiny::plotOutput(ns("map"), height = "620px"),
-        shiny::div(class = "imx-note", "Roads, waterways and buildings come from OpenStreetMap in a single request (up to about 40 seconds when the public server is busy; the map is then drawn without them). Untick the box above for an instant map of the routes only. All monitor routes of the selected settlement visit are drawn.")))
+        shiny::div(class = "imx-note", "The background is loaded from public map servers: the satellite photo shows the houses themselves (about 5-10 seconds). If a server cannot be reached, the map is still drawn with the routes and the reason is printed under it. All monitor routes of the selected settlement visit are drawn.")))
   )
 }
 
@@ -462,8 +464,8 @@ imset_static_server <- function(id, input_dir = "input") {
 
     plot_r <- shiny::eventReactive(input$generate, {
       d <- rows()
-      shiny::withProgress(message = "Building the settlement map...", detail = "Downloading OpenStreetMap layers", value = 0.4, {
-        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, osm = isTRUE(input$osm)),
+      shiny::withProgress(message = "Building the settlement map...", detail = "Loading the background", value = 0.4, {
+        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, bg = input$bg),
                  error = function(e) { cat("Settlement map error:", conditionMessage(e), "\n"); structure(list(msg = conditionMessage(e)), class = "imset_err") })
       })
     })
