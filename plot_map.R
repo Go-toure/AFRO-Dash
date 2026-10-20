@@ -13,25 +13,36 @@ IMSET_OVERPASS <- c("https://overpass-api.de/api/interpreter",
                     "https://overpass.kumi.systems/api/interpreter",
                     "https://overpass.private.coffee/api/interpreter")
 
-imset_overpass_json <- function(bb, buildings = TRUE, per_server_s = 15, total_s = 40) {
+imset_overpass_json <- function(bb, buildings = TRUE, per_server_s = 25, total_s = 28) {
   q <- sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
                bb[["ymin"]], bb[["xmin"]], bb[["ymax"]], bb[["xmax"]], if (buildings) 'way["building"];' else "")
-  t0 <- Sys.time()
-  errs <- character(0)
-  for (ep in IMSET_OVERPASS) {
-    if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > total_s) { errs <- c(errs, "time limit reached"); break }
+  # all mirrors are asked at the same time (GET); the first valid answer wins and the others are cancelled
+  js <- NULL; errs <- character(0); handles <- list()
+  pool <- curl::new_pool(total_con = length(IMSET_OVERPASS), host_con = 2)
+  for (ep in IMSET_OVERPASS) local({
     host <- sub("^https?://([^/]+).*$", "\\1", ep)
-    r <- tryCatch(httr::POST(ep, body = list(data = q), encode = "form", httr::timeout(per_server_s),
-                             httr::user_agent("AFRO-SIA-Dashboard (WHO AFRO)")),
-                  error = function(e) { errs <<- c(errs, paste0(host, ": ", substr(conditionMessage(e), 1, 70))); NULL })
-    if (is.null(r)) next
-    if (httr::status_code(r) != 200) { errs <- c(errs, paste0(host, ": HTTP ", httr::status_code(r))); next }
-    js <- tryCatch(jsonlite::fromJSON(httr::content(r, as = "text", encoding = "UTF-8"), simplifyVector = FALSE), error = function(e) NULL)
-    if (!is.null(js) && !is.null(js$elements)) { assign("last_err", "", envir = .imset_osm_cache); return(js) }
-    errs <- c(errs, paste0(host, ": unreadable answer"))
+    h <- curl::new_handle(timeout = per_server_s, connecttimeout = 10, useragent = "AFRO-SIA-Dashboard (WHO AFRO)", failonerror = FALSE)
+    handles[[length(handles) + 1]] <<- h
+    curl::curl_fetch_multi(paste0(ep, "?data=", curl::curl_escape(q)),
+      done = function(r) {
+        if (!is.null(js)) return(invisible())
+        if (r$status_code != 200) { errs <<- c(errs, paste0(host, ": HTTP ", r$status_code)); return(invisible()) }
+        x <- tryCatch(jsonlite::fromJSON(rawToChar(r$content), simplifyVector = FALSE), error = function(e) NULL)
+        if (!is.null(x) && !is.null(x$elements)) js <<- x else errs <<- c(errs, paste0(host, ": unreadable answer"))
+      },
+      fail = function(msg) errs <<- c(errs, paste0(host, ": ", substr(as.character(msg), 1, 60))), pool = pool, handle = h)
+  })
+  t0 <- Sys.time()
+  repeat {
+    left <- total_s - as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    if (left <= 0) { errs <- c(errs, "time limit reached"); break }
+    st <- tryCatch(curl::multi_run(timeout = left, pool = pool, poll = TRUE), error = function(e) { errs <<- c(errs, conditionMessage(e)); NULL })
+    if (!is.null(js) || is.null(st) || st$pending == 0) break
   }
-  assign("last_err", paste(errs, collapse = "; "), envir = .imset_osm_cache)
-  message("Overpass failed: ", paste(errs, collapse = "; "))
+  for (h in handles) try(curl::multi_cancel(h), silent = TRUE)
+  if (!is.null(js)) { assign("last_err", "", envir = .imset_osm_cache); return(js) }
+  assign("last_err", paste(unique(errs), collapse = "; "), envir = .imset_osm_cache)
+  message("Overpass failed: ", paste(unique(errs), collapse = "; "))
   NULL
 }
 
@@ -223,9 +234,13 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat", route = NULL) 
   if (!bg %in% c("sat", "osmtile", "vector", "none")) bg <- "sat"
   tl <- NULL; lay <- NULL
   if (bg %in% c("sat", "osmtile")) tl <- imset_fetch_tiles(bb, bg)
-  if (bg == "vector") lay <- imset_osm_layers(bb)
-  osm_detail <- if (bg != "none" && is.null(tl) && is.null(lay)) get0("last_err", envir = .imset_osm_cache, ifnotfound = "") else ""
-  osm_note <- if (bg == "none") "" else if (!is.null(tl) && isTRUE(tl$ph >= 0.5)) " | Satellite imagery is not available for this area" else if (!is.null(tl)) paste0(" | Background: ", tl$label, " (zoom ", tl$z, ")") else if (!is.null(lay)) " | Background: OpenStreetMap vectors" else " | Background not available (see note below)"
+  vec_failed <- FALSE
+  if (bg == "vector") {
+    lay <- imset_osm_layers(bb)
+    if (is.null(lay)) { vec_failed <- TRUE; vec_err <- get0("last_err", envir = .imset_osm_cache, ifnotfound = ""); tl <- imset_fetch_tiles(bb, "osmtile") }
+  }
+  osm_detail <- if (bg != "none" && is.null(tl) && is.null(lay)) paste0(if (vec_failed) paste0("OSM vector: ", vec_err, " | tiles: ") else "", get0("last_err", envir = .imset_osm_cache, ifnotfound = "")) else if (vec_failed) paste0("OSM vector server did not answer (", vec_err, "); showing OpenStreetMap map tiles instead") else ""
+  osm_note <- if (bg == "none") "" else if (!is.null(tl) && isTRUE(tl$ph >= 0.5)) " | Satellite imagery is not available for this area" else if (!is.null(tl) && vec_failed) paste0(" | Background: ", tl$label, " (zoom ", tl$z, ") - vector data unavailable") else if (!is.null(tl)) paste0(" | Background: ", tl$label, " (zoom ", tl$z, ")") else if (!is.null(lay)) " | Background: OpenStreetMap vectors" else " | Background not available (see note below)"
   on_img <- !is.null(tl) && bg == "sat"
   p <- ggplot2::ggplot()
   if (!is.null(tl)) p <- p + ggplot2::annotation_raster(tl$img, xmin = tl$xmin, xmax = tl$xmax, ymin = tl$ymin, ymax = tl$ymax, interpolate = TRUE)
