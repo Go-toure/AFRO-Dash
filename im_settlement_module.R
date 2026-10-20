@@ -385,10 +385,41 @@ imset_explorer_server <- function(id, input_dir = "input") {
 # ==============================================================================
 # PRINTABLE SETTLEMENT MAP (OpenStreetMap detail for one settlement)
 # ==============================================================================
+
+OV_JS <- paste0(
+"Shiny.addCustomMessageHandler('imset_overpass', function(msg) {",
+"  var q = msg.query, eps = msg.endpoints, tmo = msg.timeout_ms || 40000, errs = [], ctrls = [], done = false;",
+"  var major = ['motorway','trunk','primary','secondary','motorway_link','trunk_link','primary_link','secondary_link'];",
+"  function reply(ok, payload) { if (done) return; done = true; ctrls.forEach(function(c){ try { c.abort(); } catch(e){} });",
+"    var o = ok ? {ok:true, key:msg.key, json:payload, n:Math.random()} : {ok:false, key:msg.key, err:payload, n:Math.random()};",
+"    Shiny.setInputValue(msg.id, o, {priority:'event'}); }",
+"  function compact(js) {",
+"    var M=[], m=[], w=[], b=[];",
+"    (js.elements || []).forEach(function(e) {",
+"      if (e.type !== 'way' || !e.geometry || e.geometry.length < 2) return;",
+"      var t = e.tags || {}, g = [];",
+"      e.geometry.forEach(function(p) { g.push(Math.round(p.lon*1e6)/1e6, Math.round(p.lat*1e6)/1e6); });",
+"      if (t.building) b.push(g); else if (t.waterway) w.push(g);",
+"      else if (t.highway) { if (major.indexOf(t.highway) >= 0) M.push(g); else m.push(g); }",
+"    });",
+"    return JSON.stringify({M:M, m:m, w:w, b:b});",
+"  }",
+"  var timer = setTimeout(function() { reply(false, 'no answer within ' + Math.round(tmo/1000) + ' s (' + errs.join('; ') + ')'); }, tmo);",
+"  var failed = 0;",
+"  eps.forEach(function(ep) {",
+"    var c = new AbortController(); ctrls.push(c); var host = ep.replace(/^https?:\\/\\/([^\\/]+).*$/, '$1');",
+"    fetch(ep + '?data=' + encodeURIComponent(q), {signal: c.signal})",
+"      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })",
+"      .then(function(js) { if (!js || !js.elements) throw new Error('unreadable answer'); clearTimeout(timer); reply(true, compact(js)); })",
+"      .catch(function(err) { errs.push(host + ': ' + (err && err.message ? err.message : err)); failed++;",
+"        if (failed >= eps.length) { clearTimeout(timer); reply(false, errs.join('; ')); } });",
+"  });",
+"});")
+
 imset_static_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
-    shiny::tags$head(shiny::tags$style(shiny::HTML(IMSET_CSS))),
+    shiny::tags$head(shiny::tags$style(shiny::HTML(IMSET_CSS)), shiny::tags$script(shiny::HTML(OV_JS))),
     shiny::div(class = "imx-wrap",
       shiny::div(class = "imx-filters",
         shiny::selectInput(ns("country"), "Country", choices = NULL, width = "100%"),
@@ -401,16 +432,16 @@ imset_static_ui <- function(id) {
         shiny::selectInput(ns("date"), "Visit date", choices = NULL, width = "100%"),
         shiny::selectInput(ns("route"), "Zoom to route", choices = c("All routes" = "all"), width = "100%"),
         shiny::numericInput(ns("bbox_m"), "Map margin (m)", value = 300, min = 50, max = 3000, step = 50, width = "100%"),
-        shiny::selectInput(ns("bg"), "Background", width = "100%",
-          choices = c("Satellite photo (shows houses)" = "sat", "OpenStreetMap map" = "osmtile",
-                      "OSM roads and buildings (slow)" = "vector", "None (routes only)" = "none"))),
+        shiny::selectInput(ns("bg"), "Background", width = "100%", selected = "vector",
+          choices = c("OSM roads and buildings (map style)" = "vector", "Satellite photo (shows houses)" = "sat",
+                      "OpenStreetMap map (standard tiles)" = "osmtile", "None (routes only)" = "none"))),
       shiny::div(class = "imx-actions", style = "margin-bottom:10px;",
         shiny::actionButton(ns("generate"), "Generate map", class = "btn-primary"),
         shiny::downloadButton(ns("download_map"), "Download map (PNG)", class = "btn-default"),
         shiny::uiOutput(ns("sel_info"), inline = TRUE)),
       shiny::div(class = "imx-panel",
         shiny::plotOutput(ns("map"), height = "620px"),
-        shiny::div(class = "imx-note", "The background is loaded from public map servers: the satellite photo shows the houses themselves (about 5-10 seconds). If a server cannot be reached, the map is still drawn with the routes and the reason is printed under it. All monitor routes of the selected settlement visit are drawn; \"Zoom to route\" frames and summarises a single route.")))
+        shiny::div(class = "imx-note", "The background is loaded from public map servers (about 5-10 seconds). The default draws OpenStreetMap roads, water and buildings in plain map style, fetched by your browser; the satellite photo shows the houses themselves. If a source cannot be reached, the map still draws and the reason is printed under it. All monitor routes of the selected settlement visit are drawn; \"Zoom to route\" frames and summarises a single route.")))
   )
 }
 
@@ -469,10 +500,36 @@ imset_static_server <- function(id, input_dir = "input") {
         if (nrow(ok) < nrow(d)) paste0(" (", nrow(d) - nrow(ok), " suspect record(s) excluded)") else ""))
     })
 
-    plot_r <- shiny::eventReactive(input$generate, {
+    # The OpenStreetMap vector data (roads, water, buildings) is requested by the user's BROWSER, because the
+    # Connect server cannot reach the Overpass servers. The browser sends the compact layers back to R.
+    trig <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(input$generate, {
+      if (identical(input$bg, "vector")) {
+        d <- tryCatch(rows(), error = function(e) NULL)
+        rt <- if (identical(input$route, "all")) NULL else input$route
+        bb <- if (is.null(d)) NULL else tryCatch(imset_map_bbox_for(d, input$bbox_m, rt), error = function(e) NULL)
+        if (!is.null(bb) && !imset_osm_cached(bb)) {
+          shiny::showNotification("Loading roads and buildings from OpenStreetMap through your browser...", id = "imset_ov", duration = NULL, type = "message")
+          session$sendCustomMessage("imset_overpass", list(id = session$ns("ovr"), key = imset_osm_key(bb), query = imset_osm_query(bb),
+                                                           endpoints = as.list(IMSET_OVERPASS), timeout_ms = 40000))
+          return(invisible(NULL))
+        }
+      }
+      trig(shiny::isolate(if (is.null(trig())) 1 else trig() + 1))
+    })
+    shiny::observeEvent(input$ovr, {
+      shiny::removeNotification("imset_ov")
+      r <- input$ovr
+      if (isTRUE(r$ok)) {
+        ok <- tryCatch({ imset_osm_store(r$key, r$json); TRUE }, error = function(e) { assign("last_err", paste("browser answer could not be read:", conditionMessage(e)), envir = .imset_osm_cache); FALSE })
+        if (ok) assign("last_err", "", envir = .imset_osm_cache)
+      } else assign("last_err", paste0("browser: ", r$err), envir = .imset_osm_cache)
+      trig(shiny::isolate(if (is.null(trig())) 1 else trig() + 1))
+    })
+    plot_r <- shiny::eventReactive(trig(), {
       d <- rows()
       shiny::withProgress(message = "Building the settlement map...", detail = "Loading the background", value = 0.4, {
-        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, bg = input$bg, route = if (identical(input$route, "all")) NULL else input$route),
+        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, bg = input$bg, route = if (identical(input$route, "all")) NULL else input$route, vector_server = FALSE),
                  error = function(e) { cat("Settlement map error:", conditionMessage(e), "\n"); structure(list(msg = conditionMessage(e)), class = "imset_err") })
       })
     })

@@ -13,9 +13,31 @@ IMSET_OVERPASS <- c("https://overpass-api.de/api/interpreter",
                     "https://overpass.kumi.systems/api/interpreter",
                     "https://overpass.private.coffee/api/interpreter")
 
+# shared by the server-side request and the browser-side request (the browser can reach Overpass when the server cannot)
+imset_osm_key <- function(bb) paste(round(as.numeric(bb), 3), collapse = ",")
+imset_osm_cached <- function(bb) exists(imset_osm_key(bb), envir = .imset_osm_cache, inherits = FALSE)
+imset_osm_buildings <- function(bb) (bb[["xmax"]] - bb[["xmin"]]) * (bb[["ymax"]] - bb[["ymin"]]) <= 0.0064   # beyond about 8 km x 8 km: no buildings
+imset_osm_query <- function(bb, buildings = imset_osm_buildings(bb), pad = 0.002) {
+  sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
+          bb[["ymin"]] - pad, bb[["xmin"]] - pad, bb[["ymax"]] + pad, bb[["xmax"]] + pad, if (buildings) 'way["building"];' else "")
+}
+# compact layers sent by the browser: list(M = major roads, m = minor roads, w = waterways, b = buildings), each geometry a flat [lon,lat,lon,lat,...] array
+imset_parse_compact <- function(x) {
+  mkm <- function(g) matrix(as.numeric(unlist(g)), ncol = 2, byrow = TRUE)
+  ls <- function(items) lapply(Filter(function(g) length(g) >= 4, items), function(g) sf::st_linestring(mkm(g)))
+  pl <- function(items) lapply(Filter(function(g) length(g) >= 8, items), function(g) { xy <- mkm(g); if (all(xy[1, ] == xy[nrow(xy), ])) sf::st_polygon(list(xy)) else NULL })
+  mk <- function(z) { z <- Filter(Negate(is.null), z); if (length(z)) sf::st_sf(geometry = sf::st_sfc(z, crs = 4326)) else NULL }
+  list(major = mk(ls(x$M)), minor = mk(ls(x$m)), water = mk(ls(x$w)), buildings = mk(pl(x$b)))
+}
+imset_osm_store <- function(key, json) {
+  x <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  res <- imset_parse_compact(x)
+  assign(key, res, envir = .imset_osm_cache)
+  invisible(res)
+}
+
 imset_overpass_json <- function(bb, buildings = TRUE, per_server_s = 25, total_s = 28) {
-  q <- sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
-               bb[["ymin"]], bb[["xmin"]], bb[["ymax"]], bb[["xmax"]], if (buildings) 'way["building"];' else "")
+  q <- imset_osm_query(bb, buildings)
   # all mirrors are asked at the same time (GET); the first valid answer wins and the others are cancelled
   js <- NULL; errs <- character(0); handles <- list()
   pool <- curl::new_pool(total_con = length(IMSET_OVERPASS), host_con = 2)
@@ -69,11 +91,11 @@ imset_parse_osm <- function(js) {
 }
 
 # cached on a ~100 m grid of the bounding box; failures are not cached so a later click can retry
-imset_osm_layers <- function(bb) {
-  ck <- paste(round(as.numeric(bb), 3), collapse = ",")
+imset_osm_layers <- function(bb, server = TRUE) {
+  ck <- imset_osm_key(bb)
   if (exists(ck, envir = .imset_osm_cache, inherits = FALSE)) return(get(ck, envir = .imset_osm_cache))
-  big <- (bb[["xmax"]] - bb[["xmin"]]) * (bb[["ymax"]] - bb[["ymin"]]) > 0.0064   # > about 8 km x 8 km: skip buildings
-  js <- tryCatch(imset_overpass_json(bb, buildings = !big), error = function(e) { message("Overpass: ", conditionMessage(e)); NULL })
+  if (!isTRUE(server)) return(NULL)
+  js <- tryCatch(imset_overpass_json(bb, buildings = imset_osm_buildings(bb)), error = function(e) { message("Overpass: ", conditionMessage(e)); NULL })
   if (is.null(js)) return(NULL)
   res <- tryCatch(imset_parse_osm(js), error = function(e) { message("OSM parse: ", conditionMessage(e)); NULL })
   if (!is.null(res)) assign(ck, res, envir = .imset_osm_cache)
@@ -172,7 +194,20 @@ imset_valid_routes <- function(rows) {
   r
 }
 
-create_settlement_map <- function(rows, bbox_m = 300, bg = "sat", route = NULL) {
+# frame of the map: the routes (all or the selected one) plus a margin in metres
+imset_map_bbox <- function(routes, bbox_m) {
+  lon_margin <- bbox_m / (111320 * cos(mean(routes$LAT) * pi / 180))
+  lat_margin <- bbox_m / 111320
+  c(xmin = min(c(routes$LON, routes$LON_END)) - lon_margin, ymin = min(c(routes$LAT, routes$LAT_END)) - lat_margin,
+    xmax = max(c(routes$LON, routes$LON_END)) + lon_margin, ymax = max(c(routes$LAT, routes$LAT_END)) + lat_margin)
+}
+imset_map_bbox_for <- function(rows, bbox_m, route = NULL) {
+  v <- imset_valid_routes(rows)
+  if (!is.null(route) && length(route) == 1 && !is.na(suppressWarnings(as.integer(route))) && as.integer(route) %in% v$N) v <- v[v$N == as.integer(route), , drop = FALSE]
+  imset_map_bbox(v, bbox_m)
+}
+
+create_settlement_map <- function(rows, bbox_m = 300, bg = "sat", route = NULL, vector_server = TRUE) {
   stopifnot(is.data.frame(rows), nrow(rows) > 0)
   routes <- rows
   n_all <- nrow(routes)
@@ -236,7 +271,7 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat", route = NULL) 
   if (bg %in% c("sat", "osmtile")) tl <- imset_fetch_tiles(bb, bg)
   vec_failed <- FALSE
   if (bg == "vector") {
-    lay <- imset_osm_layers(bb)
+    lay <- imset_osm_layers(bb, server = vector_server)
     if (is.null(lay)) { vec_failed <- TRUE; vec_err <- get0("last_err", envir = .imset_osm_cache, ifnotfound = ""); tl <- imset_fetch_tiles(bb, "osmtile") }
   }
   osm_detail <- if (bg != "none" && is.null(tl) && is.null(lay)) paste0(if (vec_failed) paste0("OSM vector: ", vec_err, " | tiles: ") else "", get0("last_err", envir = .imset_osm_cache, ifnotfound = "")) else if (vec_failed) paste0("OSM vector server did not answer (", vec_err, "); showing OpenStreetMap map tiles instead") else ""
