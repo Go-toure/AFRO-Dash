@@ -8,6 +8,11 @@ Replaces the old R function get_im_data(): one CSV per IM form id, one row per m
     python tools/build_settlement_inputs.py 4445 3550       # only these form ids
     python tools/build_settlement_inputs.py --raw-dir D:/im/raw --out-dir input
 
+Run automatically by the IM workflow's "publish to AFRO-Dash" step (scripts/publish_to_afro_dash.py): it rebuilds
+the files, refreshes manifest.json and pushes only what changed. Output is byte-reproducible, so an unchanged
+country produces no git change. A form that fails, or shrinks to under half of the published routes, keeps its
+previous file.
+
 Reads  <raw-dir>/<form_id>.parquet   (written by the IM workflow fetch step)
 Writes <out-dir>/<form_id>.csv.gz     (read by im_settlement_module.R)
 
@@ -15,12 +20,12 @@ Rules (same as the old script): InProcess monitoring only, households' "Diff_Pre
 route, only routes with at least one missed child kept. Place names: the settlement column of the form
 (or the health facility for forms where that is the place name), falling back to the facility.
 """
-import argparse, os, re, sys, time
+import argparse, csv, gzip, io, os, re, sys, time
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-DEFAULT_RAW = r"C:\Users\TOURE\Documents\im_workflow\data\raw"
+DEFAULT_RAW = os.path.join(os.environ.get("IM_WORKFLOW_HOME") or r"C:\Users\TOURE\Documents\im_workflow", "data", "raw")
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUT = os.path.join(os.path.dirname(HERE), "input")
 
@@ -33,6 +38,11 @@ FORM_COUNTRY = {
     7600: "MALAWI", 7612: "UNITED REPUBLIC OF TANZANIA", 7621: "MOZAMBIQUE", 7980: "ZIMBABWE", 8279: "MADAGASCAR",
     8587: "ALGERIA", 8832: "BOTSWANA", 9597: "BURUNDI", 9793: "RWANDA", 10267: "ANGOLA", 15780: "NAMIBIA",
 }
+# forms that cannot be built (different questionnaire: no Country / household columns)
+SKIP_FORMS = {7178}   # Nigeria
+# a rebuild with fewer than this share of the routes already published is refused (stale or truncated raw file)
+MIN_KEEP_SHARE = 0.5
+
 # 3-letter / short codes used in the Country column
 COUNTRY_CODES = {
     "GAM": "GAMBIA", "GHA": "GHANA", "ALG": "ALGERIA", "ETH": "ETHIOPIA", "ANG": "ANGOLA", "BEN": "BENIN",
@@ -72,6 +82,40 @@ def num(s: pd.Series) -> pd.Series:
     return pd.to_numeric(s.astype("string").str.strip().mask(lambda x: x.isin(NA_TOKENS)), errors="coerce")
 
 
+EXTRA_COUNTRY = {}   # form id -> country for forms found through --country-forms but not listed above
+
+
+def write_if_changed(g: pd.DataFrame, path: str):
+    """Write the table as a byte-reproducible gzip CSV (no timestamp), and only if it differs from what is there.
+    Returns 'new', 'updated', 'unchanged' or 'refused' (far fewer routes than the published file)."""
+    buf = io.StringIO()
+    try:
+        g.to_csv(buf, index=False, lineterminator="\n")
+    except TypeError:   # pandas < 1.5
+        g.to_csv(buf, index=False, line_terminator="\n")
+    data = gzip.compress(buf.getvalue().encode("utf-8"), compresslevel=9, mtime=0)
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            old = f.read()
+        if old == data:
+            return "unchanged"
+        try:
+            n_old = sum(1 for _ in gzip.open(path, "rt", encoding="utf-8")) - 1
+        except Exception:
+            n_old = 0
+        if n_old > 0 and len(g) < MIN_KEEP_SHARE * n_old:
+            print(f"  REFUSED: {len(g):,} routes vs {n_old:,} already published - keeping the previous file")
+            return "refused"
+        status = "updated"
+    else:
+        status = "new"
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.replace(tmp, path)
+    return status
+
+
 def process(fid: int, raw_dir: str) -> pd.DataFrame:
     path = os.path.join(raw_dir, f"{fid}.parquet")
     names = pq.ParquetFile(path).schema_arrow.names
@@ -100,7 +144,7 @@ def process(fid: int, raw_dir: str) -> pd.DataFrame:
     raw_c = clean_text(col("Country"))
     mapped = raw_c.map(lambda v: COUNTRY_CODES.get(v, v) if pd.notna(v) else v)
     default = FORM_COUNTRY.get(fid)
-    known = set(COUNTRY_CODES.values()) | set(FORM_COUNTRY.values())
+    known = set(COUNTRY_CODES.values()) | set(FORM_COUNTRY.values()) | set(EXTRA_COUNTRY.values())
     country = mapped.where(mapped.isin(known), default if default else mapped)
 
     # ---- place names ----
@@ -152,21 +196,39 @@ def main():
     ap.add_argument("forms", nargs="*", type=int, help="form ids (default: all known)")
     ap.add_argument("--raw-dir", default=DEFAULT_RAW)
     ap.add_argument("--out-dir", default=DEFAULT_OUT)
+    ap.add_argument("--country-forms", default=None,
+                    help="IM workflow config/country_forms.csv (country_name,form_id): also builds forms not listed in this script")
     a = ap.parse_args()
-    ids = a.forms or sorted(FORM_COUNTRY)
+    if a.country_forms and os.path.exists(a.country_forms):
+        with open(a.country_forms, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                try:
+                    fid = int(r["form_id"])
+                except (KeyError, ValueError):
+                    continue
+                if fid not in FORM_COUNTRY and fid not in SKIP_FORMS and r.get("country_name"):
+                    EXTRA_COUNTRY[fid] = re.sub(r"[_\s]+", " ", r["country_name"]).strip().upper()
+    ids = a.forms or sorted((set(FORM_COUNTRY) | set(EXTRA_COUNTRY)) - SKIP_FORMS)
     os.makedirs(a.out_dir, exist_ok=True)
-    ok, failed = [], []
+    ok, failed, changed = [], [], []
     for fid in ids:
         t0 = time.time()
         try:
+            if not os.path.exists(os.path.join(a.raw_dir, f"{fid}.parquet")):
+                raise FileNotFoundError(f"{fid}.parquet not in {a.raw_dir}")
+            if fid not in FORM_COUNTRY and fid in EXTRA_COUNTRY:
+                FORM_COUNTRY[fid] = EXTRA_COUNTRY[fid]
             g = process(fid, a.raw_dir)
-            g.to_csv(os.path.join(a.out_dir, f"{fid}.csv.gz"), index=False, compression="gzip")
-            ok.append(fid)
-        except Exception as e:  # keep going: one broken form must not stop the others
+            st = write_if_changed(g, os.path.join(a.out_dir, f"{fid}.csv.gz"))
+            print(f"     {st}")
+            (failed if st == "refused" else ok).append(fid)
+            if st in ("new", "updated"):
+                changed.append(fid)
+        except Exception as e:  # keep going: one broken form must not stop the others; its previous file stays
             print(f"  {fid}: FAILED - {e}")
             failed.append(fid)
         print(f"     {time.time() - t0:.0f}s")
-    print(f"done: {len(ok)} written to {a.out_dir}" + (f", failed: {failed}" if failed else ""))
+    print(f"done: {len(ok)} checked ({len(changed)} changed) in {a.out_dir}" + (f", kept previous file for: {failed}" if failed else ""))
     return 1 if failed and not ok else 0
 
 
