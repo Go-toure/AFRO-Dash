@@ -399,6 +399,7 @@ imset_static_ui <- function(id) {
         shiny::selectInput(ns("facility"), "Facility", choices = NULL, width = "100%"),
         shiny::selectInput(ns("settlement"), "Settlement", choices = NULL, width = "100%"),
         shiny::selectInput(ns("date"), "Visit date", choices = NULL, width = "100%"),
+        shiny::selectInput(ns("route"), "Zoom to route", choices = c("All routes" = "all"), width = "100%"),
         shiny::numericInput(ns("bbox_m"), "Map margin (m)", value = 300, min = 50, max = 3000, step = 50, width = "100%"),
         shiny::selectInput(ns("bg"), "Background", width = "100%",
           choices = c("Satellite photo (shows houses)" = "sat", "OpenStreetMap map" = "osmtile",
@@ -409,7 +410,7 @@ imset_static_ui <- function(id) {
         shiny::uiOutput(ns("sel_info"), inline = TRUE)),
       shiny::div(class = "imx-panel",
         shiny::plotOutput(ns("map"), height = "620px"),
-        shiny::div(class = "imx-note", "The background is loaded from public map servers: the satellite photo shows the houses themselves (about 5-10 seconds). If a server cannot be reached, the map is still drawn with the routes and the reason is printed under it. All monitor routes of the selected settlement visit are drawn.")))
+        shiny::div(class = "imx-note", "The background is loaded from public map servers: the satellite photo shows the houses themselves (about 5-10 seconds). If a server cannot be reached, the map is still drawn with the routes and the reason is printed under it. All monitor routes of the selected settlement visit are drawn; \"Zoom to route\" frames and summarises a single route.")))
   )
 }
 
@@ -454,6 +455,12 @@ imset_static_server <- function(id, input_dir = "input") {
       if (!identical(input$date, "ALL")) d <- d[!is.na(d$DATE) & as.character(d$DATE) == input$date, , drop = FALSE]
       d
     })
+    shiny::observeEvent(rows(), {
+      r <- imset_valid_routes(rows())
+      ch <- c("All routes" = "all")
+      if (nrow(r) > 1) ch <- c(ch, stats::setNames(as.character(r$N), paste0("Route ", r$N, ": ", r$CHILDREN, " child(ren), ", ifelse(is.na(r$ROUTE_M), "?", round(r$ROUTE_M)), " m long")))
+      shiny::updateSelectInput(session, "route", choices = ch, selected = "all")
+    })
     output$sel_info <- shiny::renderUI({
       d <- tryCatch(rows(), error = function(e) NULL)
       if (is.null(d)) return(NULL)
@@ -465,7 +472,7 @@ imset_static_server <- function(id, input_dir = "input") {
     plot_r <- shiny::eventReactive(input$generate, {
       d <- rows()
       shiny::withProgress(message = "Building the settlement map...", detail = "Loading the background", value = 0.4, {
-        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, bg = input$bg),
+        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, bg = input$bg, route = if (identical(input$route, "all")) NULL else input$route),
                  error = function(e) { cat("Settlement map error:", conditionMessage(e), "\n"); structure(list(msg = conditionMessage(e)), class = "imset_err") })
       })
     })

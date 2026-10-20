@@ -152,7 +152,16 @@ imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 45) {
   best
 }
 
-create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
+# the routes that create_settlement_map() draws, numbered the same way (used for the "Zoom to route" list)
+imset_valid_routes <- function(rows) {
+  good <- rows[rows$QC == "OK", , drop = FALSE]
+  r <- if (nrow(good) > 0) good else rows
+  r <- r[!is.na(r$LAT) & !is.na(r$LON) & !is.na(r$LAT_END) & !is.na(r$LON_END), , drop = FALSE]
+  if (nrow(r)) r$N <- seq_len(nrow(r))
+  r
+}
+
+create_settlement_map <- function(rows, bbox_m = 300, bg = "sat", route = NULL) {
   stopifnot(is.data.frame(rows), nrow(rows) > 0)
   routes <- rows
   n_all <- nrow(routes)
@@ -167,6 +176,9 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
   routes <- routes[!is.na(routes$LAT) & !is.na(routes$LON) & !is.na(routes$LAT_END) & !is.na(routes$LON_END), , drop = FALSE]
   if (nrow(routes) == 0) stop("No valid GPS coordinates for this selection.")
   routes$N <- seq_len(nrow(routes))
+  routes_all <- routes                      # every route is drawn; the frame and the summary follow the selected one
+  one_route <- !is.null(route) && length(route) == 1 && !is.na(suppressWarnings(as.integer(route))) && as.integer(route) %in% routes$N
+  if (one_route) routes <- routes[routes$N == as.integer(route), , drop = FALSE]
 
   # ---- bounding box ----
   lon_margin <- bbox_m / (111320 * cos(mean(routes$LAT) * pi / 180))
@@ -191,7 +203,7 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
     paste0("Country: ", u(rows$COUNTRY)), paste0("Province: ", u(rows$PROVINCE)), paste0("District: ", u(rows$DISTRICT)),
     paste0("Facility: ", u(rows$FACILITY)), paste0("Settlement: ", u(rows$SETTLEMENT)),
     paste0("Response: ", u(rows$RESPONSE)), paste0("Round: ", u(rows$ROUND)), paste0("Date(s): ", date_txt),
-    paste0("Monitor routes: ", nrow(routes)), paste0("Total children missed: ", sm("CHILDREN")))
+    paste0("Monitor routes: ", if (one_route) paste0("route ", routes$N[1], " of ", nrow(routes_all)) else nrow(routes)), paste0("Total children missed: ", sm("CHILDREN")))
   wrap <- function(z) unlist(lapply(z, function(l) strwrap(l, width = 33, exdent = 3)))
   lines <- c(wrap(head_lines), "HH where a missed child", "was found:", hh_lines,
              "Reason(s) for not being", "vaccinated:", rs_txt,
@@ -224,17 +236,17 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
   seg_col <- if (on_img) "white" else "grey35"
   if (on_img)   # white halo so the markers stay readable on photographs
     p <- p +
-      ggplot2::geom_segment(data = routes, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END), color = "black", linewidth = 1.6, alpha = 0.5) +
-      ggplot2::geom_point(data = routes, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "white", fill = NA, size = 5.2, stroke = 3.6) +
-      ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = "white", fill = NA, size = 5.2, stroke = 3.6)
+      ggplot2::geom_segment(data = routes_all, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END), color = "black", linewidth = 1.6, alpha = 0.5) +
+      ggplot2::geom_point(data = routes_all, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "white", fill = NA, size = 5.2, stroke = 3.6) +
+      ggplot2::geom_point(data = routes_all, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = "white", fill = NA, size = 5.2, stroke = 3.6)
   p <- p +
-    ggplot2::geom_segment(data = routes, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END),
+    ggplot2::geom_segment(data = routes_all, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END),
                           color = seg_col, linetype = "dashed", linewidth = 0.6) +
-    ggplot2::geom_point(data = routes, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "chocolate", fill = NA, size = 4, stroke = 2) +
-    ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = if (on_img) "yellow" else "yellow4", fill = NA, size = 4, stroke = 2)
+    ggplot2::geom_point(data = routes_all, ggplot2::aes(x = LON, y = LAT), shape = 25, color = "chocolate", fill = NA, size = 4, stroke = 2) +
+    ggplot2::geom_point(data = routes_all, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = if (on_img) "yellow" else "yellow4", fill = NA, size = 4, stroke = 2)
   if (nrow(routes) > 1 && nrow(routes) <= 20)
-    p <- p + ggplot2::geom_text(data = routes, ggplot2::aes(x = LON, y = LAT, label = N), nudge_y = lat_margin * 0.12, size = 3.4, fontface = "bold", color = if (on_img) "white" else "black")
-  sub <- paste0(nrow(routes), " monitor route(s) | ", sm("CHILDREN"), " children missed", gps_note, osm_note)
+    p <- p + ggplot2::geom_text(data = routes_all, ggplot2::aes(x = LON, y = LAT, label = N), nudge_y = lat_margin * 0.12, size = 3.4, fontface = "bold", color = if (on_img) "white" else "black")
+  sub <- paste0(if (one_route) paste0("route ", routes$N[1], " of ", nrow(routes_all)) else paste0(nrow(routes), " monitor route(s)"), " | ", sm("CHILDREN"), " children missed", gps_note, osm_note)
   p <- p +
     ggplot2::coord_sf(xlim = c(bb[["xmin"]], bb[["xmax"]]), ylim = c(bb[["ymin"]], bb[["ymax"]]), expand = FALSE) +
     ggplot2::theme_void() +
