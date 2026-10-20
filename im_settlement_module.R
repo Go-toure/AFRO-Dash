@@ -463,16 +463,30 @@ imset_static_server <- function(id, input_dir = "input") {
     plot_r <- shiny::eventReactive(input$generate, {
       d <- rows()
       shiny::withProgress(message = "Building the settlement map...", detail = "Downloading OpenStreetMap layers", value = 0.4, {
-        create_settlement_map(d, bbox_m = input$bbox_m, osm = isTRUE(input$osm))
+        tryCatch(create_settlement_map(d, bbox_m = input$bbox_m, osm = isTRUE(input$osm)),
+                 error = function(e) { cat("Settlement map error:", conditionMessage(e), "\n"); structure(list(msg = conditionMessage(e)), class = "imset_err") })
       })
     })
-    output$map <- shiny::renderPlot({ plot_r() }, height = 620, res = 96)
+    # draw the plot; any error (building or drawing) is shown as text instead of the generic Connect message
+    imset_draw <- function(p) {
+      msg <- if (inherits(p, "imset_err")) p$msg else tryCatch({ print(p); NULL }, error = function(e) conditionMessage(e))
+      if (!is.null(msg)) {
+        cat("Settlement map error:", msg, "\n")
+        grid::grid.newpage()
+        grid::grid.text(paste(strwrap(paste("The map could not be drawn:", msg), 90), collapse = "\n"),
+                        x = 0.05, y = 0.9, just = c("left", "top"), gp = grid::gpar(col = "firebrick", fontsize = 11))
+      }
+      invisible(NULL)
+    }
+    output$map <- shiny::renderPlot({ imset_draw(plot_r()) }, height = 620, res = 96)
     output$download_map <- shiny::downloadHandler(
       filename = function() paste0("settlement_map_", gsub("[^A-Za-z0-9]+", "_", input$settlement), "_", Sys.Date(), ".png"),
       content = function(file) {
         p <- tryCatch(plot_r(), error = function(e) NULL)
-        if (is.null(p)) { shiny::showNotification("Generate the map first.", type = "error"); return(invisible(NULL)) }
-        ggplot2::ggsave(file, plot = p, width = 12, height = 7, dpi = 300)
+        if (is.null(p) || inherits(p, "imset_err")) { shiny::showNotification("Generate the map first.", type = "error"); return(invisible(NULL)) }
+        grDevices::png(file, width = 12, height = 7, units = "in", res = 300)
+        on.exit(grDevices::dev.off(), add = TRUE)
+        imset_draw(p)
       })
   })
 }

@@ -140,9 +140,20 @@ create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
     ggplot2::labs(title = paste0("Missed Children | ", u(rows$ROUND), " | ", u(rows$SETTLEMENT), " | ", u(rows$COUNTRY)), subtitle = sub) +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 16, face = "bold"),
                    plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 10, color = "grey30"))
-  if (requireNamespace("ggspatial", quietly = TRUE))
-    p <- p + ggspatial::annotation_scale(location = "br", width_hint = 0.2) +
-      ggspatial::annotation_north_arrow(location = "tl", which_north = "true", style = ggspatial::north_arrow_orienteering(),
-                                        pad_x = ggplot2::unit(0.1, "in"), pad_y = ggplot2::unit(0.2, "in"))
+  # scale bar and north arrow drawn by hand (no extra package needed)
+  w_m <- (bb[["xmax"]] - bb[["xmin"]]) * 111320 * cos(mean(c(bb[["ymin"]], bb[["ymax"]])) * pi / 180)
+  nice <- c(10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000)
+  sb_m <- nice[max(1, sum(nice <= w_m * 0.22))]
+  sb_deg <- sb_m / (111320 * cos(mean(c(bb[["ymin"]], bb[["ymax"]])) * pi / 180))
+  bb_dx <- bb[["xmax"]] - bb[["xmin"]]; bb_dy <- bb[["ymax"]] - bb[["ymin"]]
+  sb_x1 <- bb[["xmax"]] - 0.04 * bb_dx; sb_x0 <- sb_x1 - sb_deg; sb_y <- bb[["ymin"]] + 0.05 * bb_dy
+  na_x <- bb[["xmin"]] + 0.05 * bb_dx; na_y0 <- bb[["ymax"]] - 0.18 * bb_dy
+  p <- p +
+    ggplot2::annotate("segment", x = sb_x0, xend = sb_x1, y = sb_y, yend = sb_y, linewidth = 1.2, color = "black") +
+    ggplot2::annotate("segment", x = c(sb_x0, sb_x1), xend = c(sb_x0, sb_x1), y = sb_y - 0.012 * bb_dy, yend = sb_y + 0.012 * bb_dy, linewidth = 0.8, color = "black") +
+    ggplot2::annotate("text", x = (sb_x0 + sb_x1) / 2, y = sb_y + 0.03 * bb_dy, label = if (sb_m >= 1000) paste0(sb_m / 1000, " km") else paste0(sb_m, " m"), size = 3.2) +
+    ggplot2::annotate("segment", x = na_x, xend = na_x, y = na_y0, yend = na_y0 + 0.11 * bb_dy, linewidth = 0.9, color = "black",
+                      arrow = grid::arrow(length = grid::unit(0.14, "in"), type = "closed")) +
+    ggplot2::annotate("text", x = na_x, y = na_y0 + 0.145 * bb_dy, label = "N", fontface = "bold", size = 4)
   patchwork::wrap_plots(p, panel, widths = c(4, 1.5))
 }
