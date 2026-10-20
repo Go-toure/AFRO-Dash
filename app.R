@@ -283,15 +283,15 @@ input_folder <- "input/"
 # List all .rds files in the folder
 all_files <- list.files(
   path = input_folder,
-  pattern = "\\.rds$",
+  pattern = "\\.(rds|csv\\.gz|csv)$",
   full.names = FALSE
 )
 
 # Filter to keep only files with numeric-only names (e.g., "272.rds")
-file_list <- all_files[grepl("^\\d+\\.rds$", all_files)]
+file_list <- all_files[grepl("^\\d+\\.(rds|csv\\.gz|csv)$", all_files)]
 
 # Remove file extension for later use
-file_list_no_ext <- tools::file_path_sans_ext(file_list)
+file_list_no_ext <- unique(sub("\\.(rds|csv\\.gz|csv)$", "", file_list))
 
 # Country names -> file ids for the settlement tabs (falls back to raw file ids)
 settlement_file_choices <- tryCatch(
@@ -13666,10 +13666,10 @@ server <- function(input, output, session) {
   # Reactive data for settlement data explorer - loads entire dataset
   settlement_data_reactive <- reactive({
     req(input$settlement_file_id)
-    input_file <- paste0(input_folder, input$settlement_file_id, ".rds")
+    input_file <- imset_find_file(input_folder, input$settlement_file_id)
     
     if (file.exists(input_file)) {
-      im_data <- readRDS(input_file)
+      im_data <- imset_read_raw(input_file)
       names(im_data) <- toupper(names(im_data))
       return(im_data)
     } else {
@@ -13727,10 +13727,10 @@ server <- function(input, output, session) {
   # Update date range input based on selected file's data
   observe({
     req(input$settlement_file_id)
-    input_file <- paste0(input_folder, input$settlement_file_id, ".rds")
+    input_file <- imset_find_file(input_folder, input$settlement_file_id)
     
     if (file.exists(input_file)) {
-      date_data <- readRDS(input_file)
+      date_data <- imset_read_raw(input_file)
       names(date_data) <- toupper(names(date_data))
       
       date_col <- grep("DATE", names(date_data), value = TRUE, ignore.case = TRUE)
@@ -13784,9 +13784,9 @@ server <- function(input, output, session) {
     
     # Reset date range to default (last 30 days)
     req(input$settlement_file_id)
-    input_file <- paste0(input_folder, input$settlement_file_id, ".rds")
+    input_file <- imset_find_file(input_folder, input$settlement_file_id)
     if (file.exists(input_file)) {
-      date_data <- readRDS(input_file)
+      date_data <- imset_read_raw(input_file)
       names(date_data) <- toupper(names(date_data))
       
       date_col <- grep("DATE", names(date_data), value = TRUE, ignore.case = TRUE)

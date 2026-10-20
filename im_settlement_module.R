@@ -1,7 +1,7 @@
 # ==============================================================================
 # im_settlement_module.R -- IM Settlement Maps (interactive explorer + printable map)
 # ASCII-only on purpose (use \uXXXX escapes) so it parses in any locale.
-# Data: input/<formid>.rds (one file per country; one row = one monitor route that
+# Data: input/<formid>.csv.gz (built by tools/build_settlement_inputs.py; .csv and .rds also read; one file per country; one row = one monitor route that
 # found missed children: start/end GPS, households, reasons, total children missed).
 # ==============================================================================
 
@@ -11,10 +11,40 @@ IMSET_REASONS <- c(REASON_ABSENT = "Absent", REASON_NC = "Non-compliance",
 
 # Generous country bounding boxes (lat_min, lat_max, lon_min, lon_max); others -> Africa box
 IMSET_BOX <- list(
+  "ALGERIA" = c(18.9, 37.2, -8.8, 12.1),
+  "ANGOLA" = c(-18.1, -4.3, 11.6, 24.2),
+  "BENIN" = c(6.0, 12.5, 0.7, 3.9),
+  "BOTSWANA" = c(-27.0, -17.7, 19.9, 29.5),
+  "BURKINA FASO" = c(9.3, 15.2, -5.6, 2.5),
+  "BURUNDI" = c(-4.5, -2.3, 28.9, 30.9),
+  "CAMEROON" = c(1.6, 13.2, 8.3, 16.3),
   "CENTRAL AFRICAN REPUBLIC" = c(2.1, 11.1, 14.3, 27.6),
-  "CHAD"     = c(7.3, 23.6, 13.4, 24.1),
-  "NIGER"    = c(11.6, 23.6, 0.0, 16.1),
-  "CAMEROON" = c(1.6, 13.2, 8.3, 16.3)
+  "CHAD" = c(7.3, 23.6, 13.4, 24.1),
+  "CONGO" = c(-5.1, 3.8, 11.0, 18.7),
+  "COTE D IVOIRE" = c(4.2, 10.8, -8.7, -2.4),
+  "DEMOCRATIC REPUBLIC OF THE CONGO" = c(-13.6, 5.5, 12.0, 31.4),
+  "ETHIOPIA" = c(3.3, 15.0, 32.9, 48.1),
+  "GHANA" = c(4.5, 11.3, -3.4, 1.3),
+  "GUINEA" = c(7.1, 12.8, -15.2, -7.6),
+  "GUINEA-BISSAU" = c(10.8, 12.8, -16.8, -13.6),
+  "KENYA" = c(-4.8, 5.1, 33.8, 42.0),
+  "LIBERIA" = c(4.2, 8.6, -11.6, -7.3),
+  "MADAGASCAR" = c(-25.7, -11.9, 43.1, 50.6),
+  "MALAWI" = c(-17.2, -9.3, 32.6, 36.0),
+  "MAURITANIA" = c(14.6, 27.4, -17.2, -4.7),
+  "MOZAMBIQUE" = c(-27.0, -10.4, 30.1, 41.0),
+  "NAMIBIA" = c(-29.1, -16.9, 11.6, 25.4),
+  "NIGER" = c(11.6, 23.6, 0.0, 16.1),
+  "NIGERIA" = c(4.2, 14.0, 2.6, 14.8),
+  "RWANDA" = c(-3.0, -1.0, 28.8, 31.0),
+  "SENEGAL" = c(12.2, 16.8, -17.6, -11.3),
+  "SIERRA LEONE" = c(6.8, 10.1, -13.4, -10.2),
+  "SOUTH SUDAN" = c(3.4, 12.3, 23.3, 35.9),
+  "TOGO" = c(5.9, 11.2, -0.2, 1.9),
+  "UGANDA" = c(-1.6, 4.3, 29.5, 35.1),
+  "UNITED REPUBLIC OF TANZANIA" = c(-11.8, -0.9, 29.2, 40.5),
+  "ZAMBIA" = c(-18.2, -8.1, 21.9, 33.8),
+  "ZIMBABWE" = c(-22.5, -15.5, 25.1, 33.1)
 )
 IMSET_AFRICA <- c(-35.0, 38.0, -20.0, 55.0)
 IMSET_MAX_ROUTE_M <- 5000   # start-to-end distance above which a route is treated as suspect
@@ -30,6 +60,7 @@ imset_clean_txt <- function(x, underscores = TRUE) {
 }
 
 imset_num <- function(x) {
+  if (is.numeric(x)) return(as.numeric(x))
   x <- gsub("[^0-9.-]", "", as.character(x))
   suppressWarnings(as.numeric(ifelse(x == "", NA, x)))
 }
@@ -40,15 +71,50 @@ imset_haversine_m <- function(lat1, lon1, lat2, lon2) {
   2 * r * asin(pmin(1, sqrt(a)))
 }
 
-imset_read_one <- function(path) {
-  d <- suppressWarnings(readRDS(path))
+# one file id -> best file on disk (csv.gz > csv > rds)
+imset_files <- function(dir = "input") {
+  f <- list.files(dir, pattern = "^[0-9]+\\.(csv\\.gz|csv|rds)$", full.names = TRUE)
+  if (!length(f)) return(character(0))
+  id <- sub("\\.(csv\\.gz|csv|rds)$", "", basename(f))
+  rank <- ifelse(grepl("\\.csv\\.gz$", f), 1L, ifelse(grepl("\\.csv$", f), 2L, 3L))
+  f <- f[order(id, rank)]
+  f[!duplicated(sub("\\.(csv\\.gz|csv|rds)$", "", basename(f)))]
+}
+
+# path of the best file for one file id ("" if none); used by the legacy Settlement Data tab
+imset_find_file <- function(dir, id) {
+  for (ext in c(".csv.gz", ".csv", ".rds")) {
+    f <- file.path(dir, paste0(id, ext))
+    if (file.exists(f)) return(f)
+  }
+  ""
+}
+
+# raw table with upper-case names (csv/csv.gz read with numeric columns typed up front)
+imset_read_raw <- function(path, n_max = Inf) {
+  if (grepl("\\.rds$", path)) {
+    d <- suppressWarnings(readRDS(path))
+    if (is.finite(n_max)) d <- utils::head(d, n_max)
+  } else {
+    hdr <- names(utils::read.csv(path, nrows = 1, header = TRUE, check.names = FALSE, encoding = "UTF-8"))
+    isnum <- grepl("^(lat|lon|lat_end|lon_end|household_[0-9]+|reason_[a-z]+|total_child_missed|invalid_hh_cells)$",
+                   hdr, ignore.case = TRUE)
+    cc <- ifelse(isnum, "numeric", "character")
+    d <- utils::read.csv(path, header = TRUE, colClasses = cc, na.strings = c("", "NA"), nrows = if (is.finite(n_max)) n_max else -1,
+                         check.names = FALSE, stringsAsFactors = FALSE, encoding = "UTF-8", comment.char = "", quote = "\"")
+  }
   names(d) <- toupper(names(d))
+  d
+}
+
+imset_read_one <- function(path) {
+  d <- imset_read_raw(path)
   need <- c("COUNTRY", "LAT", "LON", "LAT_END", "LON_END")
   if (!all(need %in% names(d))) return(NULL)
   chr <- function(col) if (col %in% names(d)) d[[col]] else NA_character_
   num <- function(col) if (col %in% names(d)) imset_num(d[[col]]) else rep(NA_real_, nrow(d))
   out <- data.frame(
-    FILE_ID  = sub("\\.rds$", "", basename(path)),
+    FILE_ID  = sub("\\.(csv\\.gz|csv|rds)$", "", basename(path)),
     COUNTRY  = imset_clean_txt(chr("COUNTRY")),
     PROVINCE = imset_clean_txt(chr("PROVINCE")),
     DISTRICT = imset_clean_txt(chr("DISTRICT")),
@@ -58,6 +124,8 @@ imset_read_one <- function(path) {
     ROUND    = gsub(" ", "", imset_clean_txt(chr("ROUNDNUMBER"), underscores = FALSE), fixed = TRUE),
     stringsAsFactors = FALSE
   )
+  out$RESPONSE[is.na(out$RESPONSE)] <- "NOT RECORDED"
+  out$ROUND[is.na(out$ROUND)] <- "NOT RECORDED"
   dt <- suppressWarnings(as.Date(substr(as.character(chr("DATE_MONITORED")), 1, 10)))
   dt[!is.na(dt) & dt < as.Date("2018-01-01")] <- NA   # 2010-01-01 placeholder dates
   out$DATE <- dt
@@ -82,39 +150,57 @@ imset_read_one <- function(path) {
   out
 }
 
-# cached on the file signature (names + mtimes)
-imset_data <- local({
+# Country list = first row of each file (cheap); a country's rows are read only when it is picked.
+imset_file_index <- local({
   cache <- NULL; sig <- NULL
   function(dir = "input") {
-    files <- list.files(dir, pattern = "^[0-9]+\\.rds$", full.names = TRUE)
+    files <- imset_files(dir)
     s <- paste(basename(files), file.mtime(files), collapse = "|")
     if (is.null(cache) || !identical(s, sig)) {
-      parts <- lapply(files, function(f) tryCatch(imset_read_one(f), error = function(e) NULL))
-      parts <- parts[!vapply(parts, is.null, logical(1))]
-      if (!length(parts)) {
-        cache <<- NULL
-      } else {
-        cols <- Reduce(base::union, lapply(parts, names))
-        parts <- lapply(parts, function(p) { for (m in base::setdiff(cols, names(p))) p[[m]] <- NA_real_; p[, cols, drop = FALSE] })
-        cache <<- do.call(rbind, parts)
-      }
+      rows <- lapply(files, function(f) tryCatch({
+        d <- imset_read_raw(f, n_max = 1)
+        if (!all(c("COUNTRY", "LAT", "LON") %in% names(d)) || !nrow(d)) NULL
+        else data.frame(FILE_ID = sub("\\.(csv\\.gz|csv|rds)$", "", basename(f)),
+                        COUNTRY = imset_clean_txt(d$COUNTRY[1]), PATH = f, stringsAsFactors = FALSE)
+      }, error = function(e) NULL))
+      rows <- rows[!vapply(rows, is.null, logical(1))]
+      cache <<- if (length(rows)) do.call(rbind, rows) else NULL
       sig <<- s
     }
     cache
   }
 })
 
-imset_country_choices <- function(d) {
-  v <- sort(unique(stats::na.omit(d$COUNTRY)))
+# rows of one country, cleaned; the last few countries stay in memory
+imset_country_data <- local({
+  store <- list()
+  function(dir = "input", country) {
+    idx <- imset_file_index(dir)
+    if (is.null(idx)) return(NULL)
+    hit <- idx[!is.na(idx$COUNTRY) & idx$COUNTRY == country, , drop = FALSE]
+    if (!nrow(hit)) return(NULL)
+    key <- paste(hit$PATH[1], file.mtime(hit$PATH[1]))
+    if (is.null(store[[key]])) {
+      d <- imset_read_one(hit$PATH[1])
+      if (is.null(d)) return(NULL)
+      store[[key]] <<- d
+      if (length(store) > 3) store <<- store[utils::tail(seq_along(store), 3)]
+    }
+    store[[key]]
+  }
+})
+
+imset_country_choices <- function(idx) {
+  v <- sort(unique(stats::na.omit(idx$COUNTRY)))
   stats::setNames(v, tools::toTitleCase(tolower(v)))
 }
 
 # named file-id choices for the legacy "Settlement Data" tab (country name -> file id)
 imset_file_choices <- function(dir = "input") {
-  d <- imset_data(dir)
-  if (is.null(d)) return(character(0))
-  m <- unique(d[, c("COUNTRY", "FILE_ID")])
+  m <- imset_file_index(dir)
+  if (is.null(m)) return(character(0))
   m <- m[!is.na(m$COUNTRY), , drop = FALSE]
+  m <- m[order(m$COUNTRY), , drop = FALSE]
   stats::setNames(m$FILE_ID, tools::toTitleCase(tolower(m$COUNTRY)))
 }
 
@@ -189,16 +275,17 @@ imset_explorer_ui <- function(id) {
 
 imset_explorer_server <- function(id, input_dir = "input") {
   shiny::moduleServer(id, function(input, output, session) {
-    all_d <- shiny::reactive({ d <- imset_data(input_dir); shiny::req(d); d })
-
     shiny::observe({
-      d <- all_d()
-      ch <- imset_country_choices(d)
+      idx <- imset_file_index(input_dir); shiny::req(idx)
+      ch <- imset_country_choices(idx)
       keep <- shiny::isolate(input$country)
       shiny::updateSelectInput(session, "country", choices = ch,
                                selected = if (!is.null(keep) && keep %in% ch) keep else unname(ch[1]))
     })
-    s_country <- shiny::reactive({ shiny::req(input$country); imset_pick(all_d(), "COUNTRY", input$country) })
+    s_country <- shiny::reactive({
+      shiny::req(input$country)
+      d <- imset_country_data(input_dir, input$country); shiny::req(d); d
+    })
 
     shiny::observeEvent(s_country(), {
       d <- s_country(); yrs <- sort(unique(stats::na.omit(d$YEAR)), decreasing = TRUE)
@@ -447,7 +534,6 @@ imset_static_ui <- function(id) {
 
 imset_static_server <- function(id, input_dir = "input") {
   shiny::moduleServer(id, function(input, output, session) {
-    all_d <- shiny::reactive({ d <- imset_data(input_dir); shiny::req(d); d })
     chain <- function(col, label, parent, input_id, all_label = NULL, selected_all = TRUE) {
       shiny::observeEvent(parent(), {
         v <- sort(unique(stats::na.omit(parent()[[col]])))
@@ -456,11 +542,14 @@ imset_static_server <- function(id, input_dir = "input") {
       })
     }
     shiny::observe({
-      d <- all_d(); ch <- imset_country_choices(d)
+      idx <- imset_file_index(input_dir); shiny::req(idx); ch <- imset_country_choices(idx)
       keep <- shiny::isolate(input$country)
       shiny::updateSelectInput(session, "country", choices = ch, selected = if (!is.null(keep) && keep %in% ch) keep else unname(ch[1]))
     })
-    s1 <- shiny::reactive({ shiny::req(input$country); imset_pick(all_d(), "COUNTRY", input$country) })
+    s1 <- shiny::reactive({
+      shiny::req(input$country)
+      d <- imset_country_data(input_dir, input$country); shiny::req(d); d
+    })
     shiny::observeEvent(s1(), {
       d <- s1(); o <- order(d$DATE, decreasing = TRUE, na.last = TRUE); v <- unique(stats::na.omit(d$RESPONSE[o]))
       shiny::updateSelectInput(session, "response", choices = stats::setNames(v, v))
