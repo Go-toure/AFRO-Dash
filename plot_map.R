@@ -17,14 +17,21 @@ imset_overpass_json <- function(bb, buildings = TRUE, per_server_s = 15, total_s
   q <- sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
                bb[["ymin"]], bb[["xmin"]], bb[["ymax"]], bb[["xmax"]], if (buildings) 'way["building"];' else "")
   t0 <- Sys.time()
+  errs <- character(0)
   for (ep in IMSET_OVERPASS) {
-    if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > total_s) break
+    if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > total_s) { errs <- c(errs, "time limit reached"); break }
+    host <- sub("^https?://([^/]+).*$", "\\1", ep)
     r <- tryCatch(httr::POST(ep, body = list(data = q), encode = "form", httr::timeout(per_server_s),
-                             httr::user_agent("AFRO-SIA-Dashboard (WHO AFRO)")), error = function(e) NULL)
-    if (is.null(r) || httr::status_code(r) != 200) { message("Overpass ", ep, ": no usable answer"); next }
+                             httr::user_agent("AFRO-SIA-Dashboard (WHO AFRO)")),
+                  error = function(e) { errs <<- c(errs, paste0(host, ": ", substr(conditionMessage(e), 1, 70))); NULL })
+    if (is.null(r)) next
+    if (httr::status_code(r) != 200) { errs <- c(errs, paste0(host, ": HTTP ", httr::status_code(r))); next }
     js <- tryCatch(jsonlite::fromJSON(httr::content(r, as = "text", encoding = "UTF-8"), simplifyVector = FALSE), error = function(e) NULL)
-    if (!is.null(js) && !is.null(js$elements)) return(js)
+    if (!is.null(js) && !is.null(js$elements)) { assign("last_err", "", envir = .imset_osm_cache); return(js) }
+    errs <- c(errs, paste0(host, ": unreadable answer"))
   }
+  assign("last_err", paste(errs, collapse = "; "), envir = .imset_osm_cache)
+  message("Overpass failed: ", paste(errs, collapse = "; "))
   NULL
 }
 
@@ -119,8 +126,9 @@ create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
 
   # ---- OSM layers (optional: a missing server never stops the map) ----
   lay <- if (isTRUE(osm)) imset_osm_layers(bb) else NULL
-  osm_note <- if (!isTRUE(osm)) " | OpenStreetMap layers switched off" else if (is.null(lay)) " | OpenStreetMap server busy: roads/buildings not drawn, try again later" else ""
+  osm_note <- if (!isTRUE(osm)) " | OpenStreetMap layers switched off" else if (is.null(lay)) " | OpenStreetMap not reachable: roads/buildings not drawn" else ""
 
+  osm_detail <- if (isTRUE(osm) && is.null(lay)) get0("last_err", envir = .imset_osm_cache, ifnotfound = "") else ""
   p <- ggplot2::ggplot()
   if (!is.null(lay$buildings)) p <- p + ggplot2::geom_sf(data = lay$buildings, fill = "gray80", color = "gray50", linewidth = 0.2)
   if (!is.null(lay$minor))     p <- p + ggplot2::geom_sf(data = lay$minor, color = "gray50", linewidth = 0.3)
@@ -137,9 +145,10 @@ create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
   p <- p +
     ggplot2::coord_sf(xlim = c(bb[["xmin"]], bb[["xmax"]]), ylim = c(bb[["ymin"]], bb[["ymax"]]), expand = FALSE) +
     ggplot2::theme_void() +
-    ggplot2::labs(title = paste0("Missed Children | ", u(rows$ROUND), " | ", u(rows$SETTLEMENT), " | ", u(rows$COUNTRY)), subtitle = sub) +
+    ggplot2::labs(title = paste0("Missed Children | ", u(rows$ROUND), " | ", u(rows$SETTLEMENT), " | ", u(rows$COUNTRY)), subtitle = sub, caption = if (nzchar(osm_detail)) paste(strwrap(paste0("OpenStreetMap request: ", osm_detail), 110), collapse = "\n") else NULL) +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 16, face = "bold"),
-                   plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 10, color = "grey30"))
+                   plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 10, color = "grey30"),
+                   plot.caption = ggplot2::element_text(hjust = 0, size = 7, color = "grey40"))
   # scale bar and north arrow drawn by hand (no extra package needed)
   w_m <- (bb[["xmax"]] - bb[["xmin"]]) * 111320 * cos(mean(c(bb[["ymin"]], bb[["ymax"]])) * pi / 180)
   nice <- c(10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000)
