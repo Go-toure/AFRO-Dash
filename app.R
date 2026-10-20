@@ -4121,7 +4121,7 @@ ui <- dashboardPage(
       ),
       
       # Landing page: headline numbers of the monitoring programme and the campaigns
-      menuItem("Snapshot", tabName = "snapshot", icon = icon("tachometer-alt"), selected = TRUE),
+      menuItem("At a Glance", tabName = "snapshot", icon = icon("tachometer-alt"), selected = TRUE),
       
       # NEW: Add Power BI Dashboard as the first menu item
       menuItem("Campaigns Overview (Power BI)", 
@@ -4997,7 +4997,7 @@ ui <- dashboardPage(
       if (SNAPSHOT_AVAILABLE) {
         snap_ui("snap")
       } else {
-        tags$div(class = "alert alert-warning", "The Snapshot page is not available: snapshot_module.R is missing.")
+        tags$div(class = "alert alert-warning", "The At a Glance page is not available: snapshot_module.R is missing.")
       }
     ),
     

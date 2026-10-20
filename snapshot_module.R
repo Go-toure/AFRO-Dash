@@ -336,13 +336,13 @@ snap_ui <- function(id) {
     shiny::div(class = "snap-wrap",
       shiny::div(class = "snap-hero",
         shiny::div(
-          shiny::tags$h2("Polio SIA Monitoring Snapshot"),
+          shiny::tags$h2("Polio SIA at a Glance"),
           shiny::tags$p("WHO AFRO | Independent monitoring (LQAS & IM) and campaign delivery"),
           shiny::uiOutput(ns("asof"))),
         shiny::div(class = "snap-actions",
           shiny::tags$button(type = "button", class = "btn btn-default", onclick = "window.print()",
                              shiny::icon("print"), " Print / PDF"),
-          shiny::downloadButton(ns("dl"), "Snapshot (CSV)", class = "btn-default"))),
+          shiny::downloadButton(ns("dl"), "Download (CSV)", class = "btn-default"))),
       shiny::div(class = "snap-filters",
         shiny::selectizeInput(ns("year"), "Year", choices = NULL, multiple = TRUE,
                               options = list(placeholder = "All years")),
@@ -634,7 +634,7 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
       do.call(rbind, rows)
     })
     output$dl <- shiny::downloadHandler(
-      filename = function() paste0("AFRO_SIA_Snapshot_", Sys.Date(), ".csv"),
+      filename = function() paste0("AFRO_SIA_AtAGlance_", Sys.Date(), ".csv"),
       content = function(file) utils::write.csv(snapshot_table(), file, row.names = FALSE, na = ""))
   })
 }
