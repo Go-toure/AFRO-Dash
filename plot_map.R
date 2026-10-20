@@ -74,7 +74,7 @@ imset_osm_layers <- function(bb) {
 # Tiles are fetched in parallel with curl (short timeouts), stitched into one image and drawn under
 # the routes. Satellite tiles show the houses themselves. Any failure returns NULL + a reason.
 IMSET_TILES <- list(
-  sat    = list(url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d", zmax = 17, kind = "jpg",
+  sat    = list(url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d", zmax = 18, kind = "jpg",
                 label = "Esri World Imagery"),
   osmtile = list(url = "https://tile.openstreetmap.org/%d/%d/%d.png", zmax = 19, kind = "png", label = "OpenStreetMap tiles"))
 
@@ -83,15 +83,10 @@ imset_tile_y <- function(lat, z) floor((1 - asinh(tan(lat * pi / 180)) / pi) / 2
 imset_tile_lon <- function(x, z) x / 2^z * 360 - 180
 imset_tile_lat <- function(y, z) atan(sinh(pi * (1 - 2 * y / 2^z))) * 180 / pi
 
-imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 30) {
-  cfg <- IMSET_TILES[[src]]
-  z <- cfg$zmax
-  repeat {
-    x0 <- imset_tile_x(bb[["xmin"]], z); x1 <- imset_tile_x(bb[["xmax"]], z)
-    y0 <- imset_tile_y(bb[["ymax"]], z); y1 <- imset_tile_y(bb[["ymin"]], z)
-    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= max_tiles || z <= 10) break
-    z <- z - 1
-  }
+# fetch + stitch the tiles of ONE zoom level; returns list(out = mosaic or NULL, errs, ph = share of "no data" tiles)
+imset_fetch_at <- function(bb, cfg, src, z, total_s = 25) {
+  x0 <- imset_tile_x(bb[["xmin"]], z); x1 <- imset_tile_x(bb[["xmax"]], z)
+  y0 <- imset_tile_y(bb[["ymax"]], z); y1 <- imset_tile_y(bb[["ymin"]], z)
   ck <- paste("tile", src, z, x0, x1, y0, y1)
   if (exists(ck, envir = .imset_osm_cache, inherits = FALSE)) return(get(ck, envir = .imset_osm_cache))
   xs <- x0:x1; ys <- y0:y1
@@ -113,10 +108,9 @@ imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 30) {
   }
   tl <- lapply(res, function(r) if (is.null(r)) NULL else dec(r))
   ok <- !vapply(tl, is.null, logical(1))
-  if (!any(ok)) {
-    assign("last_err", paste0(cfg$label, ": ", if (length(errs)) paste(unique(errs), collapse = ", ") else "no tile received"), envir = .imset_osm_cache)
-    return(NULL)
-  }
+  if (!any(ok)) return(list(out = NULL, errs = unique(errs), ph = 1))
+  # Esri returns a flat grey "Map data not yet available" tile where it has no imagery at this zoom
+  is_ph <- vapply(tl[ok], function(a) mean(abs(a - 0.8) < 0.03) > 0.9, logical(1))
   ts <- dim(tl[[which(ok)[1]]])[1]
   big <- array(0.85, dim = c(length(ys) * ts, length(xs) * ts, 3))
   for (i in which(ok)) {
@@ -126,8 +120,36 @@ imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 30) {
   out <- list(img = big, xmin = imset_tile_lon(min(xs), z), xmax = imset_tile_lon(max(xs) + 1, z),
               ymin = imset_tile_lat(max(ys) + 1, z), ymax = imset_tile_lat(min(ys), z),
               z = z, missing = sum(!ok), label = cfg$label)
-  assign(ck, out, envir = .imset_osm_cache)
-  out
+  r <- list(out = out, errs = unique(errs), ph = if (src == "sat") mean(is_ph) else 0)
+  assign(ck, r, envir = .imset_osm_cache)
+  r
+}
+
+# starts at the sharpest zoom and steps back while most tiles are "no data" (rural areas often stop at zoom 15-16)
+imset_fetch_tiles <- function(bb, src = "sat", max_tiles = 36, total_s = 45) {
+  cfg <- IMSET_TILES[[src]]
+  z <- cfg$zmax; t0 <- Sys.time(); best <- NULL; last <- NULL
+  repeat {
+    repeat {   # keep the tile count small
+      n <- (imset_tile_x(bb[["xmax"]], z) - imset_tile_x(bb[["xmin"]], z) + 1) * (imset_tile_y(bb[["ymin"]], z) - imset_tile_y(bb[["ymax"]], z) + 1)
+      if (n <= max_tiles || z <= 10) break
+      z <- z - 1
+    }
+    last <- imset_fetch_at(bb, cfg, src, z)
+    if (is.null(last$out)) break                      # network problem: stepping back will not help
+    best <- last$out
+    if (last$ph < 0.5 || z <= 12) break
+    if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > total_s) break
+    z <- z - 1
+  }
+  if (is.null(best)) {
+    assign("last_err", paste0(cfg$label, ": ", if (length(last$errs)) paste(last$errs, collapse = ", ") else "no tile received"), envir = .imset_osm_cache)
+    return(NULL)
+  }
+  if (!is.null(last) && !is.null(last$out) && last$ph >= 0.5)
+    assign("last_err", paste0(cfg$label, ": no imagery available for this area"), envir = .imset_osm_cache)
+  best$ph <- if (is.null(last$ph)) 0 else last$ph
+  best
 }
 
 create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
@@ -191,7 +213,7 @@ create_settlement_map <- function(rows, bbox_m = 300, bg = "sat") {
   if (bg %in% c("sat", "osmtile")) tl <- imset_fetch_tiles(bb, bg)
   if (bg == "vector") lay <- imset_osm_layers(bb)
   osm_detail <- if (bg != "none" && is.null(tl) && is.null(lay)) get0("last_err", envir = .imset_osm_cache, ifnotfound = "") else ""
-  osm_note <- if (bg == "none") "" else if (!is.null(tl)) paste0(" | Background: ", tl$label) else if (!is.null(lay)) " | Background: OpenStreetMap vectors" else " | Background not available (see note below)"
+  osm_note <- if (bg == "none") "" else if (!is.null(tl) && isTRUE(tl$ph >= 0.5)) " | Satellite imagery is not available for this area" else if (!is.null(tl)) paste0(" | Background: ", tl$label, " (zoom ", tl$z, ")") else if (!is.null(lay)) " | Background: OpenStreetMap vectors" else " | Background not available (see note below)"
   on_img <- !is.null(tl) && bg == "sat"
   p <- ggplot2::ggplot()
   if (!is.null(tl)) p <- p + ggplot2::annotation_raster(tl$img, xmin = tl$xmin, xmax = tl$xmax, ymin = tl$ymin, ymax = tl$ymax, interpolate = TRUE)
