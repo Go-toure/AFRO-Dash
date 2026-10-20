@@ -2,34 +2,67 @@
 # create_settlement_map(rows, bbox_m) draws ALL monitor routes in `rows`
 # (a cleaned subset from imset_data(): one settlement visit, one or more routes).
 
-retry_query <- function(query, max_attempts = 3) {
-  attempt <- 1
-  while (attempt <= max_attempts) {
-    res <- tryCatch(osmdata::osmdata_sf(query), error = function(e) {
-      message("OSM attempt ", attempt, " failed: ", conditionMessage(e)); NULL })
-    if (!is.null(res)) return(res)
-    if (attempt == max_attempts) stop("OpenStreetMap query failed after ", max_attempts, " attempts")
-    Sys.sleep(2)
-    attempt <- attempt + 1
-  }
-}
+# ---- OpenStreetMap layers -------------------------------------------------------
+# One small Overpass request (roads + waterways + buildings together) with a hard time limit,
+# tried on several public servers. The old version sent four separate requests through osmdata,
+# which the public server rate-limits ("Waiting 60s for retry backoff"). Nothing here retries
+# in a loop: if no server answers in time the map is drawn without the OSM layers.
 
 .imset_osm_cache <- new.env(parent = emptyenv())
+IMSET_OVERPASS <- c("https://overpass-api.de/api/interpreter",
+                    "https://overpass.kumi.systems/api/interpreter",
+                    "https://overpass.private.coffee/api/interpreter")
 
-# one OSM layer for a bounding box; cached for the life of the R process; NULL when unavailable
-imset_osm_layer <- function(bb, key, value = NULL) {
-  ck <- paste(key, paste(value, collapse = ","), paste(round(as.numeric(bb), 4), collapse = ","))
+imset_overpass_json <- function(bb, buildings = TRUE, per_server_s = 15, total_s = 40) {
+  q <- sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
+               bb[["ymin"]], bb[["xmin"]], bb[["ymax"]], bb[["xmax"]], if (buildings) 'way["building"];' else "")
+  t0 <- Sys.time()
+  for (ep in IMSET_OVERPASS) {
+    if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > total_s) break
+    r <- tryCatch(httr::POST(ep, body = list(data = q), encode = "form", httr::timeout(per_server_s),
+                             httr::user_agent("AFRO-SIA-Dashboard (WHO AFRO)")), error = function(e) NULL)
+    if (is.null(r) || httr::status_code(r) != 200) { message("Overpass ", ep, ": no usable answer"); next }
+    js <- tryCatch(jsonlite::fromJSON(httr::content(r, as = "text", encoding = "UTF-8"), simplifyVector = FALSE), error = function(e) NULL)
+    if (!is.null(js) && !is.null(js$elements)) return(js)
+  }
+  NULL
+}
+
+# parse the Overpass JSON ("out geom") into sf layers
+imset_parse_osm <- function(js) {
+  els <- js$elements
+  roads_major <- list(); roads_minor <- list(); water <- list(); bld <- list()
+  major_types <- c("motorway", "trunk", "primary", "secondary", "motorway_link", "trunk_link", "primary_link", "secondary_link")
+  for (e in els) {
+    if (!identical(e$type, "way") || is.null(e$geometry) || length(e$geometry) < 2) next
+    xy <- cbind(vapply(e$geometry, function(g) as.numeric(g$lon), numeric(1)), vapply(e$geometry, function(g) as.numeric(g$lat), numeric(1)))
+    tg <- e$tags; if (is.null(tg)) tg <- list()
+    if (!is.null(tg$building)) {
+      if (nrow(xy) >= 4 && all(xy[1, ] == xy[nrow(xy), ])) bld[[length(bld) + 1]] <- sf::st_polygon(list(xy))
+    } else if (!is.null(tg$waterway)) {
+      water[[length(water) + 1]] <- sf::st_linestring(xy)
+    } else if (!is.null(tg$highway)) {
+      if (tg$highway %in% major_types) roads_major[[length(roads_major) + 1]] <- sf::st_linestring(xy)
+      else roads_minor[[length(roads_minor) + 1]] <- sf::st_linestring(xy)
+    }
+  }
+  mk <- function(x) if (length(x)) sf::st_sf(geometry = sf::st_sfc(x, crs = 4326)) else NULL
+  list(major = mk(roads_major), minor = mk(roads_minor), water = mk(water), buildings = mk(bld))
+}
+
+# cached on a ~100 m grid of the bounding box; failures are not cached so a later click can retry
+imset_osm_layers <- function(bb) {
+  ck <- paste(round(as.numeric(bb), 3), collapse = ",")
   if (exists(ck, envir = .imset_osm_cache, inherits = FALSE)) return(get(ck, envir = .imset_osm_cache))
-  res <- tryCatch({
-    q <- osmdata::opq(bbox = as.numeric(bb), timeout = 40)
-    q <- if (is.null(value)) osmdata::add_osm_feature(q, key = key) else osmdata::add_osm_feature(q, key = key, value = value)
-    retry_query(q)
-  }, error = function(e) { message("OSM layer ", key, ": ", conditionMessage(e)); NULL })
+  big <- (bb[["xmax"]] - bb[["xmin"]]) * (bb[["ymax"]] - bb[["ymin"]]) > 0.0064   # > about 8 km x 8 km: skip buildings
+  js <- tryCatch(imset_overpass_json(bb, buildings = !big), error = function(e) { message("Overpass: ", conditionMessage(e)); NULL })
+  if (is.null(js)) return(NULL)
+  res <- tryCatch(imset_parse_osm(js), error = function(e) { message("OSM parse: ", conditionMessage(e)); NULL })
   if (!is.null(res)) assign(ck, res, envir = .imset_osm_cache)
   res
 }
 
-create_settlement_map <- function(rows, bbox_m = 300) {
+create_settlement_map <- function(rows, bbox_m = 300, osm = TRUE) {
   stopifnot(is.data.frame(rows), nrow(rows) > 0)
   routes <- rows
   n_all <- nrow(routes)
@@ -84,20 +117,15 @@ create_settlement_map <- function(rows, bbox_m = 300) {
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.margin = ggplot2::margin(0, 0, 0, 0))
 
-  # ---- OSM layers (each optional: a failed layer does not stop the map) ----
-  major <- imset_osm_layer(bb, "highway", c("motorway", "primary", "secondary"))
-  minor <- imset_osm_layer(bb, "highway", c("tertiary", "residential"))
-  water <- imset_osm_layer(bb, "waterway")
-  bld   <- imset_osm_layer(bb, "building")
-  missing_layers <- c(if (is.null(major)) "major roads", if (is.null(minor)) "minor roads",
-                      if (is.null(water)) "waterways", if (is.null(bld)) "buildings")
-  has <- function(x, el) !is.null(x) && !is.null(x[[el]]) && nrow(x[[el]]) > 0
+  # ---- OSM layers (optional: a missing server never stops the map) ----
+  lay <- if (isTRUE(osm)) imset_osm_layers(bb) else NULL
+  osm_note <- if (!isTRUE(osm)) " | OpenStreetMap layers switched off" else if (is.null(lay)) " | OpenStreetMap server busy: roads/buildings not drawn, try again later" else ""
 
   p <- ggplot2::ggplot()
-  if (has(bld, "osm_polygons"))   p <- p + ggplot2::geom_sf(data = bld$osm_polygons, fill = "gray80", color = "gray50", linewidth = 0.2)
-  if (has(minor, "osm_lines"))    p <- p + ggplot2::geom_sf(data = minor$osm_lines, color = "gray50", linewidth = 0.3)
-  if (has(major, "osm_lines"))    p <- p + ggplot2::geom_sf(data = major$osm_lines, color = "black", linewidth = 0.4)
-  if (has(water, "osm_lines"))    p <- p + ggplot2::geom_sf(data = water$osm_lines, color = "blue", linewidth = 0.3)
+  if (!is.null(lay$buildings)) p <- p + ggplot2::geom_sf(data = lay$buildings, fill = "gray80", color = "gray50", linewidth = 0.2)
+  if (!is.null(lay$minor))     p <- p + ggplot2::geom_sf(data = lay$minor, color = "gray50", linewidth = 0.3)
+  if (!is.null(lay$major))     p <- p + ggplot2::geom_sf(data = lay$major, color = "black", linewidth = 0.4)
+  if (!is.null(lay$water))     p <- p + ggplot2::geom_sf(data = lay$water, color = "blue", linewidth = 0.3)
   p <- p +
     ggplot2::geom_segment(data = routes, ggplot2::aes(x = LON, y = LAT, xend = LON_END, yend = LAT_END),
                           color = "grey35", linetype = "dashed", linewidth = 0.5) +
@@ -105,8 +133,7 @@ create_settlement_map <- function(rows, bbox_m = 300) {
     ggplot2::geom_point(data = routes, ggplot2::aes(x = LON_END, y = LAT_END), shape = 24, color = "yellow4", fill = NA, size = 4, stroke = 2)
   if (nrow(routes) > 1 && nrow(routes) <= 20)
     p <- p + ggplot2::geom_text(data = routes, ggplot2::aes(x = LON, y = LAT, label = N), nudge_y = lat_margin * 0.12, size = 3.2, fontface = "bold")
-  sub <- paste0(nrow(routes), " monitor route(s) | ", sm("CHILDREN"), " children missed", gps_note,
-                if (length(missing_layers)) paste0(" | OSM layers not available: ", paste(missing_layers, collapse = ", ")) else "")
+  sub <- paste0(nrow(routes), " monitor route(s) | ", sm("CHILDREN"), " children missed", gps_note, osm_note)
   p <- p +
     ggplot2::coord_sf(xlim = c(bb[["xmin"]], bb[["xmax"]]), ylim = c(bb[["ymin"]], bb[["ymax"]]), expand = FALSE) +
     ggplot2::theme_void() +
