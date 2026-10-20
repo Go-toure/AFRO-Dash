@@ -74,7 +74,7 @@ imset_osm_layers <- function(bb) {
 # Tiles are fetched in parallel with curl (short timeouts), stitched into one image and drawn under
 # the routes. Satellite tiles show the houses themselves. Any failure returns NULL + a reason.
 IMSET_TILES <- list(
-  sat    = list(url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d", zmax = 18, kind = "jpg",
+  sat    = list(url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%d/%d/%d", zmax = 18, kind = "jpg", yx = TRUE,   # ArcGIS tile URLs are z/row(y)/col(x)
                 label = "Esri World Imagery"),
   osmtile = list(url = "https://tile.openstreetmap.org/%d/%d/%d.png", zmax = 19, kind = "png", label = "OpenStreetMap tiles"))
 
@@ -96,7 +96,7 @@ imset_fetch_at <- function(bb, cfg, src, z, total_s = 25) {
   for (i in seq_len(nrow(grid))) local({
     ii <- i
     h <- curl::new_handle(timeout = 12, connecttimeout = 8, useragent = "AFRO-SIA-Dashboard (WHO AFRO)", failonerror = FALSE)
-    curl::curl_fetch_multi(sprintf(cfg$url, z, grid$x[ii], grid$y[ii]),
+    curl::curl_fetch_multi(if (isTRUE(cfg$yx)) sprintf(cfg$url, z, grid$y[ii], grid$x[ii]) else sprintf(cfg$url, z, grid$x[ii], grid$y[ii]),
       done = function(r) { if (r$status_code == 200) res[[ii]] <<- r$content else errs <<- c(errs, paste0("HTTP ", r$status_code)) },
       fail = function(msg) errs <<- c(errs, substr(as.character(msg), 1, 70)), pool = pool, handle = h)
   })
