@@ -170,11 +170,13 @@ imset_explorer_ui <- function(id) {
         shiny::selectInput(ns("round"), "Round", choices = NULL, width = "100%"),
         shiny::selectInput(ns("province"), "Province", choices = NULL, width = "100%"),
         shiny::selectInput(ns("district"), "District", choices = NULL, width = "100%"),
+        shiny::selectInput(ns("basemap"), "Basemap", width = "100%",
+          choices = c("Streets (OpenStreetMap)" = "osm", "Satellite (Esri)" = "sat", "No basemap" = "none")),
         shiny::checkboxInput(ns("hide_bad"), "Hide suspect records (GPS or counts)", value = TRUE)),
       shiny::uiOutput(ns("kpis")),
       shiny::div(class = "imx-panel",
         shiny::h4("Where missed children were found: monitor routes (dot = start, line = route to the end point)"),
-        plotly::plotlyOutput(ns("map"), height = "560px"),
+        plotly::plotlyOutput(ns("map"), height = "620px"),
         shiny::uiOutput(ns("note"))),
       shiny::div(class = "imx-panel",
         shiny::h4("Summary by district"),
@@ -280,11 +282,26 @@ imset_explorer_server <- function(id, input_dir = "input") {
           marker = list(color = cls_cols[k], size = 8, opacity = 0.9), name = paste0(cls_levels[k], " (", nrow(s), ")"), legendgroup = cls_levels[k])
       }
       lon_r <- range(c(d$LON, d$LON_END), na.rm = TRUE); lat_r <- range(c(d$LAT, d$LAT_END), na.rm = TRUE)
-      lon_sp <- max(diff(lon_r) * cos(mean(lat_r) * pi / 180), 0.002) * 1.2
-      lat_sp <- max(diff(lat_r), 0.002) * 1.2
-      zoom <- max(2, min(14.5, log2(min(1000 * 360 / (512 * lon_sp), 470 * 360 / (512 * lat_sp)))))
-      plotly::layout(p,
-        mapbox = list(style = "carto-positron", zoom = zoom, center = list(lon = mean(lon_r), lat = mean(lat_r))),
+      w <- session$clientData[[paste0("output_", session$ns("map"), "_width")]]
+      h <- session$clientData[[paste0("output_", session$ns("map"), "_height")]]
+      if (is.null(w) || !is.finite(w) || w < 300) w <- 1000
+      if (is.null(h) || !is.finite(h) || h < 200) h <- 620
+      lon_sp <- max(diff(lon_r) * cos(mean(lat_r) * pi / 180), 0.002) * 1.15
+      lat_sp <- max(diff(lat_r), 0.002) * 1.15
+      zoom <- max(2, min(16, log2(min((w - 40) * 360 / (512 * lon_sp), (h - 70) * 360 / (512 * lat_sp)))))
+      bm <- if (is.null(input$basemap)) "osm" else input$basemap
+      mb <- list(zoom = zoom, center = list(lon = mean(lon_r), lat = mean(lat_r)))
+      if (bm == "osm") {
+        mb$style <- "open-street-map"
+      } else if (bm == "sat") {
+        mb$style <- "white-bg"
+        mb$layers <- list(list(below = "traces", sourcetype = "raster", opacity = 1,
+          source = list("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
+          sourceattribution = "Imagery: Esri, Maxar, Earthstar Geographics"))
+      } else {
+        mb$style <- "white-bg"
+      }
+      plotly::layout(p, mapbox = mb,
         margin = list(l = 0, r = 0, t = 0, b = 0),
         legend = list(orientation = "h", x = 0.01, y = 0.01, bgcolor = "rgba(255,255,255,.85)"),
         paper_bgcolor = "rgba(0,0,0,0)")
