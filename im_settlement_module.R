@@ -301,10 +301,25 @@ imset_explorer_server <- function(id, input_dir = "input") {
       } else {
         mb$style <- "white-bg"
       }
-      plotly::layout(p, mapbox = mb,
+      p <- plotly::layout(p, mapbox = mb,
         margin = list(l = 0, r = 0, t = 0, b = 0),
         legend = list(orientation = "h", x = 0.01, y = 0.01, bgcolor = "rgba(255,255,255,.85)"),
         paper_bgcolor = "rgba(0,0,0,0)")
+      # fit the view to the data using the real size of the map box (done in the browser)
+      htmlwidgets::onRender(p, "function(el, x, b) {
+        function fit() {
+          var w = el.clientWidth, h = el.clientHeight;
+          if (!w || !h) return;
+          var z = Math.log2(Math.min((w - 40) * 360 / (512 * b.lonSp), (h - 70) * 360 / (512 * b.latSp)));
+          if (!isFinite(z)) return;
+          z = Math.max(2, Math.min(16, z));
+          Plotly.relayout(el, {'mapbox.zoom': z, 'mapbox.center': {lon: b.lon, lat: b.lat}});
+        }
+        var done = false;
+        function arm() { if (done || !el.clientWidth || !el.clientHeight) return; done = true; setTimeout(fit, 150); setTimeout(fit, 700); setTimeout(fit, 1800); }
+        if (window.ResizeObserver) { new ResizeObserver(arm).observe(el); }
+        arm(); setTimeout(arm, 500); setTimeout(arm, 1500);
+      }", data = list(lon = mean(lon_r), lat = mean(lat_r), lonSp = lon_sp, latSp = lat_sp))
     })
 
     output$note <- shiny::renderUI({
