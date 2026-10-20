@@ -233,6 +233,12 @@ source("scope_analysis_optimized.R")
 source("lqas_summary_map_optimized.R")
 source("unresolved_cases_optimized.R")
 source("plot_map.R")
+IMSET_AVAILABLE <- file.exists("im_settlement_module.R")
+if (IMSET_AVAILABLE) {
+  source("im_settlement_module.R")
+} else {
+  cat("IM settlement explorer disabled (im_settlement_module.R not found)\n")
+}
 # source("R/sia_ai_mwanza_pro_v2.R")
 
 # preprocess_shapefile() / normalize_key_text() / compute_ambiguous_district_pairs()
@@ -285,6 +291,10 @@ file_list <- all_files[grepl("^\\d+\\.rds$", all_files)]
 
 # Remove file extension for later use
 file_list_no_ext <- tools::file_path_sans_ext(file_list)
+
+# Country names -> file ids for the settlement tabs (falls back to raw file ids)
+settlement_file_choices <- if (exists("imset_file_choices")) imset_file_choices(input_folder) else character(0)
+if (!length(settlement_file_choices)) settlement_file_choices <- file_list_no_ext
 
 cat("📁 Found", length(file_list), "numeric .rds files in input folder:\n")
 if (length(file_list) > 0) {
@@ -6850,33 +6860,16 @@ ui <- dashboardPage(
           id = "settlement_tabs",
           type = "tabs",
           
-          # Map Tab
+          # Interactive explorer (all monitor routes) + printable OSM map
+          tabPanel(
+            "Explorer",
+            if (IMSET_AVAILABLE) imset_explorer_ui("imx") else
+              tags$div(class = "alert alert-warning", "The settlement explorer is not available: im_settlement_module.R is missing.")
+          ),
           tabPanel(
             "Settlement Map",
-            fluidRow(
-              box(
-                title = "Input Parameters", width = 4, solidHeader = TRUE, status = "primary",
-                selectInput("file_id", "File ID", choices = file_list_no_ext),
-                dateInput("selected_date", "Select Date", 
-                          value = Sys.Date(),
-                          min = as.Date("2000-01-01"),
-                          max = Sys.Date()),
-                selectInput("ctry", "Country", choices = NULL),
-                selectInput("Province", "Province", choices = NULL),
-                selectInput("District", "District", choices = NULL),
-                selectInput("Facility", "Facility", choices = NULL),
-                selectInput("response", "Response", choices = NULL),
-                selectInput("roundNumber", "Round Number", choices = NULL),
-                selectInput("settlement", "Settlement", choices = NULL),
-                numericInput("bbox_m", "Bounding Box Margin (meters)", value = 300),
-                actionButton("generate", "Generate Map"),
-                downloadButton("download_map", "Download Map", style = "margin-top: 10px;")
-              ),
-              box(
-                title = "Map Output", width = 8, solidHeader = TRUE, status = "primary",
-                plotOutput("mapPlot", height = "600px")
-              )
-            )
+            if (IMSET_AVAILABLE) imset_static_ui("ims") else
+              tags$div(class = "alert alert-warning", "The settlement map is not available: im_settlement_module.R is missing.")
           ),
           
           # Data Explorer Tab
@@ -6885,7 +6878,7 @@ ui <- dashboardPage(
             fluidRow(
               box(
                 title = "Data Filters", width = 3, solidHeader = TRUE, status = "primary",
-                selectInput("settlement_file_id", "File ID", choices = file_list_no_ext),
+                selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
                 dateRangeInput("settlement_date_range", "Date Range:",
                                start = Sys.Date() - 30,
                                end = Sys.Date(),
@@ -13656,261 +13649,13 @@ server <- function(input, output, session) {
   )
   
   # ============================================================
-  # 🗺️ IM SETTLEMENT MAPS SERVER LOGIC (RDS VERSION - CLEAN)
+  # IM SETTLEMENT MAPS: interactive explorer + printable map (im_settlement_module.R)
   # ============================================================
-  
-  # Load RDS data with date filtering
-  data_reactive <- reactive({
-    req(input$file_id)
-    input_file <- paste0(input_folder, input$file_id, ".rds")
-    
-    if (file.exists(input_file)) {
-      # SIMPLE RDS loading - no extra parameters
-      im_data <- readRDS(input_file)
-      names(im_data) <- toupper(names(im_data))
-      
-      # Check if date column exists
-      date_col <- grep("DATE", names(im_data), value = TRUE, ignore.case = TRUE)
-      
-      if (length(date_col) > 0) {
-        date_col_name <- date_col[1]
-        
-        # Try to convert to date and filter for selected date
-        im_data <- tryCatch({
-          im_data %>%
-            mutate(!!date_col_name := as.Date(.data[[date_col_name]])) %>%
-            filter(.data[[date_col_name]] == input$selected_date)
-        }, error = function(e) {
-          showNotification(paste("Date conversion error:", e$message), type = "warning")
-          return(im_data)
-        })
-        
-        if (nrow(im_data) == 0) {
-          showNotification("No data available for selected date", type = "warning")
-        }
-      } else {
-        showNotification("No date column found - showing all data", type = "warning")
-      }
-      
-      return(im_data)
-    } else {
-      showNotification(paste("File", input_file, "not found!"), type = "error")
-      return(NULL)
-    }
-  })
-  
-  # Update date input based on selected file's data
-  observe({
-    req(input$file_id)
-    input_file <- paste0(input_folder, input$file_id, ".rds")
-    
-    if (file.exists(input_file)) {
-      # SIMPLE RDS loading - no extra parameters
-      date_data <- readRDS(input_file)
-      names(date_data) <- toupper(names(date_data))
-      
-      date_col <- grep("DATE", names(date_data), value = TRUE, ignore.case = TRUE)
-      
-      if (length(date_col) > 0) {
-        date_col_name <- date_col[1]
-        
-        date_data <- tryCatch({
-          date_data %>%
-            mutate(!!date_col_name := as.Date(.data[[date_col_name]]))
-        }, error = function(e) {
-          showNotification(paste("Date column found but couldn't convert:", e$message), 
-                           type = "warning")
-          return(NULL)
-        })
-        
-        if (!is.null(date_data)) {
-          available_dates <- unique(date_data[[date_col_name]])
-          updateDateInput(session, "selected_date",
-                          value = max(available_dates, na.rm = TRUE),
-                          min = min(available_dates, na.rm = TRUE),
-                          max = max(available_dates, na.rm = TRUE))
-          shinyjs::enable("selected_date")
-        } else {
-          shinyjs::disable("selected_date")
-        }
-      } else {
-        shinyjs::disable("selected_date")
-      }
-    }
-  })
-  
-  # Store last generated plot for download
-  map_plot_reactive <- reactiveVal(NULL)
-  
-  # ------------------------ Country ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data)
-    
-    updateSelectInput(session, "ctry", choices = unique(na.omit(im_data$COUNTRY)))
-    updateSelectInput(session, "Province", choices = NULL)
-    updateSelectInput(session, "District", choices = NULL)
-    updateSelectInput(session, "Facility", choices = NULL)
-    updateSelectInput(session, "response", choices = NULL)
-    updateSelectInput(session, "roundNumber", choices = NULL)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ Province ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$ctry)
-    
-    provinces <- im_data %>%
-      filter(COUNTRY == input$ctry) %>%
-      pull(PROVINCE) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "Province", choices = provinces)
-    updateSelectInput(session, "District", choices = NULL)
-    updateSelectInput(session, "Facility", choices = NULL)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ District ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$ctry, input$Province)
-    
-    districts <- im_data %>%
-      filter(COUNTRY == input$ctry, PROVINCE == input$Province) %>%
-      pull(DISTRICT) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "District", choices = districts)
-    updateSelectInput(session, "Facility", choices = NULL)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ Facility ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$ctry, input$Province, input$District)
-    
-    facilities <- im_data %>%
-      filter(COUNTRY == input$ctry, PROVINCE == input$Province, DISTRICT == input$District) %>%
-      pull(FACILITY) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "Facility", choices = facilities)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ Response ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$Facility)
-    
-    responses <- im_data %>%
-      filter(FACILITY == input$Facility) %>%
-      pull(RESPONSE) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "response", choices = responses)
-    updateSelectInput(session, "roundNumber", choices = NULL)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ Round Number ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$Facility, input$response)
-    
-    rounds <- im_data %>%
-      filter(FACILITY == input$Facility, RESPONSE == input$response) %>%
-      pull(ROUNDNUMBER) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "roundNumber", choices = rounds)
-    updateSelectInput(session, "settlement", choices = NULL)
-  })
-  
-  # ------------------------ Settlement ------------------------
-  observe({
-    im_data <- data_reactive()
-    req(im_data, input$Facility, input$response, input$roundNumber)
-    
-    settlements <- im_data %>%
-      filter(FACILITY == input$Facility,
-             RESPONSE == input$response,
-             ROUNDNUMBER == input$roundNumber) %>%
-      pull(SETTLEMENT) %>%
-      unique() %>%
-      na.omit()
-    
-    updateSelectInput(session, "settlement", choices = settlements)
-  }) 
-  
-  # ------------------------ Generate Map ------------------------
-  observeEvent(input$generate, {
-    output$mapPlot <- renderPlot({
-      req(
-        input$file_id,
-        input$ctry,
-        input$Province,
-        input$District,
-        input$Facility,
-        input$response,
-        input$roundNumber,
-        input$settlement
-      )
-      
-      tryCatch({
-        plot <- create_settlement_map(
-          x = input$bbox_m,
-          ctry = input$ctry,
-          province = input$Province,
-          district = input$District,
-          facility = input$Facility,
-          Response = input$response,
-          roundNumber = input$roundNumber,
-          settlement = input$settlement,
-          bbox_m = input$bbox_m,
-          file_id = input$file_id
-        )
-        map_plot_reactive(plot)
-        plot
-      }, error = function(e) {
-        showNotification(paste("Error generating map:", e$message), type = "error")
-        NULL
-      })
-    }, height = 600)
-  })
-  
-  # ------------------------ Download Map ------------------------
-  output$download_map <- downloadHandler(
-    filename = function() {
-      paste0("map_", input$ctry, "_", input$settlement, "_", Sys.Date(), ".png")
-    },
-    content = function(file) {
-      withProgress(
-        message = 'Generating map download...',
-        detail = 'Rendering high-quality image...',
-        value = 0.3,
-        {
-          plot <- map_plot_reactive()
-          if (!is.null(plot)) {
-            incProgress(0.6, detail = "Saving image...")
-            ggsave(file, plot = plot, width = 12, height = 7, dpi = 300)
-            incProgress(1, detail = "Download ready!")
-          } else {
-            showNotification("No map available to download.", type = "error")
-          }
-        }
-      )
-    }
-  )
-  
+  if (IMSET_AVAILABLE) {
+    imset_explorer_server("imx", input_dir = input_folder)
+    imset_static_server("ims", input_dir = input_folder)
+  }
+
   # ============================================================
   # 📊 SETTLEMENT DATA SERVER LOGIC (With Date Range Filtering)
   # ============================================================
