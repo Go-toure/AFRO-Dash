@@ -475,11 +475,14 @@ imset_explorer_server <- function(id, input_dir = "input") {
 
 OV_JS <- paste0(
 "Shiny.addCustomMessageHandler('imset_overpass', function(msg) {",
-"  var q = msg.query, eps = msg.endpoints, tmo = msg.timeout_ms || 40000, errs = [], ctrls = [], done = false;",
+"  var eps = msg.endpoints, tiers = msg.tiers, tmo = msg.timeout_ms || 30000, deadline = Date.now() + (msg.total_ms || 100000);",
+"  var errs = [], done = false, lkey = 'imset_ov:' + msg.key;",
 "  var major = ['motorway','trunk','primary','secondary','motorway_link','trunk_link','primary_link','secondary_link'];",
-"  function reply(ok, payload) { if (done) return; done = true; ctrls.forEach(function(c){ try { c.abort(); } catch(e){} });",
-"    var o = ok ? {ok:true, key:msg.key, json:payload, n:Math.random()} : {ok:false, key:msg.key, err:payload, n:Math.random()};",
-"    Shiny.setInputValue(msg.id, o, {priority:'event'}); }",
+"  function reply(ok, payload, lite) {",
+"    if (done) return; done = true;",
+"    var o = ok ? {ok:true, key:msg.key, json:payload, lite:!!lite, n:Math.random()} : {ok:false, key:msg.key, err:payload, n:Math.random()};",
+"    Shiny.setInputValue(msg.id, o, {priority:'event'});",
+"  }",
 "  function compact(js) {",
 "    var M=[], m=[], w=[], b=[];",
 "    (js.elements || []).forEach(function(e) {",
@@ -491,16 +494,42 @@ OV_JS <- paste0(
 "    });",
 "    return JSON.stringify({M:M, m:m, w:w, b:b});",
 "  }",
-"  var timer = setTimeout(function() { reply(false, 'no answer within ' + Math.round(tmo/1000) + ' s (' + errs.join('; ') + ')'); }, tmo);",
-"  var failed = 0;",
-"  eps.forEach(function(ep) {",
-"    var c = new AbortController(); ctrls.push(c); var host = ep.replace(/^https?:\\/\\/([^\\/]+).*$/, '$1');",
-"    fetch(ep + '?data=' + encodeURIComponent(q), {signal: c.signal})",
-"      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })",
-"      .then(function(js) { if (!js || !js.elements) throw new Error('unreadable answer'); clearTimeout(timer); reply(true, compact(js)); })",
-"      .catch(function(err) { errs.push(host + ': ' + (err && err.message ? err.message : err)); failed++;",
-"        if (failed >= eps.length) { clearTimeout(timer); reply(false, errs.join('; ')); } });",
-"  });",
+"  try {",
+"    var hit = JSON.parse(localStorage.getItem(lkey) || 'null');",
+"    if (hit && hit.j && hit.t && Date.now() - hit.t < 7*864e5) { reply(true, hit.j, false); return; }",
+"  } catch(e) {}",
+"  function race(q, ms) {",
+"    return new Promise(function(resolve, reject) {",
+"      var cs = [], failed = 0, fin = false, es = [];",
+"      function stop() { cs.forEach(function(c) { try { c.abort(); } catch(e) {} }); }",
+"      var timer = setTimeout(function() { if (fin) return; fin = true; stop();",
+"        reject(new Error('no answer within ' + Math.round(ms/1000) + ' s' + (es.length ? ' (' + es.join(', ') + ')' : ''))); }, ms);",
+"      eps.forEach(function(ep) {",
+"        var c = new AbortController(); cs.push(c); var host = ep.replace(/^https?:\\/\\/([^\\/]+).*$/, '$1');",
+"        fetch(ep + '?data=' + encodeURIComponent(q), {signal: c.signal})",
+"          .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })",
+"          .then(function(js) { if (!js || !js.elements) throw new Error('unreadable answer'); if (fin) return; fin = true; clearTimeout(timer); stop(); resolve(js); })",
+"          .catch(function(err) { if (fin) return; es.push(host + ' ' + (err && err.message ? err.message : err)); failed++;",
+"            if (failed >= eps.length) { fin = true; clearTimeout(timer); reject(new Error(es.join(', '))); } });",
+"      });",
+"    });",
+"  }",
+"  var plan = [];",
+"  tiers.forEach(function(t, i) { plan.push({q:t, lite:i > 0}); plan.push({q:t, lite:i > 0}); });",
+"  var idx = 0;",
+"  function step() {",
+"    if (idx >= plan.length || Date.now() > deadline) { reply(false, errs.slice(-2).join(' | ')); return; }",
+"    var p = plan[idx++];",
+"    race(p.q, Math.min(tmo, deadline - Date.now())).then(function(js) {",
+"      var c = compact(js);",
+"      if (!p.lite) { try { localStorage.setItem(lkey, JSON.stringify({t:Date.now(), j:c})); } catch(e) {} }",
+"      reply(true, c, p.lite);",
+"    }).catch(function(err) {",
+"      errs.push((p.lite ? 'light query: ' : 'full query: ') + err.message);",
+"      setTimeout(step, Math.min(2500 * idx, 6000));",
+"    });",
+"  }",
+"  step();",
 "});")
 
 imset_static_ui <- function(id) {
@@ -599,8 +628,9 @@ imset_static_server <- function(id, input_dir = "input") {
         bb <- if (is.null(d)) NULL else tryCatch(imset_map_bbox_for(d, input$bbox_m, rt), error = function(e) NULL)
         if (!is.null(bb) && !imset_osm_cached(bb)) {
           shiny::showNotification("Loading roads and buildings from OpenStreetMap through your browser...", id = "imset_ov", duration = NULL, type = "message")
-          session$sendCustomMessage("imset_overpass", list(id = session$ns("ovr"), key = imset_osm_key(bb), query = imset_osm_query(bb),
-                                                           endpoints = as.list(IMSET_OVERPASS), timeout_ms = 40000))
+          session$sendCustomMessage("imset_overpass", list(id = session$ns("ovr"), key = imset_osm_key(bb),
+                                                           tiers = list(imset_osm_query(bb), imset_osm_query_lite(bb)),
+                                                           endpoints = as.list(IMSET_OVERPASS), timeout_ms = 30000, total_ms = 100000))
           return(invisible(NULL))
         }
       }
@@ -612,6 +642,11 @@ imset_static_server <- function(id, input_dir = "input") {
       if (isTRUE(r$ok)) {
         ok <- tryCatch({ imset_osm_store(r$key, r$json); TRUE }, error = function(e) { assign("last_err", paste("browser answer could not be read:", conditionMessage(e)), envir = .imset_osm_cache); FALSE })
         if (ok) assign("last_err", "", envir = .imset_osm_cache)
+        # a "light" answer (no buildings, servers busy) is used for this map but not kept, so the next Generate retries the full query
+        if (ok && isTRUE(r$lite)) {
+          assign(r$key, TRUE, envir = .imset_osm_lite)
+          shiny::showNotification("The OpenStreetMap servers are busy: roads and water are drawn, buildings could not be loaded. Click Generate map again later to retry.", type = "warning", duration = 12)
+        } else if (ok && exists(r$key, envir = .imset_osm_lite, inherits = FALSE)) rm(list = r$key, envir = .imset_osm_lite)
       } else assign("last_err", paste0("browser: ", r$err), envir = .imset_osm_cache)
       trig(shiny::isolate(if (is.null(trig())) 1 else trig() + 1))
     })

@@ -9,17 +9,25 @@
 # in a loop: if no server answers in time the map is drawn without the OSM layers.
 
 .imset_osm_cache <- new.env(parent = emptyenv())
+.imset_osm_lite <- new.env(parent = emptyenv())   # keys whose cached answer has no buildings (retry next time)
 IMSET_OVERPASS <- c("https://overpass-api.de/api/interpreter",
+                    "https://overpass.private.coffee/api/interpreter",
                     "https://overpass.kumi.systems/api/interpreter",
-                    "https://overpass.private.coffee/api/interpreter")
+                    "https://overpass.openstreetmap.fr/api/interpreter",
+                    "https://maps.mail.ru/osm/tools/overpass/api/interpreter")
 
 # shared by the server-side request and the browser-side request (the browser can reach Overpass when the server cannot)
 imset_osm_key <- function(bb) paste(round(as.numeric(bb), 3), collapse = ",")
-imset_osm_cached <- function(bb) exists(imset_osm_key(bb), envir = .imset_osm_cache, inherits = FALSE)
+imset_osm_cached <- function(bb) { k <- imset_osm_key(bb); exists(k, envir = .imset_osm_cache, inherits = FALSE) && !exists(k, envir = .imset_osm_lite, inherits = FALSE) }
 imset_osm_buildings <- function(bb) (bb[["xmax"]] - bb[["xmin"]]) * (bb[["ymax"]] - bb[["ymin"]]) <= 0.0064   # beyond about 8 km x 8 km: no buildings
 imset_osm_query <- function(bb, buildings = imset_osm_buildings(bb), pad = 0.002) {
   sprintf('[out:json][timeout:25][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"];way["waterway"];%s);out geom tags;',
           bb[["ymin"]] - pad, bb[["xmin"]] - pad, bb[["ymax"]] + pad, bb[["xmax"]] + pad, if (buildings) 'way["building"];' else "")
+}
+# lighter query used when the servers are busy: main roads, tracks and rivers only, no buildings
+imset_osm_query_lite <- function(bb, pad = 0.002) {
+  sprintf('[out:json][timeout:20][bbox:%.6f,%.6f,%.6f,%.6f];(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|track|motorway_link|trunk_link|primary_link|secondary_link)$"];way["waterway"~"^(river|stream|canal)$"];);out geom tags;',
+          bb[["ymin"]] - pad, bb[["xmin"]] - pad, bb[["ymax"]] + pad, bb[["xmax"]] + pad)
 }
 # compact layers sent by the browser: list(M = major roads, m = minor roads, w = waterways, b = buildings), each geometry a flat [lon,lat,lon,lat,...] array
 imset_parse_compact <- function(x) {
