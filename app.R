@@ -235,7 +235,8 @@ source("unresolved_cases_optimized.R")
 source("plot_map.R")
 IMSET_AVAILABLE <- file.exists("im_settlement_module.R")
 if (IMSET_AVAILABLE) {
-  source("im_settlement_module.R")
+  IMSET_AVAILABLE <- tryCatch({ source("im_settlement_module.R"); TRUE },
+                              error = function(e) { cat("IM settlement explorer disabled:", conditionMessage(e), "\n"); FALSE })
 } else {
   cat("IM settlement explorer disabled (im_settlement_module.R not found)\n")
 }
@@ -293,7 +294,9 @@ file_list <- all_files[grepl("^\\d+\\.rds$", all_files)]
 file_list_no_ext <- tools::file_path_sans_ext(file_list)
 
 # Country names -> file ids for the settlement tabs (falls back to raw file ids)
-settlement_file_choices <- if (exists("imset_file_choices")) imset_file_choices(input_folder) else character(0)
+settlement_file_choices <- tryCatch(
+  if (IMSET_AVAILABLE) imset_file_choices(input_folder) else character(0),
+  error = function(e) { cat("Settlement country list unavailable:", conditionMessage(e), "\n"); character(0) })
 if (!length(settlement_file_choices)) settlement_file_choices <- file_list_no_ext
 
 cat("📁 Found", length(file_list), "numeric .rds files in input folder:\n")

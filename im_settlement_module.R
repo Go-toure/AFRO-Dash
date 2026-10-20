@@ -94,8 +94,8 @@ imset_data <- local({
       if (!length(parts)) {
         cache <<- NULL
       } else {
-        cols <- Reduce(union, lapply(parts, names))
-        parts <- lapply(parts, function(p) { for (m in setdiff(cols, names(p))) p[[m]] <- NA_real_; p[, cols, drop = FALSE] })
+        cols <- Reduce(base::union, lapply(parts, names))
+        parts <- lapply(parts, function(p) { for (m in base::setdiff(cols, names(p))) p[[m]] <- NA_real_; p[, cols, drop = FALSE] })
         cache <<- do.call(rbind, parts)
       }
       sig <<- s
@@ -315,7 +315,7 @@ imset_explorer_server <- function(id, input_dir = "input") {
     output$dl <- shiny::downloadHandler(
       filename = function() paste0("IM_settlement_routes_", Sys.Date(), ".csv"),
       content = function(file) {
-        d <- shown(); d <- d[, setdiff(names(d), c("FILE_ID")), drop = FALSE]
+        d <- shown(); d <- d[, base::setdiff(names(d), c("FILE_ID")), drop = FALSE]
         utils::write.csv(d, file, row.names = FALSE, na = "")
       })
   })
