@@ -171,7 +171,8 @@ imset_explorer_ui <- function(id) {
         shiny::selectInput(ns("province"), "Province", choices = NULL, width = "100%"),
         shiny::selectInput(ns("district"), "District", choices = NULL, width = "100%"),
         shiny::selectInput(ns("basemap"), "Basemap", width = "100%",
-          choices = c("Streets (OpenStreetMap)" = "osm", "Satellite (Esri)" = "sat", "No basemap" = "none")),
+          choices = c("Satellite + labels (Esri)" = "hyb", "Satellite only (Esri)" = "sat", "Streets (OpenStreetMap)" = "osm", "No basemap" = "none"),
+          selected = "hyb"),
         shiny::checkboxInput(ns("hide_bad"), "Hide suspect records (GPS or counts)", value = TRUE)),
       shiny::uiOutput(ns("kpis")),
       shiny::div(class = "imx-panel",
@@ -257,8 +258,9 @@ imset_explorer_server <- function(id, input_dir = "input") {
     cls_cols <- c("#F2B134", "#E6761B", "#C73E1D", "#7A1F5C")
     class_of <- function(n) factor(ifelse(is.na(n) | n <= 1, cls_levels[1], ifelse(n == 2, cls_levels[2], ifelse(n <= 4, cls_levels[3], cls_levels[4]))), levels = cls_levels)
 
+    shown_d <- shiny::debounce(shown, 400)   # avoid redrawing/flying while the filter lists are still updating
     output$map <- plotly::renderPlotly({
-      d <- shown()
+      d <- shown_d()
       shiny::validate(shiny::need(nrow(d) > 0, "No monitor routes for this selection. Try another year, response or round."))
       if (nrow(d) > IMSET_MAX_DRAW) d <- d[order(d$DATE, decreasing = TRUE, na.last = TRUE)[seq_len(IMSET_MAX_DRAW)], , drop = FALSE]
       d$CLS <- class_of(d$CHILDREN)
@@ -282,50 +284,77 @@ imset_explorer_server <- function(id, input_dir = "input") {
           marker = list(color = cls_cols[k], size = 8, opacity = 0.9), name = paste0(cls_levels[k], " (", nrow(s), ")"), legendgroup = cls_levels[k])
       }
       lon_r <- range(c(d$LON, d$LON_END), na.rm = TRUE); lat_r <- range(c(d$LAT, d$LAT_END), na.rm = TRUE)
-      w <- session$clientData[[paste0("output_", session$ns("map"), "_width")]]
-      h <- session$clientData[[paste0("output_", session$ns("map"), "_height")]]
-      if (is.null(w) || !is.finite(w) || w < 300) w <- 1000
-      if (is.null(h) || !is.finite(h) || h < 200) h <- 620
       lon_sp <- max(diff(lon_r) * cos(mean(lat_r) * pi / 180), 0.002) * 1.15
       lat_sp <- max(diff(lat_r), 0.002) * 1.15
-      zoom <- max(2, min(16, log2(min((w - 40) * 360 / (512 * lon_sp), (h - 70) * 360 / (512 * lat_sp)))))
-      bm <- if (is.null(input$basemap)) "osm" else input$basemap
-      mb <- list(zoom = zoom, center = list(lon = mean(lon_r), lat = mean(lat_r)))
+      bm <- if (is.null(input$basemap)) "hyb" else input$basemap
+      mb <- list(uirevision = "imx")
+      # keep the camera where the user (or the fly-in) left it, so a redraw never makes the map jump
+      v <- shiny::isolate(input$view)
+      if (!is.null(v) && length(v$c) == 2 && is.finite(v$z)) { mb$zoom <- v$z; mb$center <- list(lon = v$c[[1]], lat = v$c[[2]]) }
+      esri <- function(path, attr = NULL) list(below = "traces", sourcetype = "raster", opacity = 1,
+        source = list(paste0("https://server.arcgisonline.com/ArcGIS/rest/services/", path, "/MapServer/tile/{z}/{y}/{x}")),
+        sourceattribution = attr)
       if (bm == "osm") {
         mb$style <- "open-street-map"
-      } else if (bm == "sat") {
+      } else if (bm %in% c("sat", "hyb")) {
         mb$style <- "white-bg"
-        mb$layers <- list(list(below = "traces", sourcetype = "raster", opacity = 1,
-          source = list("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
-          sourceattribution = "Imagery: Esri, Maxar, Earthstar Geographics"))
+        mb$layers <- list(esri("World_Imagery", "Imagery: Esri, Maxar, Earthstar Geographics"))
+        if (bm == "hyb") mb$layers[[2]] <- esri("Reference/World_Boundaries_and_Places")
       } else {
         mb$style <- "white-bg"
       }
-      p <- plotly::layout(p, mapbox = mb,
+      p <- plotly::layout(p, mapbox = mb, uirevision = "imx",
         margin = list(l = 0, r = 0, t = 0, b = 0),
         legend = list(orientation = "h", x = 0.01, y = 0.01, bgcolor = "rgba(255,255,255,.85)"),
         paper_bgcolor = "rgba(0,0,0,0)")
       # fit the view to the data using the real size of the map box (done in the browser)
       htmlwidgets::onRender(p, "function(el, x, b) {
-        function fit() {
+        function getMap() { try { return el._fullLayout.mapbox._subplot.map; } catch (e) { return null; } }
+        function targetZoom() {
           var w = el.clientWidth, h = el.clientHeight;
-          if (!w || !h) return;
+          if (!w || !h) return null;
           var z = Math.log2(Math.min((w - 40) * 360 / (512 * b.lonSp), (h - 70) * 360 / (512 * b.latSp)));
-          if (!isFinite(z)) return;
-          z = Math.max(2, Math.min(16, z));
-          Plotly.relayout(el, {'mapbox.zoom': z, 'mapbox.center': {lon: b.lon, lat: b.lat}});
+          return isFinite(z) ? Math.max(2, Math.min(18, z)) : null;
         }
-        var done = false;
-        function arm() { if (done || !el.clientWidth || !el.clientHeight) return; done = true; setTimeout(fit, 150); setTimeout(fit, 700); setTimeout(fit, 1800); }
-        if (window.ResizeObserver) { new ResizeObserver(arm).observe(el); }
-        arm(); setTimeout(arm, 500); setTimeout(arm, 1500);
-      }", data = list(lon = mean(lon_r), lat = mean(lat_r), lonSp = lon_sp, latSp = lat_sp))
+        function reveal() { el.style.visibility = 'visible'; }
+        var first = !el.__imxPrev, t0 = Date.now(), done = false;
+        var m0 = getMap();
+        // report the camera to R after every move so redraws keep the current view
+        if (m0 && !m0.__imxBound && window.Shiny) {
+          m0.__imxBound = true;
+          m0.on('moveend', function() { try { var c = m0.getCenter(); Shiny.setInputValue(b.viewId, {c: [c.lng, c.lat], z: m0.getZoom()}, {priority: 'event'}); } catch (e) {} });
+        }
+        if (first) { el.style.visibility = 'hidden'; setTimeout(reveal, 8000); }
+        function go() {
+          if (done) return;
+          var m = getMap(), z = targetZoom();
+          if (!m || z === null) return;
+          var ready = !first; try { if (first) ready = m.isStyleLoaded(); } catch (e) {}
+          if (!ready && Date.now() - t0 < 4000) return;   // let the map style finish loading before we move it
+          done = true;
+          try { m.setMaxZoom(19); } catch (e) {}
+          var prev = el.__imxPrev;
+          var same = prev && Math.abs(prev.z - z) < 0.02 && Math.abs(prev.c[0] - b.lon) < 1e-4 && Math.abs(prev.c[1] - b.lat) < 1e-4;
+          el.__imxPrev = {c: [b.lon, b.lat], z: z};
+          if (same) { reveal(); return; }
+          // first load: start from the whole world and fly in; later changes: fly from the current view
+          if (first) { try { m.jumpTo({center: [b.lon, Math.max(-50, Math.min(60, b.lat))], zoom: 1.1}); } catch (e) {} }
+          setTimeout(reveal, 80);
+          setTimeout(function() {
+            try { m.flyTo({center: [b.lon, b.lat], zoom: z, duration: first ? 3800 : 2200, curve: 1.7, essential: true}); }
+            catch (e) { Plotly.relayout(el, {'mapbox.zoom': z, 'mapbox.center': {lon: b.lon, lat: b.lat}}); }
+          }, first ? 600 : 50);
+        }
+        if (window.ResizeObserver) { new ResizeObserver(function() { go(); }).observe(el); }
+        var iv = setInterval(function() { go(); if (done || Date.now() - t0 > 9000) clearInterval(iv); }, 250);
+        go();
+      }", data = list(lon = mean(lon_r), lat = mean(lat_r), lonSp = lon_sp, latSp = lat_sp, viewId = session$ns("view")))
     })
 
     output$note <- shiny::renderUI({
       d <- shown(); msg <- character(0)
       if (nrow(d) > IMSET_MAX_DRAW) msg <- c(msg, paste0("Showing the ", imset_fmt(IMSET_MAX_DRAW), " most recent of ", imset_fmt(nrow(d)), " routes. Choose a year, response or round to see all of them."))
-      msg <- c(msg, paste0("Each row of the source data is one monitor route that found missed children; several monitors can visit the same settlement, so one settlement can have several routes. ",
+      msg <- c(msg, paste0("Zoom in with the mouse wheel to see houses: use the Satellite basemap for building footprints (up to zoom level 19). Each row of the source data is one monitor route that found missed children; several monitors can visit the same settlement, so one settlement can have several routes. ",
         "Suspect records = start or end GPS outside the country, a start-to-end distance above 5 km, or more than 100 children missed on one route (likely a typing error)."))
       shiny::div(class = "imx-note", paste(msg, collapse = " "))
     })
