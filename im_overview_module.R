@@ -2222,11 +2222,10 @@ im_repository_ui <- function(id) {
     shiny::uiOutput(ns("rp_empty")),
     shiny::fluidRow(
       # ---- FILTER PANEL ---------------------------------------------------------------
-      shiny::column(3,
+      shiny::column(12, class = "imx-fcol",
         shinydashboard::box(
           title = shiny::tags$div(shiny::icon("filter"), "IM Repository Filters"),
           width = NULL, status = "primary", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE,
-          style = "max-height: 88vh; overflow-y: auto;",
           shiny::selectizeInput(ns("rp_block"), "AFRO Block:", c("All", "LCB", "WA", "DRC", "CEA", "ESA"),
             selected = "All", options = list(dropdownParent = "body")),
           shiny::selectizeInput(ns("rp_country"), "Countries (optional):", choices = NULL, multiple = TRUE,
@@ -2245,11 +2244,11 @@ im_repository_ui <- function(id) {
           shiny::dateRangeInput(ns("rp_dates"), "Round start date:", format = "yyyy-mm-dd", startview = "year"),
           shiny::selectInput(ns("rp_qc"), "QC flag:", c("All", "OK only", "Needs review only")),
           shiny::actionButton(ns("rp_reset"), shiny::tagList(shiny::icon("undo"), "Reset filters"),
-            class = "btn btn-default", style = "margin-top: 8px; width: 100%;")
+            class = "btn btn-default", style = "margin-top: 8px; width: auto; justify-self: start;")
         )
       ),
       # ---- RESULTS PANEL ---------------------------------------------------------------
-      shiny::column(9,
+      shiny::column(12,
         shinydashboard::box(
           title = shiny::tags$div(shiny::icon("database"), "IM Repository Overview"),
           width = NULL, status = "info", solidHeader = TRUE, collapsible = FALSE,
