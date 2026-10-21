@@ -539,6 +539,7 @@ imset_static_ui <- function(id) {
     shiny::div(class = "imx-wrap",
       shiny::div(class = "imx-filters",
         shiny::selectInput(ns("country"), "Country", choices = NULL, width = "100%"),
+        shiny::selectInput(ns("year"), "Year", choices = NULL, width = "100%"),
         shiny::selectInput(ns("response"), "Response", choices = NULL, width = "100%"),
         shiny::selectInput(ns("round"), "Round", choices = NULL, width = "100%"),
         shiny::selectInput(ns("province"), "Province", choices = NULL, width = "100%"),
@@ -579,11 +580,21 @@ imset_static_server <- function(id, input_dir = "input") {
       shiny::req(input$country)
       d <- imset_country_data(input_dir, input$country); shiny::req(d); d
     })
+    # Year (newest first, "All years" available): narrows everything below it
     shiny::observeEvent(s1(), {
-      d <- s1(); o <- order(d$DATE, decreasing = TRUE, na.last = TRUE); v <- unique(stats::na.omit(d$RESPONSE[o]))
+      yrs <- sort(unique(stats::na.omit(s1()$YEAR)), decreasing = TRUE)
+      shiny::updateSelectInput(session, "year",
+        choices = c("All years" = "ALL", stats::setNames(yrs, yrs)), selected = if (length(yrs)) yrs[1] else "ALL")
+    })
+    s1y <- shiny::reactive({
+      shiny::req(input$year); d <- s1()
+      if (identical(input$year, "ALL")) d else d[!is.na(d$YEAR) & d$YEAR == as.integer(input$year), , drop = FALSE]
+    })
+    shiny::observeEvent(s1y(), {
+      d <- s1y(); o <- order(d$DATE, decreasing = TRUE, na.last = TRUE); v <- unique(stats::na.omit(d$RESPONSE[o]))
       shiny::updateSelectInput(session, "response", choices = stats::setNames(v, v))
     })
-    s2 <- shiny::reactive({ shiny::req(input$response); imset_pick(s1(), "RESPONSE", input$response) })
+    s2 <- shiny::reactive({ shiny::req(input$response); imset_pick(s1y(), "RESPONSE", input$response) })
     chain("ROUND", "Round", s2, "round")
     s3 <- shiny::reactive({ shiny::req(input$round); imset_pick(s2(), "ROUND", input$round) })
     chain("PROVINCE", "Province", s3, "province")
