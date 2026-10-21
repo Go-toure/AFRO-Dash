@@ -31,6 +31,7 @@ DEFAULT_OUT = os.path.join(os.path.dirname(HERE), "input")
 
 # form id -> country (used when the Country column is blank or an unknown code)
 FORM_COUNTRY = {
+    7178: "NIGERIA",
     3550: "GHANA", 4344: "ZAMBIA", 4385: "BENIN", 4413: "TOGO", 4434: "CENTRAL AFRICAN REPUBLIC", 4445: "CHAD",
     4459: "BURKINA FASO", 4479: "COTE D IVOIRE", 4498: "DEMOCRATIC REPUBLIC OF THE CONGO", 4997: "CONGO",
     5212: "NIGER", 5297: "GUINEA", 5710: "CAMEROON", 5772: "SOUTH SUDAN", 5887: "LIBERIA", 6102: "SIERRA LEONE",
@@ -38,8 +39,10 @@ FORM_COUNTRY = {
     7600: "MALAWI", 7612: "UNITED REPUBLIC OF TANZANIA", 7621: "MOZAMBIQUE", 7980: "ZIMBABWE", 8279: "MADAGASCAR",
     8587: "ALGERIA", 8832: "BOTSWANA", 9597: "BURUNDI", 9793: "RWANDA", 10267: "ANGOLA", 15780: "NAMIBIA",
 }
-# forms that cannot be built (different questionnaire: no Country / household columns)
-SKIP_FORMS = {7178}   # Nigeria
+# forms that cannot be built at all (none at the moment)
+SKIP_FORMS = set()
+# forms with their own questionnaire layout, built by a dedicated function (see process_nigeria)
+NIGERIA_FORM = 7178
 # a rebuild with fewer than this share of the routes already published is refused (stale or truncated raw file)
 MIN_KEEP_SHARE = 0.5
 
@@ -191,6 +194,81 @@ def process(fid: int, raw_dir: str) -> pd.DataFrame:
     return g
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Nigeria (form 7178) uses a different questionnaire: one record per team visit, one GPS point (no end point),
+# 15 houses with the number of unimmunized children each (unimm_h1..15), no Country / Type_Monitoring columns.
+# Round and response follow the same year/month rules as the IM workflow's Nigeria processor.
+NG_ROUND = [  # (year, months, round) - later rules win
+    (2025, [1], "Rnd1"), (2024, [12], "Rnd5"), (2024, [11], "Rnd4"), (2024, [9, 10], "Rnd3"), (2024, [2, 3], "Rnd1"),
+    (2024, [4, 5, 6], "Rnd2"), (2023, [1, 5], "Rnd1"), (2023, [6, 7, 8], "Rnd2"), (2023, [9, 10], "Rnd3"),
+    (2023, [11], "Rnd4"), (2023, [12], "Rnd5")]
+NG_RESPONSE = [
+    (2025, [1], "OBR1"), (2024, [2, 3, 4, 8, 9, 10, 11, 12], "NIE-2024-nOPV2"),
+    (2020, [1, 2, 3], "NGA-20DS-01-2020"), (2020, [12], "NGA-5DS-10-2020"), (2021, [1], "NGA-5DS-10-2020"),
+    (2021, [3], "NGA-2021-013-1"), (2021, [4, 5], "NGA-2021-011-1"), (2021, [6, 7], "NGA-2021-016-1"),
+    (2021, [8], "NGA-2021-019"), (2021, [9], "NGA-2021-020-4"), (2021, [10], "NGA-2021-020-2"),
+    (2021, [11], "NGA-2021-020-3"), (2022, [7, 8], "Kwara Response"), (2023, [5, 6], "NIE-2023-04-02_nOPV"),
+    (2023, [7, 10, 11], "NIE-2023-07-03_nOPV"), (2023, [12], "NIE-2023-07-03_nOPV2")]
+
+
+def process_nigeria(fid: int, raw_dir: str) -> pd.DataFrame:
+    path = os.path.join(raw_dir, f"{fid}.parquet")
+    names = pq.ParquetFile(path).schema_arrow.names
+    un = sorted((n for n in names if re.fullmatch(r"unimm_h\d+", n)), key=lambda n: int(n[7:]))
+    base = ["states", "lgas", "Wards", "Settlement", "today", "siatype", "GPS", "_geolocation[1]", "_geolocation[2]"]
+    df = pq.read_table(path, columns=[c for c in base + un if c in names]).to_pandas()
+    for need in ("states", "today", "_geolocation[1]", "_geolocation[2]"):
+        if need not in df.columns:
+            raise RuntimeError(f"column {need} not found in {fid}.parquet")
+    df = df.astype({c: "string" for c in df.columns})
+    date = pd.to_datetime(df["today"].str.slice(0, 10), errors="coerce")
+    keep = date.notna() & df["states"].notna() & (date.dt.year > 2019)   # same filter as the workflow (year > 2019)
+    df, date = df[keep].reset_index(drop=True), date[keep].reset_index(drop=True)
+    n_rec = len(df)
+    year, month = date.dt.year, date.dt.month
+    rnd = ("Rnd" + month.astype(str)).astype("object")
+    resp = df["siatype"].astype("object").where(df["siatype"].notna(), "")
+    for y, ms, v in NG_ROUND:
+        rnd[(year == y) & month.isin(ms)] = v
+    for y, ms, v in NG_RESPONSE:
+        resp[(year == y) & month.isin(ms)] = v
+    place = clean_text(df["Wards"]) if "Wards" in df else pd.Series(pd.NA, index=df.index, dtype="string")
+    sett = clean_text(df["Settlement"]) if "Settlement" in df else pd.Series(pd.NA, index=df.index, dtype="string")
+    out = pd.DataFrame({
+        "COUNTRY": "NIGERIA",
+        "PROVINCE": clean_text(df["states"]).fillna(NOT_RECORDED),
+        "DISTRICT": clean_text(df["lgas"]).fillna(NOT_RECORDED) if "lgas" in df else NOT_RECORDED,
+        "Facility": place.fillna(sett).fillna(NOT_RECORDED),
+        "Settlement": sett.fillna(place).fillna(NOT_RECORDED),
+        "Response": resp, "roundNumber": rnd,
+        "date_monitored": date.dt.strftime("%Y-%m-%d"),
+        "lat": num(df["_geolocation[1]"]), "lon": num(df["_geolocation[2]"]),
+    })
+    out["lat_end"], out["lon_end"] = out["lat"], out["lon"]   # single point: no walked route
+    invalid = pd.Series(0, index=df.index)
+    hcols = []
+    for k, c in enumerate(un, start=1):
+        raw = num(df[c])
+        ok = sane(raw)
+        invalid = invalid + (raw.notna() & ok.isna()).astype(int)
+        out[f"Household_{k}"] = ok
+        hcols.append(f"Household_{k}")
+    out["Invalid_HH_cells"] = invalid
+    keys = ["COUNTRY", "PROVINCE", "DISTRICT", "Facility", "Settlement", "Response", "roundNumber", "date_monitored",
+            "lat", "lon", "lat_end", "lon_end"]
+    vals = hcols + ["Invalid_HH_cells"]
+    g = out.groupby(keys, dropna=False, sort=False)[vals].sum(min_count=0).reset_index()
+    g["Total_child_missed"] = g[hcols].sum(axis=1)
+    n_bad = int((g["Invalid_HH_cells"] > 0).sum())
+    g = g[g["Total_child_missed"] >= 1].copy()
+    for c in vals + ["Total_child_missed"]:
+        g[c] = g[c].astype(float).round(0).astype("Int64")
+    print(f"  {fid}: {n_rec:,} team visits -> {len(g):,} routes with >= 1 child missed "
+          f"({int(g['Total_child_missed'].sum()):,} children), country ['NIGERIA']"
+          + (f", {n_bad:,} routes had ignored out-of-range house values" if n_bad else ""))
+    return g
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("forms", nargs="*", type=int, help="form ids (default: all known)")
@@ -218,7 +296,7 @@ def main():
                 raise FileNotFoundError(f"{fid}.parquet not in {a.raw_dir}")
             if fid not in FORM_COUNTRY and fid in EXTRA_COUNTRY:
                 FORM_COUNTRY[fid] = EXTRA_COUNTRY[fid]
-            g = process(fid, a.raw_dir)
+            g = process_nigeria(fid, a.raw_dir) if fid == NIGERIA_FORM else process(fid, a.raw_dir)
             st = write_if_changed(g, os.path.join(a.out_dir, f"{fid}.csv.gz"))
             print(f"     {st}")
             (failed if st == "refused" else ok).append(fid)
