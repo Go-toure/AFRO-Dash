@@ -4734,7 +4734,7 @@ ui <- dashboardPage(
       background: var(--kpi-bg) !important;
       background-image: none !important;
       border: 1px solid var(--kpi-border);
-      border-top: 3px solid #0072B2;
+      border-top: 3px solid var(--acc, #0072B2);
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       height: auto;
@@ -4747,6 +4747,14 @@ ui <- dashboardPage(
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
       border-color: var(--kpi-border);
     }
+    /* accent colour per card (the top edge only; the card itself stays white and the text dark) */
+    .content .small-box.bg-aqua, .content .small-box.bg-light-blue { --acc: #56B4E9; }
+    .content .small-box.bg-blue, .content .small-box.bg-navy { --acc: #0072B2; }
+    .content .small-box.bg-green, .content .small-box.bg-teal, .content .small-box.bg-olive { --acc: #009E73; }
+    .content .small-box.bg-yellow, .content .small-box.bg-orange, .content .small-box.bg-lime { --acc: #E69F00; }
+    .content .small-box.bg-red, .content .small-box.bg-maroon { --acc: #D55E00; }
+    .content .small-box.bg-purple, .content .small-box.bg-fuchsia { --acc: #CC79A7; }
+    .content .small-box.bg-gray, .content .small-box.bg-black { --acc: #8c96a3; }
     .content .small-box .icon,
     .content .small-box > .icon,
     .content .small-box .icon-large,
@@ -4759,13 +4767,13 @@ ui <- dashboardPage(
     }
     .content .small-box .inner p,
     .valuebox-flex-container .small-box .inner p {
-      font-size: 10.5px !important; letter-spacing: 0.7px; font-weight: 700;
-      text-transform: uppercase; color: var(--kpi-subtext); text-shadow: none;
+      font-size: 11px !important; letter-spacing: 0.6px; font-weight: 700;
+      text-transform: uppercase; color: #4b5563; text-shadow: none;
     }
     body:not(.dark-mode) .content .small-box[class*='bg-'] .inner,
     body:not(.dark-mode) .content .small-box[class*='bg-'] .inner h3 { color: #111827; }
     body:not(.dark-mode) .content .small-box[class*='bg-'] .inner p,
-    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner p span { color: #6b7280; }
+    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner p span { color: #4b5563; }
     .dark-mode .content .small-box[class*='bg-'] .inner h3 { color: #f9fafb; }
 
     /* ==============================================
