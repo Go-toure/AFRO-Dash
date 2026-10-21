@@ -5277,7 +5277,7 @@
       "checksum": "2a6fda6230f192d3435f5ec5ccd89b71"
     },
     "input/AFRO_IM_data.rds": {
-      "checksum": "70644859b603bc61dca95b981b43e434"
+      "checksum": "a8094902176ffd48a203b67adca566c9"
     },
     "input/AFRO_LQAS_combined.rds": {
       "checksum": "65d91ae1eac2db1dc04619850a3d1be1"
@@ -5289,7 +5289,7 @@
       "checksum": "325bc886556d55b6e5b5eb92f1e1476b"
     },
     "input/AFRO_snapshot_stats_IM.csv": {
-      "checksum": "d9c647bd69e2a559f3e8ee56b65a4d04"
+      "checksum": "3e006faff11c0df12c4bfdd01244851e"
     },
     "input/AFRO_snapshot_stats_LQAS.csv": {
       "checksum": "e962919263142a7e13b805b3e018ce9c"
