@@ -16,11 +16,16 @@ previous file.
 Reads  <raw-dir>/<form_id>.parquet   (written by the IM workflow fetch step)
 Writes <out-dir>/<form_id>.csv.gz     (read by im_settlement_module.R)
 
+Response / round that the form does not record (Ethiopia 6839, Algeria 8587) are filled from the official campaign
+calendar (<raw-dir>/../lookup/lookup.xlsx, or --lookup): a visit belongs to the round that most recently started
+on its date (same rule as the IM workflow's Ethiopia attribution); a raw response text that names a calendar
+campaign wins over the date.
+
 Rules (same as the old script): InProcess monitoring only, households' "Diff_Present_Vacc_FM_HH" summed per
 route, only routes with at least one missed child kept. Place names: the settlement column of the form
 (or the health facility for forms where that is the place name), falling back to the facility.
 """
-import argparse, csv, gzip, io, os, re, sys, time
+import argparse, csv, gzip, io, os, re, sys, time, unicodedata
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
@@ -67,6 +72,11 @@ REASONS = {  # output column -> start of the group column name
     "Reason_Asleep": "Tot_child_Asleep_HH", "Reason_VaccinatedRoutine": "Tot_child_VaccinatedRoutine",
     "Reason_Others": "Tot_child_Others_HH"}
 NOT_RECORDED = "NOT RECORDED"
+# forms whose Response / roundNumber are blank in the raw data and are filled from the campaign calendar
+CALENDAR_FILL = {6839, 8587}
+CAL_EARLY_DAYS = 14   # a visit up to this many days before a round starts can belong to that round (see fill_from_calendar)
+CAL_STALE_DAYS = 45   # a date-attributed round that started longer ago than this is "stale" (same threshold as the R workflow audit)
+CAL = {"df": None, "path": None}   # calendar loaded once per run
 MAX_PER_HH = 50   # a household cell above this (or negative) is a data-entry error (IDs, phone numbers...) and is ignored
 
 
@@ -119,7 +129,90 @@ def write_if_changed(g: pd.DataFrame, path: str):
     return status
 
 
-def process(fid: int, raw_dir: str) -> pd.DataFrame:
+def _norm_key(x) -> str:
+    x = unicodedata.normalize("NFKD", str(x)).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Z0-9]+", " ", x.upper()).strip()
+
+
+def load_calendar(path):
+    """Campaign calendar -> DataFrame(CTRY, OBR, ROUND, START) sorted by start date, or None when unreadable."""
+    if CAL["path"] == path:
+        return CAL["df"]
+    CAL["path"], CAL["df"] = path, None
+    if not path or not os.path.exists(path):
+        print(f"  WARNING: campaign calendar not found ({path}) - response/round stay NOT RECORDED where the form has none")
+        return None
+    try:
+        c = pd.read_excel(path)
+        c = pd.DataFrame({
+            "CTRY": c["Country"].map(_norm_key), "OBR": c["OBR Name"].astype("string").str.strip(),
+            "ROUND": "Rnd" + c["Round Number"].astype("string").str.extract(r"(\d+)")[0],
+            "START": pd.to_datetime(c["Round Start Date"], errors="coerce")})
+        c = c.dropna(subset=["START", "OBR"]).sort_values("START", kind="stable").reset_index(drop=True)
+        c["OBR_KEY"] = c["OBR"].map(lambda v: re.sub(r"[^A-Z0-9]", "", str(v).upper()))
+        CAL["df"] = c
+    except Exception as e:
+        print(f"  WARNING: could not read the campaign calendar ({e}) - response/round stay NOT RECORDED")
+    return CAL["df"]
+
+
+def fill_from_calendar(out: pd.DataFrame, country: str, cal, text=None) -> pd.DataFrame:
+    """Fill blank Response / roundNumber of `out` (needs date_monitored) from the calendar rows of `country`."""
+    blank = out["Response"].eq("") | out["roundNumber"].eq("")
+    if cal is None or not blank.any():
+        return out
+    c = cal[cal["CTRY"] == _norm_key(country)].reset_index(drop=True)
+    if c.empty:
+        print(f"  WARNING: no calendar rows for {country}")
+        return out
+    d = pd.to_datetime(out.loc[blank, "date_monitored"], errors="coerce")
+    resp = pd.Series("", index=d.index, dtype="object")
+    rnd = pd.Series("", index=d.index, dtype="object")
+    # 1) the raw text names a calendar campaign: its round is taken from the date inside that campaign
+    n_text = 0
+    if text is not None:
+        key = text.loc[blank].map(lambda v: re.sub(r"[^A-Z0-9]", "", str(v).upper()) if pd.notna(v) else "")
+        for obr_key, grp in c.groupby("OBR_KEY"):
+            hit = key.index[(key == obr_key) & d.notna()]
+            if not len(hit):
+                continue
+            g = grp.sort_values("START")
+            m = pd.merge_asof(pd.DataFrame({"d": d[hit].values, "i": hit}).sort_values("d"),
+                              g[["START", "OBR", "ROUND"]], left_on="d", right_on="START", direction="backward")
+            m["ROUND"] = m["ROUND"].fillna(g["ROUND"].iloc[0]); m["OBR"] = m["OBR"].fillna(g["OBR"].iloc[0])
+            resp[m["i"].values] = m["OBR"].values; rnd[m["i"].values] = m["ROUND"].values
+            n_text += len(m)
+    # 2) otherwise the round that most recently started on the visit date. Exception: when that round started long
+    #    ago (> CAL_STALE_DAYS) and another round starts within CAL_EARLY_DAYS AFTER the visit, the visit belongs to the
+    #    upcoming round (monitors in the field a few days before the calendar's official start date).
+    todo = d.index[d.notna() & resp.eq("")]
+    if len(todo):
+        q = pd.DataFrame({"d": d[todo].values, "i": todo}).sort_values("d")
+        cc = c[["START", "OBR", "ROUND"]]
+        back = pd.merge_asof(q, cc, left_on="d", right_on="START", direction="backward")
+        fwd = pd.merge_asof(q, cc, left_on="d", right_on="START", direction="forward")
+        lag = (back["d"] - back["START"]).dt.days
+        lead = (fwd["START"] - fwd["d"]).dt.days
+        use_fwd = fwd["OBR"].notna() & (lead <= CAL_EARLY_DAYS) & (back["OBR"].isna() | (lag > CAL_STALE_DAYS))
+        res = back.copy()
+        res.loc[use_fwd, ["OBR", "ROUND"]] = fwd.loc[use_fwd, ["OBR", "ROUND"]].values
+        ok = res["OBR"].notna()
+        resp[res.loc[ok, "i"].values] = res.loc[ok, "OBR"].values
+        rnd[res.loc[ok, "i"].values] = res.loc[ok, "ROUND"].values
+        n_stale = int((ok & ~use_fwd & (lag > CAL_STALE_DAYS)).sum())
+        if n_stale:
+            print(f"  note: {n_stale:,} visits are more than {CAL_STALE_DAYS} days after the start of the round they were attached to "
+                  f"(no newer round in the calendar for their date)")
+    out = out.copy()
+    got = resp.ne("")
+    out.loc[got.index[got], "Response"] = resp[got]
+    out.loc[got.index[got], "roundNumber"] = rnd[got]
+    print(f"  calendar: filled {int(got.sum()):,} of {int(blank.sum()):,} blank response/round rows for {country} "
+          f"({n_text:,} by campaign name, {int(got.sum()) - n_text:,} by date; {int((~got).sum()):,} left NOT RECORDED - no calendar round on or before their date)")
+    return out
+
+
+def process(fid: int, raw_dir: str, lookup=None) -> pd.DataFrame:
     path = os.path.join(raw_dir, f"{fid}.parquet")
     names = pq.ParquetFile(path).schema_arrow.names
     hh = {}
@@ -132,7 +225,8 @@ def process(fid: int, raw_dir: str) -> pd.DataFrame:
     base = ["Country", "Region", "District", "facility", "Response", "roundNumber", "date_monitored", "Type_Monitoring",
             "_GPS_hh_latitude", "_GPS_hh_longitude", "_GPS_hh_end_latitude", "_GPS_hh_end_longitude"]
     sett = [c for c in SETTLEMENT_COLS if c in names]
-    want = [c for c in base + sett + list(hh.values()) + [c for v in reason_cols.values() for c in v] if c in names]
+    resp_cols = [n for n in names if re.fullmatch(r"HH\[\d+\]/HH/Response", n)] if fid in CALENDAR_FILL else []
+    want = [c for c in base + sett + resp_cols + list(hh.values()) + [c for v in reason_cols.values() for c in v] if c in names]
     for need in ("Type_Monitoring", "_GPS_hh_latitude", "_GPS_hh_longitude"):
         if need not in names:
             raise RuntimeError(f"column {need} not found in {fid}.parquet")
@@ -170,6 +264,12 @@ def process(fid: int, raw_dir: str) -> pd.DataFrame:
         "lat": num(col("_GPS_hh_latitude")), "lon": num(col("_GPS_hh_longitude")),
         "lat_end": num(col("_GPS_hh_end_latitude")), "lon_end": num(col("_GPS_hh_end_longitude")),
     })
+    if fid in CALENDAR_FILL:
+        text = pd.Series(pd.NA, index=df.index, dtype="string")
+        for c in resp_cols:
+            text = text.fillna(clean_text(df[c], upper=False))
+        out = fill_from_calendar(out, FORM_COUNTRY.get(fid) or str(country.dropna().iloc[0] if country.notna().any() else ""),
+                                 load_calendar(lookup), text)
     invalid = pd.Series(0, index=df.index)
     for k in range(1, 11):
         raw = num(df[hh[k]]) if k in hh else pd.Series(np.nan, index=df.index)
@@ -274,6 +374,7 @@ def main():
     ap.add_argument("forms", nargs="*", type=int, help="form ids (default: all known)")
     ap.add_argument("--raw-dir", default=DEFAULT_RAW)
     ap.add_argument("--out-dir", default=DEFAULT_OUT)
+    ap.add_argument("--lookup", default=None, help="campaign calendar xlsx (default: <raw-dir>/../lookup/lookup.xlsx)")
     ap.add_argument("--country-forms", default=None,
                     help="IM workflow config/country_forms.csv (country_name,form_id): also builds forms not listed in this script")
     a = ap.parse_args()
@@ -287,6 +388,7 @@ def main():
                 if fid not in FORM_COUNTRY and fid not in SKIP_FORMS and r.get("country_name"):
                     EXTRA_COUNTRY[fid] = re.sub(r"[_\s]+", " ", r["country_name"]).strip().upper()
     ids = a.forms or sorted((set(FORM_COUNTRY) | set(EXTRA_COUNTRY)) - SKIP_FORMS)
+    lookup = a.lookup or os.path.join(os.path.dirname(os.path.abspath(a.raw_dir)), "lookup", "lookup.xlsx")
     os.makedirs(a.out_dir, exist_ok=True)
     ok, failed, changed = [], [], []
     for fid in ids:
@@ -296,7 +398,7 @@ def main():
                 raise FileNotFoundError(f"{fid}.parquet not in {a.raw_dir}")
             if fid not in FORM_COUNTRY and fid in EXTRA_COUNTRY:
                 FORM_COUNTRY[fid] = EXTRA_COUNTRY[fid]
-            g = process_nigeria(fid, a.raw_dir) if fid == NIGERIA_FORM else process(fid, a.raw_dir)
+            g = process_nigeria(fid, a.raw_dir) if fid == NIGERIA_FORM else process(fid, a.raw_dir, lookup)
             st = write_if_changed(g, os.path.join(a.out_dir, f"{fid}.csv.gz"))
             print(f"     {st}")
             (failed if st == "refused" else ok).append(fid)
