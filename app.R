@@ -4279,6 +4279,65 @@ ui <- dashboardPage(
       transform: translateY(0);
       box-shadow: none;
     }
+
+    /* ===========================
+       LIGHT LOOK (same style as the IM Explorer):
+       light cards, small uppercase labels, filters laid out in one row
+       =========================== */
+    .content .box.box-solid > .box-header {
+      background: transparent !important;
+      color: var(--kpi-subtext) !important;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 8px 14px;
+    }
+    .content .box.box-solid > .box-header .box-title {
+      font-size: 12px; letter-spacing: 0.7px; text-transform: uppercase;
+      font-weight: 700; color: var(--kpi-subtext);
+    }
+    .content .box.box-solid > .box-header .btn,
+    .content .box.box-solid > .box-header .box-tools .fa { color: var(--kpi-subtext) !important; }
+    .content .box.box-solid {
+      background: var(--kpi-bg);
+      border: 1px solid var(--kpi-border) !important;
+      border-top: 3px solid #0072B2 !important;
+      border-radius: 14px;
+      box-shadow: var(--kpi-shadow);
+    }
+    .content .box.box-solid.box-info,
+    .content .box.box-solid.box-success { border-top-color: #009E73 !important; }
+    .content .box.box-solid.box-warning { border-top-color: #E69F00 !important; }
+    .content .box.box-solid.box-danger  { border-top-color: #D55E00 !important; }
+
+    /* filter panels: controls side by side instead of one tall column */
+    .imx-fcol .box-body,
+    .box-body.imx-fbody {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 4px 16px;
+      align-items: start;
+      padding: 12px 16px 8px 16px;
+    }
+    .imx-fcol .box-body::before, .imx-fcol .box-body::after,
+    .box-body.imx-fbody::before, .box-body.imx-fbody::after { display: none; }
+    .imx-fcol .box-body .shiny-panel-conditional,
+    .imx-fbody .shiny-panel-conditional { display: contents; }
+    .imx-fcol .box-body .form-group,
+    .imx-fbody .form-group { margin-bottom: 6px !important; }
+    .imx-fcol .box-body label,
+    .imx-fbody label {
+      font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--kpi-subtext); font-weight: 700;
+    }
+    .imx-fcol .box-body .checkbox label,
+    .imx-fbody .checkbox label { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 600; }
+    .imx-fcol .box-body .btn,
+    .imx-fbody .btn,
+    .imx-fcol .box-body hr,
+    .imx-fbody hr,
+    .imx-fcol .box-body .help-block,
+    .imx-fbody .help-block,
+    .imx-fcol .box-body h4,
+    .imx-fbody h4 { grid-column: 1 / -1; }
     
     .shiny-output-error { 
       color: #d9534f; 
@@ -5070,12 +5129,11 @@ ui <- dashboardPage(
                 condition = "input.tabs == 'overview'",
                 box(
                   title = tags$div(icon("filter"), "Overview Filters"),
-                  width = 3,
+                  width = 12, class = "imx-fbody",
                   status = "primary",
                   solidHeader = TRUE,
                   collapsible = TRUE,
                   collapsed = FALSE,
-                  style = "height: 90vh; overflow-y: auto;",
             
                   # ADDED: Block Type Selection
                   selectizeInput(
@@ -5179,7 +5237,7 @@ ui <- dashboardPage(
                 condition = "input.tabs == 'overview'",
                 box(
                   title = tags$div(icon("database"), "LQAS Repository Overview"),
-                  width = 9,
+                  width = 12,
                   status = "info",
                   solidHeader = TRUE,
                   collapsible = FALSE,
@@ -5230,7 +5288,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'overview' && input.overview_subtabs == 'missed_children'",
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
                   box(
                     title = tags$div(icon("search"), "Missed Children Analysis"), 
                     width = 12, 
@@ -5294,7 +5352,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'overview' && input.overview_subtabs == 'missed_children'",
                 column(
-                  width = 9,
+                  width = 12,
                   fluidRow(
                     valueBoxOutput("missed_overall_rate", width = 4),
                     valueBoxOutput("missed_boys_rate", width = 4),
@@ -5337,7 +5395,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'overview' && input.overview_subtabs == 'coverage'",
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
                   box(
                     title = tags$div(icon("cog"), "Coverage Analysis Settings"), 
                     width = 12, 
@@ -5401,7 +5459,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'overview' && input.overview_subtabs == 'coverage'",
                 column(
-                  width = 9,
+                  width = 12,
                   fluidRow(
                     valueBoxOutput("coverage_overall", width = 4),
                     valueBoxOutput("coverage_boys", width = 4),
@@ -5451,7 +5509,7 @@ ui <- dashboardPage(
         conditionalPanel(
           condition = "input.tabs == 'scope'",
           column(
-            width = 3,
+            width = 12, class = "imx-fcol",
             box(
               title = tags$div(icon("cog"), "Scope Analysis Settings"),
               width = 12, solidHeader = TRUE, status = "primary", collapsible = TRUE,
@@ -5522,7 +5580,7 @@ ui <- dashboardPage(
         conditionalPanel(
           condition = "input.tabs == 'scope'",
           column(
-            width = 9,
+            width = 12,
             fluidRow(
               valueBoxOutput("scope_campaigns", width = 3),
               valueBoxOutput("scope_countries_box", width = 3),
@@ -5576,7 +5634,7 @@ ui <- dashboardPage(
           condition = "input.tabs == 'admin_overview'",
           box(
             title = tags$div(icon("filter"), "Filters"),
-            width = 3,
+            width = 12, class = "imx-fbody",
             status = "primary",
             solidHeader = TRUE,
             collapsible = TRUE,
@@ -5651,7 +5709,7 @@ ui <- dashboardPage(
           condition = "input.tabs == 'admin_overview'",
           box(
             title = tags$div(icon("database"), "Admin Data Overview"),
-            width = 9,
+            width = 12,
             solidHeader = TRUE,
             status = "info",
             
@@ -5716,7 +5774,7 @@ ui <- dashboardPage(
                 condition = "input.tabs == 'district_perf'",
           
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
             
                   box(
                     title = tags$div(icon("cog"), "District Performance Settings"),
@@ -5927,7 +5985,7 @@ ui <- dashboardPage(
                 condition = "input.tabs == 'district_perf'",
           
                 column(
-                  width = 9,
+                  width = 12,
             
                   fluidRow(
                     valueBoxOutput("perf_total_districts", width = 4),
@@ -6022,7 +6080,7 @@ ui <- dashboardPage(
                 condition = "input.tabs == 'district_perf' && input.district_subtabs == 'lqas_maps'",
           
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
                   box(
                     title = tags$div(icon("cog"), "LQAS Map Settings"),
                     width = 12,
@@ -6127,7 +6185,7 @@ ui <- dashboardPage(
                 ),
           
                 column(
-                  width = 9,
+                  width = 12,
             
                   fluidRow(
                     valueBoxOutput("lqas_total_districts", 4),
@@ -6262,7 +6320,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'district_perf' && input.district_subtabs == 'reasons'",
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
                   box(
                     title = tags$div(icon("cog"), "Reasons Analysis Settings"), 
                     width = 12, 
@@ -6358,7 +6416,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'district_perf' && input.district_subtabs == 'reasons'",
                 column(
-                  width = 9,
+                  width = 12,
             
                   fluidRow(
                     column(12,
@@ -6529,7 +6587,7 @@ ui <- dashboardPage(
                       value = "priority_drilldown",
                       fluidRow(
                         column(
-                          width = 3,
+                          width = 12, class = "imx-fcol",
                           box(
                             title = "Drill‑down Settings", width = 12, solidHeader = TRUE, status = "warning",
                       
@@ -6560,7 +6618,7 @@ ui <- dashboardPage(
                           )
                         ),
                         column(
-                          width = 9,
+                          width = 12,
                     
                           # Priority Plot Box with Download Button
                           box(
@@ -6685,7 +6743,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'district_perf' && input.district_subtabs == 'unresolved'",
                 column(
-                  width = 3,
+                  width = 12, class = "imx-fcol",
                   box(
                     title = tags$div(icon("cog"), "Unresolved Cases Settings"), 
                     width = 12, 
@@ -6774,7 +6832,7 @@ ui <- dashboardPage(
               conditionalPanel(
                 condition = "input.tabs == 'district_perf' && input.district_subtabs == 'unresolved'",
                 column(
-                  width = 9,
+                  width = 12,
                   fluidRow(
                     valueBoxOutput("unresolved_total_cases", width = 4),
                     valueBoxOutput("unresolved_countries_box", width = 4),
@@ -6881,7 +6939,7 @@ ui <- dashboardPage(
             "Settlement Data",
             fluidRow(
               box(
-                title = "Data Filters", width = 3, solidHeader = TRUE, status = "primary",
+                title = "Data Filters", width = 12, class = "imx-fbody", solidHeader = TRUE, status = "primary",
                 selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
                 selectInput("settlement_monitoring", "Monitoring",
                             choices = c("In process" = "InProcess", "End process" = "EndProcess", "Both" = "ALL"), selected = "InProcess"),
@@ -6904,7 +6962,7 @@ ui <- dashboardPage(
                 downloadButton("settlement_download_excel", "Download as Excel", style = "margin: 2px;")
               ),
               box(
-                title = "Data Preview", width = 9, solidHeader = TRUE, status = "primary",
+                title = "Data Preview", width = 12, solidHeader = TRUE, status = "primary",
                 div(
                   style = "overflow-x: auto; max-height: 600px;",
                   DTOutput("settlement_data_table")
