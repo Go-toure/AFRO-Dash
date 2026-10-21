@@ -4308,6 +4308,12 @@ ui <- dashboardPage(
     .content .box.box-solid.box-warning { border-top-color: #E69F00 !important; }
     .content .box.box-solid.box-danger  { border-top-color: #D55E00 !important; }
 
+    /* a box (its own column wrapper) placed inside a column would be indented twice and
+       stick out of line with the KPI row: drop the inner gutter so everything shares one edge */
+    .content [class*='col-sm-'] > [class*='col-sm-'] { padding-left: 0; padding-right: 0; }
+    .content .small-box,
+    .valuebox-flex-container .small-box { margin-bottom: 12px !important; }
+
     /* filter panels: controls side by side instead of one tall column */
     .imx-fcol .box-body,
     .box-body.imx-fbody {
