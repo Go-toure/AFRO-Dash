@@ -4141,13 +4141,14 @@ ui <- dashboardPage(
                tabName = "powerbi_dashboard", 
                icon = icon("chart-line")),
       
+      menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
       # Missed Children and Coverage Analysis are sub-tabs inside this page.
       menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
-      menuItem("SIA Scope Analysis", tabName = "scope", icon = icon("syringe")),
-      menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
       # LQAS Summary Maps, Reasons Analysis and Unresolved Cases are sub-tabs inside this page.
       menuItem("LQAS District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
+      # Overview, IM Analytics and Settlement Maps are sub-tabs inside this page.
       menuItem("IM Overview", tabName = "im_overview", icon = icon("clipboard-check")),
+      menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
       menuItem("Generate Slides", tabName = "generate_slides", icon = icon("file-powerpoint")),
       menuItem("Quick Start Guide", tabName = "guide", icon = icon("info-circle")),
       
