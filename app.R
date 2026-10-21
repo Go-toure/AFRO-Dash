@@ -4720,6 +4720,49 @@ ui <- dashboardPage(
     }
 
     /* ==============================================
+       LIGHT KPI CARDS: white card, one accent colour, no icons
+       (overrides the coloured AdminLTE value boxes: bg-aqua, bg-green, ...)
+       ============================================== */
+    .content .small-box,
+    .valuebox-flex-container .small-box {
+      background: var(--kpi-bg) !important;
+      background-image: none !important;
+      border: 1px solid var(--kpi-border);
+      border-top: 3px solid #0072B2;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      height: auto;
+      min-height: 66px;
+      padding: 9px 14px;
+    }
+    .content .small-box:hover,
+    .valuebox-flex-container .small-box:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+      border-color: var(--kpi-border);
+    }
+    .content .small-box .icon,
+    .content .small-box > .icon,
+    .content .small-box .icon-large,
+    .valuebox-flex-container .small-box .icon,
+    .valuebox-flex-container .small-box .icon-large { display: none !important; }
+    .content .small-box .inner h3,
+    .valuebox-flex-container .small-box .inner h3 {
+      font-size: 20px !important; line-height: 1.25 !important; font-weight: 700;
+      color: var(--kpi-text); text-shadow: none;
+    }
+    .content .small-box .inner p,
+    .valuebox-flex-container .small-box .inner p {
+      font-size: 10.5px !important; letter-spacing: 0.7px; font-weight: 700;
+      text-transform: uppercase; color: var(--kpi-subtext); text-shadow: none;
+    }
+    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner,
+    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner h3 { color: #111827; }
+    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner p,
+    body:not(.dark-mode) .content .small-box[class*='bg-'] .inner p span { color: #6b7280; }
+    .dark-mode .content .small-box[class*='bg-'] .inner h3 { color: #f9fafb; }
+
+    /* ==============================================
        POWER BI IFRAME STYLING (NEW) - FIXED
        ============================================== */
     iframe {
