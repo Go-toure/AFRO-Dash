@@ -21,7 +21,7 @@ calendar (<raw-dir>/../lookup/lookup.xlsx, or --lookup): a visit belongs to the 
 on its date (same rule as the IM workflow's Ethiopia attribution); a raw response text that names a calendar
 campaign wins over the date.
 
-Rules (same as the old script): InProcess monitoring only, households' "Diff_Present_Vacc_FM_HH" summed per
+Rules (same as the old script): InProcess and EndProcess monitoring (column "Monitoring"; the dashboard shows In process by default), households' "Diff_Present_Vacc_FM_HH" summed per
 route, only routes with at least one missed child kept. Place names: the settlement column of the form
 (or the health facility for forms where that is the place name), falling back to the facility.
 """
@@ -72,6 +72,7 @@ REASONS = {  # output column -> start of the group column name
     "Reason_Asleep": "Tot_child_Asleep_HH", "Reason_VaccinatedRoutine": "Tot_child_VaccinatedRoutine",
     "Reason_Others": "Tot_child_Others_HH"}
 NOT_RECORDED = "NOT RECORDED"
+MONITORING_TYPES = ("InProcess", "EndProcess")   # Type_Monitoring values kept (written to the "Monitoring" column)
 # Response / roundNumber the raw data leaves blank are filled from the campaign calendar (any country; --no-calendar to skip)
 USE_CALENDAR = True
 CAL_EARLY_DAYS = 14   # a visit up to this many days before a round starts can belong to that round (see fill_from_calendar)
@@ -257,7 +258,9 @@ def process(fid: int, raw_dir: str, lookup=None) -> pd.DataFrame:
         if need not in names:
             raise RuntimeError(f"column {need} not found in {fid}.parquet")
     df = pq.read_table(path, columns=want).to_pandas()
-    df = df[df["Type_Monitoring"].astype("string").str.strip() == "InProcess"].reset_index(drop=True)
+    mon = df["Type_Monitoring"].astype("string").str.strip()
+    df = df[mon.isin(MONITORING_TYPES)].reset_index(drop=True)   # in-process and end-process; the dashboard lets the user pick
+    mon = mon[mon.isin(MONITORING_TYPES)].reset_index(drop=True)
     n_inproc = len(df)
 
     def col(c):
@@ -286,6 +289,7 @@ def process(fid: int, raw_dir: str, lookup=None) -> pd.DataFrame:
         "Settlement": settlement.fillna(NOT_RECORDED),
         "Response": clean_text(col("Response"), upper=False).fillna(""),
         "roundNumber": clean_text(col("roundNumber"), upper=False).fillna(""),
+        "Monitoring": mon.astype(object),
         "date_monitored": col("date_monitored").astype("string").str.slice(0, 10),
         "lat": num(col("_GPS_hh_latitude")), "lon": num(col("_GPS_hh_longitude")),
         "lat_end": num(col("_GPS_hh_end_latitude")), "lon_end": num(col("_GPS_hh_end_longitude")),
@@ -307,7 +311,7 @@ def process(fid: int, raw_dir: str, lookup=None) -> pd.DataFrame:
     for r, cols in reason_cols.items():
         out[r] = sum((sane(num(df[c])).fillna(0) for c in cols), start=pd.Series(0.0, index=df.index)) if cols else 0.0
     out["Invalid_HH_cells"] = invalid
-    keys = ["COUNTRY", "PROVINCE", "DISTRICT", "Facility", "Settlement", "Response", "roundNumber", "date_monitored",
+    keys = ["COUNTRY", "PROVINCE", "DISTRICT", "Facility", "Settlement", "Response", "roundNumber", "Monitoring", "date_monitored",
             "lat", "lon", "lat_end", "lon_end"]
     vals = [f"Household_{k}" for k in range(1, 11)] + list(REASONS) + ["Invalid_HH_cells"]
     g = out.groupby(keys, dropna=False, sort=False)[vals].sum(min_count=0).reset_index()
@@ -316,8 +320,9 @@ def process(fid: int, raw_dir: str, lookup=None) -> pd.DataFrame:
     g = g[g["Total_child_missed"] >= 1].copy()
     for c in vals + ["Total_child_missed"]:
         g[c] = g[c].astype(float).round(0).astype("Int64") if c != "lat" else g[c]
-    print(f"  {fid}: {n_inproc:,} in-process records -> {len(g):,} routes with >= 1 child missed "
-          f"({int(g['Total_child_missed'].sum()):,} children), country {sorted(g['COUNTRY'].dropna().unique())[:3]}"
+    print(f"  {fid}: {n_inproc:,} in-process + end-process records -> {len(g):,} routes with >= 1 child missed "
+          f"({int((g['Monitoring'] == 'InProcess').sum()):,} in-process, {int((g['Monitoring'] == 'EndProcess').sum()):,} end-process; "
+          f"{int(g['Total_child_missed'].sum()):,} children), country {sorted(g['COUNTRY'].dropna().unique())[:3]}"
           + (f", {n_bad:,} routes had ignored out-of-range household values" if n_bad else ""))
     return g
 
@@ -368,7 +373,7 @@ def process_nigeria(fid: int, raw_dir: str) -> pd.DataFrame:
         "DISTRICT": clean_text(df["lgas"]).fillna(NOT_RECORDED) if "lgas" in df else NOT_RECORDED,
         "Facility": place.fillna(sett).fillna(NOT_RECORDED),
         "Settlement": sett.fillna(place).fillna(NOT_RECORDED),
-        "Response": resp, "roundNumber": rnd,
+        "Response": resp, "roundNumber": rnd, "Monitoring": "InProcess",   # Nigeria's form has no monitoring type: team visits during the campaign
         "date_monitored": date.dt.strftime("%Y-%m-%d"),
         "lat": num(df["_geolocation[1]"]), "lon": num(df["_geolocation[2]"]),
     })
@@ -382,7 +387,7 @@ def process_nigeria(fid: int, raw_dir: str) -> pd.DataFrame:
         out[f"Household_{k}"] = ok
         hcols.append(f"Household_{k}")
     out["Invalid_HH_cells"] = invalid
-    keys = ["COUNTRY", "PROVINCE", "DISTRICT", "Facility", "Settlement", "Response", "roundNumber", "date_monitored",
+    keys = ["COUNTRY", "PROVINCE", "DISTRICT", "Facility", "Settlement", "Response", "roundNumber", "Monitoring", "date_monitored",
             "lat", "lon", "lat_end", "lon_end"]
     vals = hcols + ["Invalid_HH_cells"]
     g = out.groupby(keys, dropna=False, sort=False)[vals].sum(min_count=0).reset_index()

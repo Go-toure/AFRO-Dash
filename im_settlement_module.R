@@ -124,6 +124,9 @@ imset_read_one <- function(path) {
     ROUND    = gsub(" ", "", imset_clean_txt(chr("ROUNDNUMBER"), underscores = FALSE), fixed = TRUE),
     stringsAsFactors = FALSE
   )
+  # monitoring type: "IN" = in process (default; also files without the column), "END" = end process
+  mon_raw <- toupper(gsub("[^A-Za-z]", "", as.character(chr("MONITORING"))))
+  out$MONITORING <- ifelse(!is.na(mon_raw) & mon_raw == "ENDPROCESS", "END", "IN")
   out$RESPONSE[is.na(out$RESPONSE)] <- "NOT RECORDED"
   out$ROUND[is.na(out$ROUND)] <- "NOT RECORDED"
   dt <- suppressWarnings(as.Date(substr(as.character(chr("DATE_MONITORED")), 1, 10)))
@@ -209,6 +212,16 @@ imset_pick <- function(d, col, val) {
   d[!is.na(d[[col]]) & d[[col]] == val, , drop = FALSE]
 }
 
+IMSET_MON_LABEL <- c(IN = "In process", END = "End process")
+# monitoring-type choices for one country's rows: the types present, plus "Both" when there are two; In process first
+imset_mon_choices <- function(d) {
+  t <- intersect(c("IN", "END"), unique(stats::na.omit(d$MONITORING)))
+  if (!length(t)) t <- "IN"
+  ch <- stats::setNames(t, IMSET_MON_LABEL[t])
+  if (length(t) > 1) ch <- c(ch, "Both" = "ALL")
+  ch
+}
+
 imset_choices <- function(values, all_label = NULL, decreasing_dates = NULL) {
   v <- unique(stats::na.omit(values))
   v <- if (is.null(decreasing_dates)) sort(v) else v
@@ -251,6 +264,7 @@ imset_explorer_ui <- function(id) {
     shiny::div(class = "imx-wrap",
       shiny::div(class = "imx-filters",
         shiny::selectInput(ns("country"), "Country", choices = NULL, width = "100%"),
+        shiny::selectInput(ns("mon"), "Monitoring", choices = c("In process" = "IN"), width = "100%"),
         shiny::selectInput(ns("year"), "Year", choices = NULL, width = "100%"),
         shiny::selectInput(ns("response"), "Response", choices = NULL, width = "100%"),
         shiny::selectInput(ns("round"), "Round", choices = NULL, width = "100%"),
@@ -288,12 +302,18 @@ imset_explorer_server <- function(id, input_dir = "input") {
     })
 
     shiny::observeEvent(s_country(), {
-      d <- s_country(); yrs <- sort(unique(stats::na.omit(d$YEAR)), decreasing = TRUE)
+      ch <- imset_mon_choices(s_country())
+      keep <- shiny::isolate(input$mon)
+      shiny::updateSelectInput(session, "mon", choices = ch, selected = if (!is.null(keep) && keep %in% ch) keep else unname(ch[1]))
+    })
+    s_mon <- shiny::reactive({ shiny::req(input$mon); imset_pick(s_country(), "MONITORING", input$mon) })
+    shiny::observeEvent(s_mon(), {
+      d <- s_mon(); yrs <- sort(unique(stats::na.omit(d$YEAR)), decreasing = TRUE)
       shiny::updateSelectInput(session, "year",
         choices = c("All years" = "ALL", stats::setNames(yrs, yrs)), selected = if (length(yrs)) yrs[1] else "ALL")
     })
     s_year <- shiny::reactive({
-      shiny::req(input$year); d <- s_country()
+      shiny::req(input$year); d <- s_mon()
       if (identical(input$year, "ALL")) d else d[!is.na(d$YEAR) & d$YEAR == as.integer(input$year), , drop = FALSE]
     })
     shiny::observeEvent(s_year(), {
@@ -539,6 +559,7 @@ imset_static_ui <- function(id) {
     shiny::div(class = "imx-wrap",
       shiny::div(class = "imx-filters",
         shiny::selectInput(ns("country"), "Country", choices = NULL, width = "100%"),
+        shiny::selectInput(ns("mon"), "Monitoring", choices = c("In process" = "IN"), width = "100%"),
         shiny::selectInput(ns("year"), "Year", choices = NULL, width = "100%"),
         shiny::selectInput(ns("response"), "Response", choices = NULL, width = "100%"),
         shiny::selectInput(ns("round"), "Round", choices = NULL, width = "100%"),
@@ -582,12 +603,18 @@ imset_static_server <- function(id, input_dir = "input") {
     })
     # Year (newest first, "All years" available): narrows everything below it
     shiny::observeEvent(s1(), {
-      yrs <- sort(unique(stats::na.omit(s1()$YEAR)), decreasing = TRUE)
+      ch <- imset_mon_choices(s1())
+      keep <- shiny::isolate(input$mon)
+      shiny::updateSelectInput(session, "mon", choices = ch, selected = if (!is.null(keep) && keep %in% ch) keep else unname(ch[1]))
+    })
+    s1m <- shiny::reactive({ shiny::req(input$mon); imset_pick(s1(), "MONITORING", input$mon) })
+    shiny::observeEvent(s1m(), {
+      yrs <- sort(unique(stats::na.omit(s1m()$YEAR)), decreasing = TRUE)
       shiny::updateSelectInput(session, "year",
         choices = c("All years" = "ALL", stats::setNames(yrs, yrs)), selected = if (length(yrs)) yrs[1] else "ALL")
     })
     s1y <- shiny::reactive({
-      shiny::req(input$year); d <- s1()
+      shiny::req(input$year); d <- s1m()
       if (identical(input$year, "ALL")) d else d[!is.na(d$YEAR) & d$YEAR == as.integer(input$year), , drop = FALSE]
     })
     shiny::observeEvent(s1y(), {

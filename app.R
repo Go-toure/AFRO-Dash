@@ -6882,6 +6882,8 @@ ui <- dashboardPage(
               box(
                 title = "Data Filters", width = 3, solidHeader = TRUE, status = "primary",
                 selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
+                selectInput("settlement_monitoring", "Monitoring",
+                            choices = c("In process" = "InProcess", "End process" = "EndProcess", "Both" = "ALL"), selected = "InProcess"),
                 dateRangeInput("settlement_date_range", "Date Range:",
                                start = Sys.Date() - 30,
                                end = Sys.Date(),
@@ -13671,6 +13673,9 @@ server <- function(input, output, session) {
     if (file.exists(input_file)) {
       im_data <- imset_read_raw(input_file)
       names(im_data) <- toupper(names(im_data))
+      # monitoring type (files built before this column existed are all in-process)
+      if ("MONITORING" %in% names(im_data) && !identical(input$settlement_monitoring, "ALL"))
+        im_data <- im_data[!is.na(im_data$MONITORING) & im_data$MONITORING == input$settlement_monitoring, , drop = FALSE]
       return(im_data)
     } else {
       showNotification(paste("File", input_file, "not found!"), type = "error")
