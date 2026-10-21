@@ -4146,8 +4146,9 @@ ui <- dashboardPage(
       menuItem("LQAS Repository Overview", tabName = "overview", icon = icon("dashboard")),
       # LQAS Summary Maps, Reasons Analysis and Unresolved Cases are sub-tabs inside this page.
       menuItem("LQAS District Performance", tabName = "district_perf", icon = icon("map-marked-alt")),
-      # Overview, IM Analytics and Settlement Maps are sub-tabs inside this page.
+      # Overview and IM Analytics are sub-tabs inside the IM Overview page.
       menuItem("IM Overview", tabName = "im_overview", icon = icon("clipboard-check")),
+      menuItem("IM Settlement Maps", tabName = "settlement_maps", icon = icon("map")),
       menuItem("Admin Data Overview", tabName = "admin_overview", icon = icon("database")),
       menuItem("Generate Slides", tabName = "generate_slides", icon = icon("file-powerpoint")),
       menuItem("Quick Start Guide", tabName = "guide", icon = icon("info-circle")),
@@ -6847,67 +6848,71 @@ ui <- dashboardPage(
           title = tagList(icon("chart-line"), "IM Analytics"),
           value = "im_analytics",
           if (IM_OVERVIEW_AVAILABLE) im_overview_ui("im")
-        ),
-        # Settlement-level maps and data (explorer, printable map, data table) as a sub-tab of IM Overview
-        tabPanel(
-          title = tagList(icon("map"), "Settlement Maps"),
-          value = "im_settlement",
-          tags$div(style = "margin-top:8px;",
-          tabsetPanel(
-            id = "settlement_tabs",
-            type = "tabs",
-          
-            # Interactive explorer (all monitor routes) + printable OSM map
-            tabPanel(
-              "Explorer",
-              if (IMSET_AVAILABLE) imset_explorer_ui("imx") else
-                tags$div(class = "alert alert-warning", "The settlement explorer is not available: im_settlement_module.R is missing.")
-            ),
-            tabPanel(
-              "Settlement Map",
-              if (IMSET_AVAILABLE) imset_static_ui("ims") else
-                tags$div(class = "alert alert-warning", "The settlement map is not available: im_settlement_module.R is missing.")
-            ),
-          
-            # Data Explorer Tab
-            tabPanel(
-              "Settlement Data",
-              fluidRow(
-                box(
-                  title = "Data Filters", width = 3, solidHeader = TRUE, status = "primary",
-                  selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
-                  selectInput("settlement_monitoring", "Monitoring",
-                              choices = c("In process" = "InProcess", "End process" = "EndProcess", "Both" = "ALL"), selected = "InProcess"),
-                  dateRangeInput("settlement_date_range", "Date Range:",
-                                 start = Sys.Date() - 30,
-                                 end = Sys.Date(),
-                                 min = as.Date("2000-01-01"),
-                                 max = Sys.Date()),
-                  selectInput("settlement_ctry", "Country", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_province", "Province", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_district", "District", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_facility", "Facility", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_response", "Response", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_roundNumber", "Round Number", choices = NULL, multiple = TRUE),
-                  selectInput("settlement_settlement", "Settlement", choices = NULL, multiple = TRUE),
-                  actionButton("settlement_apply_filters", "Apply Filters", class = "btn-primary"),
-                  actionButton("settlement_reset_filters", "Reset Filters", class = "btn-warning"),
-                  br(), br(),
-                  downloadButton("settlement_download_csv", "Download as CSV", style = "margin: 2px;"),
-                  downloadButton("settlement_download_excel", "Download as Excel", style = "margin: 2px;")
+        )
+      )
+    ),
+
+    # ============================================================
+    # 🗺️ IM SETTLEMENT MAPS (Includes both Map and Data Explorer)
+    # ============================================================
+    tabItem(
+      tabName = "settlement_maps",
+      conditionalPanel(
+        condition = "input.tabs == 'settlement_maps'",
+        # Tabset for switching between Map and Data views
+        tabsetPanel(
+          id = "settlement_tabs",
+          type = "tabs",
+        
+          # Interactive explorer (all monitor routes) + printable OSM map
+          tabPanel(
+            "Explorer",
+            if (IMSET_AVAILABLE) imset_explorer_ui("imx") else
+              tags$div(class = "alert alert-warning", "The settlement explorer is not available: im_settlement_module.R is missing.")
+          ),
+          tabPanel(
+            "Settlement Map",
+            if (IMSET_AVAILABLE) imset_static_ui("ims") else
+              tags$div(class = "alert alert-warning", "The settlement map is not available: im_settlement_module.R is missing.")
+          ),
+        
+          # Data Explorer Tab
+          tabPanel(
+            "Settlement Data",
+            fluidRow(
+              box(
+                title = "Data Filters", width = 3, solidHeader = TRUE, status = "primary",
+                selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
+                selectInput("settlement_monitoring", "Monitoring",
+                            choices = c("In process" = "InProcess", "End process" = "EndProcess", "Both" = "ALL"), selected = "InProcess"),
+                dateRangeInput("settlement_date_range", "Date Range:",
+                               start = Sys.Date() - 30,
+                               end = Sys.Date(),
+                               min = as.Date("2000-01-01"),
+                               max = Sys.Date()),
+                selectInput("settlement_ctry", "Country", choices = NULL, multiple = TRUE),
+                selectInput("settlement_province", "Province", choices = NULL, multiple = TRUE),
+                selectInput("settlement_district", "District", choices = NULL, multiple = TRUE),
+                selectInput("settlement_facility", "Facility", choices = NULL, multiple = TRUE),
+                selectInput("settlement_response", "Response", choices = NULL, multiple = TRUE),
+                selectInput("settlement_roundNumber", "Round Number", choices = NULL, multiple = TRUE),
+                selectInput("settlement_settlement", "Settlement", choices = NULL, multiple = TRUE),
+                actionButton("settlement_apply_filters", "Apply Filters", class = "btn-primary"),
+                actionButton("settlement_reset_filters", "Reset Filters", class = "btn-warning"),
+                br(), br(),
+                downloadButton("settlement_download_csv", "Download as CSV", style = "margin: 2px;"),
+                downloadButton("settlement_download_excel", "Download as Excel", style = "margin: 2px;")
+              ),
+              box(
+                title = "Data Preview", width = 9, solidHeader = TRUE, status = "primary",
+                div(
+                  style = "overflow-x: auto; max-height: 600px;",
+                  DTOutput("settlement_data_table")
                 ),
-                box(
-                  title = "Data Preview", width = 9, solidHeader = TRUE, status = "primary",
-                  div(
-                    style = "overflow-x: auto; max-height: 600px;",
-                    DTOutput("settlement_data_table")
-                  ),
-                  br(),
-                  verbatimTextOutput("settlement_data_summary")
-                )
+                br(),
+                verbatimTextOutput("settlement_data_summary")
               )
             )
-          )
           )
         )
       )
@@ -7203,7 +7208,7 @@ ui <- dashboardPage(
                                 tags$li(tags$b("SIA Scope Analysis:"), " View vaccination campaign scope and coverage by geographic area"),
                                 tags$li(tags$b("LQAS Repository Overview:"), " Repository overview, with Missed Children and Coverage Analysis as sub-tabs"),
                                 tags$li(tags$b("🗺️ LQAS District Performance:"), " Monitor LQAS performance at district level, with LQAS Summary Maps, Reasons Analysis and Unresolved Cases as sub-tabs"),
-                                tags$li(tags$b("🌍 IM Overview > Settlement Maps:"), " Visualize settlement-level footprint maps to locate missed children and guide field teams effectively (sub-tab of IM Overview)")
+                                tags$li(tags$b("🌍 IM Settlement Maps:"), " Visualize settlement-level footprint maps to locate missed children and guide field teams effectively")
                               )
                      ),
                      tags$div(class = "col-md-6",
