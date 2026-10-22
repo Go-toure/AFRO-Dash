@@ -4419,6 +4419,8 @@ ui <- dashboardPage(
     .sl-bar-nav { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #374151; }
     .sl-prev-title { font-size: 16px; font-weight: 600; color: #0b3c5d; margin: 4px 0 2px 0; }
     .sl-foot { font-size: 12px; margin-top: 8px; }
+    .sl-status { margin: 12px 0 0 0; padding: 10px 14px; font-size: 13px; }
+    .sl-status ul { margin: 4px 0 0 0; padding-left: 18px; }
     .sl-start { padding: 10px 16px; max-width: 820px; }
     .sl-start h4 { margin-top: 0; }
     .sl-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 10px; }
@@ -7177,7 +7179,8 @@ ui <- dashboardPage(
                        actionButton("generate_slides", "Generate slides",
                                     icon = icon("file-powerpoint"),
                                     class = "btn-primary-custom",
-                                    style = "width:100%; font-weight:bold; margin-top:12px;")
+                                    style = "width:100%; font-weight:bold; margin-top:12px;"),
+                       uiOutput("slide_status")
                 )
               )
             )
@@ -14012,6 +14015,7 @@ server <- function(input, output, session) {
   slide_analysis_results <- reactiveVal(list())   # raw results per analysis (what the .pptx is built from)
   slide_items_rv <- reactiveVal(list())           # flat list of previewable slides (one per map / chart / table)
   slide_meta_rv <- reactiveVal(NULL)              # settings used at generation time
+  slide_status_rv <- reactiveVal(NULL)            # what could not be built (shown under the button)
   current_slide_index <- reactiveVal(1)
   slides_generated <- reactiveVal(FALSE)
 
@@ -14098,8 +14102,9 @@ server <- function(input, output, session) {
     districts <- slide_clean(input$slide_districts)
     geo_args  <- list(block_selection = block, country_selection = countries,
                       province_selection = provinces, district_selection = districts)
-    lookups   <- list(afro_blocks = afro_blocks, all_countries = all_countries, all_provinces = all_provinces,
-                      all_districts = all_districts, ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS)
+    lookups   <- list(afro_blocks = afro_blocks, ist_blocks = ist_blocks, all_countries = all_countries,
+                      all_provinces = all_provinces, all_districts = all_districts,
+                      ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS)
 
     # call fn with only the arguments it accepts (the analysis functions differ); NULLs are dropped
     # except for names listed in keep_null, which are passed explicitly as NULL
@@ -14203,15 +14208,30 @@ server <- function(input, output, session) {
     current_slide_index(1)
     slides_generated(length(items) > 0)
 
+    slide_status_rv(list(failures = failures, notes = unique(notes)))
+    if (length(failures)) message("[Generate Slides] not built: ", paste(failures, collapse = " | "))
     if (length(unique(notes))) showNotification(paste(unique(notes), collapse = ". "), type = "message", duration = 10)
     if (length(failures)) showNotification(paste("Not included:", paste(failures, collapse = " | ")),
-                                           type = "warning", duration = 15)
+                                           type = "warning", duration = 20)
     if (length(items)) {
       showNotification(paste0("Ready: ", length(items), " content slides. Review them below, then download."),
                        type = "message", duration = 6)
     } else {
-      showNotification("No slides could be built for these settings. Try a wider period or other analyses.", type = "warning")
+      showNotification("No slides could be built for these settings. See the reasons under the Generate button.",
+                       type = "warning", duration = 15)
     }
+  })
+
+  # Persistent reasons (the pop-up notifications disappear after a few seconds)
+  output$slide_status <- renderUI({
+    st <- slide_status_rv()
+    if (is.null(st) || (!length(st$failures) && !length(st$notes))) return(NULL)
+    tagList(
+      if (length(st$failures)) div(class = "alert alert-warning sl-status",
+        tags$strong("Not built:"),
+        tags$ul(lapply(st$failures, tags$li))),
+      if (length(st$notes)) div(class = "alert alert-info sl-status",
+        tags$ul(lapply(st$notes, tags$li))))
   })
 
   # ---- Slide preview: one generic viewer that mirrors the exported slides ----
