@@ -11,7 +11,7 @@ QSG_TITLE <- "WHO AFRO SIA Dashboard"
 QSG_SUBTITLE <- "Quick Start Guide"
 QSG_TAGLINE <- paste("Integrated digital platform for monitoring Supplementary Immunization Activities (SIA)",
                      "across the WHO African Region")
-QSG_CONTACTS <- c("afrgodim@who.int", "tourayk@who.int", "mwanzam@who.int")
+QSG_CONTACTS <- c("afrgodim@who.int", "mwanzam@who.int", "tourayk@who.int")
 
 # ---- content ----------------------------------------------------------------------
 # section: list(title, paras, bullets, steps, table = data.frame(a, b), table_head = c("A", "B"), image = "qr")
