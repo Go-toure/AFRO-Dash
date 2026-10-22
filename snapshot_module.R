@@ -170,7 +170,7 @@ snap_load <- function(files = SNAP_FILES) {
   if (!is.null(M)) {
     M$pkey <- snap_keyp(M$country, M$province)
     M$dkey <- snap_keyp(M$country, M$province, M$district, optional = 2)
-    M$ckey <- snap_keyp(M$country, M$response)
+    M$ckey <- snap_keyp(M$response, M$round)
     M$rkey <- snap_keyp(M$country, M$response, M$round)
   }
 
@@ -182,7 +182,7 @@ snap_load <- function(files = SNAP_FILES) {
       doses = num(ad$TotalNbrVaccPolio), cv = num(ad$CVPolio), stringsAsFactors = FALSE)
     a$year <- yr(a$date)
     a$month <- format(a$date, "%Y-%m")
-    a$ckey <- snap_keyp(a$country, a$response)
+    a$ckey <- snap_keyp(a$response, a$round)
     a$rkey <- snap_keyp(a$country, a$response, a$round)
     a$dkey <- snap_keyp(a$country, a$province, a$district, optional = 2)
     a
@@ -638,7 +638,7 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
             shiny::tags$li(shiny::HTML("<b>Countries, provinces, districts</b>: unique values across the LQAS and IM repositories (names matched ignoring accents and punctuation). Settlements and facilities are counted per source, so a facility monitored by both IM and LQAS is counted in each.")),
             shiny::tags$li(shiny::HTML("<b>Doses administered</b>: total vaccinated in the administrative data, all rounds. <b>Children vaccinated</b>: same method as the Admin Data Overview (largest monthly total per country, summed), which avoids counting a child again in every round.")),
             shiny::tags$li(shiny::HTML("<b>95% coverage</b>: share of district-rounds with administrative coverage of at least 95%.")),
-            shiny::tags$li(shiny::HTML("<b>Campaign</b>: unique country + response. A campaign is <i>both</i> when it used nOPV and bOPV (in the same or different rounds).")))))
+            shiny::tags$li(shiny::HTML("<b>Campaign</b>: unique response + round. A campaign is <i>both</i> when it used nOPV and bOPV.")))))
     })
 
     # ---- csv ----------------------------------------------------------------------------------
