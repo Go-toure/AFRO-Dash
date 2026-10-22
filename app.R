@@ -90,7 +90,7 @@ if (interactive()) {
 is_deployment <- Sys.getenv("SHINY_PORT") != "" || !interactive()
 is_local_dev <- interactive() && (Sys.getenv("RSTUDIO") == "1" || Sys.getenv("POSITRON") == "1")
 
-cat("🎯 Environment:", if(is_deployment) "DEPLOYMENT" else "LOCAL DEVELOPMENT", "\n")
+cat("Environment:", if(is_deployment) "DEPLOYMENT" else "LOCAL DEVELOPMENT", "\n")
 
 # ---- Core options ----
 options(
@@ -105,14 +105,14 @@ options(
 # ---- Environment configuration ----
 if (is_local_dev) {
   options(shiny.autoreload = FALSE)  # Prevent reload loops in local dev
-  cat("🔧 Local development mode activated\n")
+  cat("Local development mode activated\n")
 } else {
   options(
     shiny.port = as.numeric(Sys.getenv("PORT", 8080)),
     shiny.host = "0.0.0.0",
     shiny.autoreload = FALSE
   )
-  cat("🚀 Deployment mode activated\n")
+  cat("Deployment mode activated\n")
 }
 
 # ============================================================
@@ -136,7 +136,7 @@ qr_file <- file.path(www_folder, "AFRO_SIA_Dashboard_QR.png")
 # Ensure www folder exists
 if (!dir.exists(www_folder)) {
   dir.create(www_folder, recursive = TRUE)
-  cat("📁 Created 'www' folder for static assets\n")
+  cat("Created 'www' folder for static assets\n")
 }
 
 # Generate QR code only if missing or outdated (>1 day)
@@ -144,7 +144,7 @@ needs_update <- !file.exists(qr_file) ||
   difftime(Sys.time(), file.info(qr_file)$mtime, units = "days") > 1
 
 if (needs_update) {
-  cat("🔄 Generating fresh QR code for:", dashboard_url, "\n")
+  cat("Generating fresh QR code for:", dashboard_url, "\n")
   qr_matrix <- qrencoder::qrencode(dashboard_url)
   
   png(qr_file, width = 500, height = 500, bg = "white")
@@ -152,9 +152,9 @@ if (needs_update) {
   image(t(apply(qr_matrix, 2, rev)), col = c("white", "black"), axes = FALSE, asp = 1)
   dev.off()
   
-  cat("✅ QR code saved at:", qr_file, "\n")
+  cat("QR code saved at:", qr_file, "\n")
 } else {
-  cat("ℹ️ QR code already up-to-date at:", qr_file, "\n")
+  cat("QR code already up-to-date at:", qr_file, "\n")
 }
 
 
@@ -185,11 +185,11 @@ required_packages <- c(
 
 # Function to safely load packages with installation fallback
 safe_package_load <- function(pkg_list) {
-  cat("📦 Loading packages...\n")
+  cat("Loading packages...\n")
   
   for (pkg in pkg_list) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
-      cat("🔧 Installing missing package:", pkg, "\n")
+      cat("Installing missing package:", pkg, "\n")
       tryCatch({
         install.packages(pkg, dependencies = TRUE, quiet = TRUE)
       }, error = function(e) {
@@ -200,19 +200,19 @@ safe_package_load <- function(pkg_list) {
     # Try to load the package
     success <- tryCatch({
       suppressPackageStartupMessages(library(pkg, character.only = TRUE, quietly = TRUE))
-      cat("✅", pkg, "\n")
+      cat(pkg, "\n")
       TRUE
     }, error = function(e) {
-      cat("❌", pkg, "-", e$message, "\n")
+      cat(pkg, "-", e$message, "\n")
       FALSE
     })
     
     # Critical packages check
     if (!success && pkg %in% c("shiny", "dplyr", "ggplot2", "sf")) {
-      stop("❌ Critical package '", pkg, "' failed to load. App cannot continue.")
+      stop("Critical package '", pkg, "' failed to load. App cannot continue.")
     }
   }
-  cat("✅ All packages loaded successfully\n")
+  cat("All packages loaded successfully\n")
 }
 
 # Load packages
@@ -289,7 +289,7 @@ if (QSG_AVAILABLE) {
   cat("Quick Start Guide file not found (quick_start_guide.R)\n")
 }
 
-cat("✅ External map functions loaded from optimized files\n")
+cat("External map functions loaded from optimized files\n")
 # ============================================================
 # ---- List numeric .rds files ----
 # ============================================================
@@ -317,18 +317,18 @@ settlement_file_choices <- tryCatch(
   error = function(e) { cat("Settlement country list unavailable:", conditionMessage(e), "\n"); character(0) })
 if (!length(settlement_file_choices)) settlement_file_choices <- file_list_no_ext
 
-cat("📁 Found", length(file_list), "numeric .rds files in input folder:\n")
+cat("Found", length(file_list), "numeric .rds files in input folder:\n")
 if (length(file_list) > 0) {
   cat("   -", paste(file_list, collapse = "\n   - "), "\n")
 } else {
-  cat("   ⚠️ No numeric .rds files found\n")
+  cat("   No numeric .rds files found\n")
 }
 
 # ============================================================
 # ---- Environment Diagnostics ----
 # ============================================================
 cat("\n", strrep("=", 70), "\n")
-cat("🔍 ENVIRONMENT DIAGNOSTICS\n")
+cat("ENVIRONMENT DIAGNOSTICS\n")
 cat(strrep("=", 70), "\n")
 cat("Current working directory:", getwd(), "\n")
 cat("Running in RStudio:", ifelse(Sys.getenv("RSTUDIO") == "1", "YES", "NO"), "\n")
@@ -338,13 +338,13 @@ cat("Deployment mode:", ifelse(exists("is_deployment") && is_deployment, "DEPLOY
 check_dir <- function(dir_name) {
   if (dir.exists(dir_name)) {
     files <- list.files(dir_name, pattern = "\\.rds$")
-    cat("📁", dir_name, "folder contains", length(files), "RDS files\n")
+    cat(dir_name, "folder contains", length(files), "RDS files\n")
     if (length(files) > 0) {
       cat("   ", paste(head(files, 5), collapse = ", "), 
           if(length(files) > 5) paste("... and", length(files)-5, "more"), "\n")
     }
   } else {
-    cat("📁", dir_name, "folder not found\n")
+    cat(dir_name, "folder not found\n")
   }
 }
 
@@ -372,9 +372,9 @@ if ("conflicted" %in% loadedNamespaces()) {
   conflict_prefer("year", "lubridate", quiet = TRUE)  # Add this line
   conflict_prefer("month", "lubridate", quiet = TRUE) # Also good to add month if you use it
   conflict_prefer("day", "lubridate", quiet = TRUE)   # Also good to add day if you use it
-  cat("✅ Conflict resolution applied\n")
+  cat("Conflict resolution applied\n")
 } else {
-  cat("⚠️ conflicted package not available for conflict resolution\n")
+  cat("conflicted package not available for conflict resolution\n")
 }
 
 # ---- Font fallback ----
@@ -442,13 +442,13 @@ find_data_file <- function(filename) {
   
   for (path in possible_paths) {
     if (file.exists(path)) {
-      cat("📁 Found", filename, "at:", path, "\n")
+      cat("Found", filename, "at:", path, "\n")
       return(path)
     }
   }
   
   # If not found with relative paths, try to find any matching file recursively
-  cat("⚠️", filename, "not found in standard locations. Searching recursively...\n")
+  cat(filename, "not found in standard locations. Searching recursively...\n")
   
   # Look for the file in the current directory and subdirectories (max depth 3)
   search_result <- tryCatch({
@@ -459,11 +459,11 @@ find_data_file <- function(filename) {
   }, error = function(e) character(0))
   
   if (length(search_result) > 0) {
-    cat("📁 Found", filename, "at:", search_result[1], "\n")
+    cat("Found", filename, "at:", search_result[1], "\n")
     return(search_result[1])
   }
   
-  cat("❌", filename, "not found. Checked locations:\n")
+  cat(filename, "not found. Checked locations:\n")
   cat("   -", paste(head(possible_paths, 10), collapse = "\n   - "), "\n")
   if (length(possible_paths) > 10) {
     cat("   ... and", length(possible_paths) - 10, "more locations\n")
@@ -478,35 +478,35 @@ load_data_simple <- function(filename, sample_size = NULL, required = FALSE) {
   
   if (is.null(file_path)) {
     if (required) {
-      stop("❌ REQUIRED file not found: ", filename)
+      stop("REQUIRED file not found: ", filename)
     }
-    warning("⚠️ Optional file not found: ", filename)
+    warning("Optional file not found: ", filename)
     return(NULL)
   }
   
-  cat("🔄 Loading", filename, "from:", file_path, "\n")
+  cat("Loading", filename, "from:", file_path, "\n")
   
   data <- tryCatch({
     result <- readRDS(file_path)
     
     # Memory optimization for deployment
     if (is_deployment && !is.null(sample_size) && nrow(result) > sample_size) {
-      cat("📊 Sampling data for deployment:", nrow(result), "->", sample_size, "rows\n")
+      cat("Sampling data for deployment:", nrow(result), "->", sample_size, "rows\n")
       set.seed(123)
       result <- dplyr::sample_n(result, sample_size)
     } else if (is_local_dev && !is.null(sample_size) && nrow(result) > sample_size) {
-      cat("🔬 Local dev sampling:", nrow(result), "->", sample_size, "rows\n")
+      cat("Local dev sampling:", nrow(result), "->", sample_size, "rows\n")
       set.seed(123)
       result <- dplyr::sample_n(result, sample_size)
     }
     
-    cat("✅ Loaded", filename, "-", nrow(result), "rows,", ncol(result), "cols\n")
+    cat("Loaded", filename, "-", nrow(result), "rows,", ncol(result), "cols\n")
     result
   }, error = function(e) {
     if (required) {
-      stop("❌ Failed to load REQUIRED file ", filename, ": ", e$message)
+      stop("Failed to load REQUIRED file ", filename, ": ", e$message)
     }
-    warning("⚠️ Failed to load ", filename, ": ", e$message)
+    warning("Failed to load ", filename, ": ", e$message)
     return(NULL)
   })
   
@@ -582,7 +582,7 @@ canonical_country_name <- function(x) {
 standardize_admin_data <- function(admin_data) {
   if (is.null(admin_data) || nrow(admin_data) == 0) return(admin_data)
   
-  cat("🔄 Standardizing admin data...\n")
+  cat("Standardizing admin data...\n")
   cat("   Input columns:", paste(names(admin_data), collapse = ", "), "\n")
   cat("   Input rows:", nrow(admin_data), "\n")
   
@@ -786,10 +786,10 @@ standardize_admin_data <- function(admin_data) {
     }
     
   } else {
-    cat("   ⚠️ No SIA_date column found in admin data\n")
+    cat("   No SIA_date column found in admin data\n")
   }
   
-  cat("✅ Admin data standardization complete\n")
+  cat("Admin data standardization complete\n")
   admin_data
 }
 
@@ -835,7 +835,7 @@ preprocess_scope_data <- function(data) {
   result <- result %>% filter(!is.na(round_start_date))
   n_after <- nrow(result)
   if (n_before != n_after) {
-    cat("ℹ️ Scope data:", n_before - n_after, "row(s) dropped for missing/unparseable round_start_date (kept",
+    cat("Scope data:", n_before - n_after, "row(s) dropped for missing/unparseable round_start_date (kept",
         n_after, "of", n_before, ")\n")
   }
 
@@ -847,7 +847,7 @@ preprocess_scope_data <- function(data) {
 preprocess_admin_data <- function(data) {
   if (is.null(data)) return(NULL)
   
-  cat("🔄 Preprocessing admin data...\n")
+  cat("Preprocessing admin data...\n")
   cat("   Input columns:", paste(names(data), collapse = ", "), "\n")
   cat("   Input rows:", nrow(data), "\n")
   
@@ -879,7 +879,7 @@ preprocess_admin_data <- function(data) {
   missing_cols <- setdiff(required_cols, names(result))
   
   if (length(missing_cols) > 0) {
-    cat("⚠️ Missing required columns:", paste(missing_cols, collapse = ", "), "\n")
+    cat("Missing required columns:", paste(missing_cols, collapse = ", "), "\n")
     # Add missing columns as NA
     for (col in missing_cols) {
       result[[col]] <- NA
@@ -895,7 +895,7 @@ preprocess_admin_data <- function(data) {
   # Don't let optimize_data_types convert our already-converted dates
   result <- optimize_data_types(result)
   
-  cat("✅ Admin data preprocessing complete\n")
+  cat("Admin data preprocessing complete\n")
   cat("   Output columns:", paste(names(result), collapse = ", "), "\n")
   cat("   Output rows:", nrow(result), "\n")
   
@@ -907,11 +907,11 @@ preprocess_admin_data <- function(data) {
 # ---- DEPLOYMENT-READY Dataset Loading ----
 # ============================================================
 
-cat("🚀 Starting deployment-ready data loading...\n")
+cat("Starting deployment-ready data loading...\n")
 
 # Memory management for deployment
 if (is_deployment) {
-  cat("💾 Deployment memory optimization active\n")
+  cat("Deployment memory optimization active\n")
   gc()  # Clean up memory before loading
 }
 
@@ -931,7 +931,7 @@ sample_size_main <- NULL
 sample_size_scope <- NULL
 sample_size_admin <- NULL
 
-cat("📊 Sampling strategy: INACTIVE (dat/scope/admin_data always loaded in full)\n")
+cat("Sampling strategy: INACTIVE (dat/scope/admin_data always loaded in full)\n")
 
 # ---- Load Main Dataset (REQUIRED) ----
 dat <- tryCatch({
@@ -944,14 +944,14 @@ dat <- tryCatch({
     stop("Main dataset is NULL after loading")
   }
 }, error = function(e) {
-  stop("❌ CRITICAL: Main dataset failed to load: ", e$message, "\nApp cannot continue.")
+  stop("CRITICAL: Main dataset failed to load: ", e$message, "\nApp cannot continue.")
 })
 
 # Validate main dataset
 if (is.null(dat) || nrow(dat) == 0) {
-  stop("❌ CRITICAL: Main dataset is empty or invalid after loading")
+  stop("CRITICAL: Main dataset is empty or invalid after loading")
 }
-cat("✅ Main dataset ready:", nrow(dat), "rows\n")
+cat("Main dataset ready:", nrow(dat), "rows\n")
 
 # ---- Load Scope Data (OPTIONAL) ----
 scope <- tryCatch({
@@ -961,11 +961,11 @@ scope <- tryCatch({
   if (!is.null(raw_scope)) {
     preprocess_scope_data(raw_scope)
   } else {
-    cat("ℹ️ Scope data not available - some features will be disabled\n")
+    cat("Scope data not available - some features will be disabled\n")
     NULL
   }
 }, error = function(e) {
-  cat("⚠️ Scope data loading failed: ", e$message, "\n")
+  cat("Scope data loading failed: ", e$message, "\n")
   NULL
 })
 
@@ -976,11 +976,11 @@ scope <- tryCatch({
 
 admin_data <- tryCatch({
   cat("\n", strrep("=", 70), "\n")
-  cat("🔍 ADMIN DATA LOADING DIAGNOSTICS\n")
+  cat("ADMIN DATA LOADING DIAGNOSTICS\n")
   cat(strrep("=", 70), "\n")
   
   # Step 1: Check if input folder exists and list all files
-  cat("\n1️⃣ Checking input folder contents:\n")
+  cat("\n1Checking input folder contents:\n")
   
   # Function to safely check directories (case-insensitive on file system)
   find_admin_file <- function() {
@@ -990,7 +990,7 @@ admin_data <- tryCatch({
     for (dir in directories) {
       if (!dir.exists(dir)) next
       
-      cat("\n   📁 Checking directory:", dir, "\n")
+      cat("\n   Checking directory:", dir, "\n")
       
       # Get all files in directory
       all_files <- list.files(dir, full.names = TRUE)
@@ -1007,7 +1007,7 @@ admin_data <- tryCatch({
           
           if (length(matches) > 0) {
             # Found potential matches
-            cat("      ✅ Found", length(matches), "potential admin files:\n")
+            cat("      Found", length(matches), "potential admin files:\n")
             for (match in matches) {
               cat("         -", basename(match), "\n")
             }
@@ -1018,11 +1018,11 @@ admin_data <- tryCatch({
               
               tryCatch({
                 data <- readRDS(match_file)
-                cat("✅ SUCCESS\n")
+                cat("SUCCESS\n")
                 cat("         Rows:", nrow(data), "| Columns:", ncol(data), "\n")
                 return(list(data = data, path = match_file))
               }, error = function(e) {
-                cat("❌ Failed:", e$message, "\n")
+                cat("Failed:", e$message, "\n")
                 return(NULL)
               })
             }
@@ -1036,18 +1036,18 @@ admin_data <- tryCatch({
           matches <- all_files[grepl(pattern, basename(all_files), ignore.case = TRUE)]
           
           if (length(matches) > 0) {
-            cat("      ✅ Found", length(matches), "potential admin CSV files:\n")
+            cat("      Found", length(matches), "potential admin CSV files:\n")
             
             for (match_file in matches) {
               cat("\n      Attempting to read CSV:", basename(match_file), "... ")
               
               tryCatch({
                 data <- read.csv(match_file, stringsAsFactors = FALSE)
-                cat("✅ SUCCESS\n")
+                cat("SUCCESS\n")
                 cat("         Rows:", nrow(data), "| Columns:", ncol(data), "\n")
                 return(list(data = data, path = match_file))
               }, error = function(e) {
-                cat("❌ Failed:", e$message, "\n")
+                cat("Failed:", e$message, "\n")
                 return(NULL)
               })
             }
@@ -1061,7 +1061,7 @@ admin_data <- tryCatch({
   }
   
   # Step 2: Search for admin file
-  cat("\n2️⃣ Searching for admin data files...\n")
+  cat("\n2Searching for admin data files...\n")
   result <- find_admin_file()
   
   if (!is.null(result)) {
@@ -1069,7 +1069,7 @@ admin_data <- tryCatch({
     loaded_path <- result$path
     
     # Step 3: Examine the data structure
-    cat("\n3️⃣ Raw admin data structure:\n")
+    cat("\n3Raw admin data structure:\n")
     cat("   File loaded from:", loaded_path, "\n")
     cat("   Dimensions:", nrow(raw_admin), "rows x", ncol(raw_admin), "columns\n")
     cat("   Column names:", paste(names(raw_admin), collapse = ", "), "\n")
@@ -1083,7 +1083,7 @@ admin_data <- tryCatch({
     required_cols <- c("SIA_date", "Country", "Vaccine_type", "CVPolio", "TotalNbrVaccPolio")
     col_mapping <- list()
     
-    cat("\n4️⃣ Checking for required columns (case-insensitive):\n")
+    cat("\n4Checking for required columns (case-insensitive):\n")
     for (col in required_cols) {
       # Case-insensitive match
       matches <- names(raw_admin)[tolower(names(raw_admin)) == tolower(col)]
@@ -1091,7 +1091,7 @@ admin_data <- tryCatch({
       if (length(matches) > 0) {
         actual_col <- matches[1]
         col_mapping[[col]] <- actual_col
-        cat("   ✅", col, "found as:", actual_col, "\n")
+        cat(col, "found as:", actual_col, "\n")
         
         # Show sample values
         sample_vals <- head(raw_admin[[actual_col]][!is.na(raw_admin[[actual_col]])], 3)
@@ -1102,9 +1102,9 @@ admin_data <- tryCatch({
         # Check for similar columns
         similar <- names(raw_admin)[grepl(tolower(col), tolower(names(raw_admin)))]
         if (length(similar) > 0) {
-          cat("   ⚠️", col, "not found, but found similar:", paste(similar, collapse = ", "), "\n")
+          cat(col, "not found, but found similar:", paste(similar, collapse = ", "), "\n")
         } else {
-          cat("   ❌", col, "not found\n")
+          cat(col, "not found\n")
         }
       }
     }
@@ -1115,13 +1115,13 @@ admin_data <- tryCatch({
     }
     
     # Step 5: Process the data
-    cat("\n5️⃣ Processing admin data...\n")
+    cat("\n5Processing admin data...\n")
     processed_admin <- preprocess_admin_data(raw_admin)
     
     # Step 6: Validate processed data
-    cat("\n6️⃣ Processed admin data validation:\n")
+    cat("\n6Processed admin data validation:\n")
     if (!is.null(processed_admin) && nrow(processed_admin) > 0) {
-      cat("   ✅ Processing successful\n")
+      cat("   Processing successful\n")
       cat("   Final dimensions:", nrow(processed_admin), "rows x", ncol(processed_admin), "columns\n")
       
       if ("SIA_date" %in% names(processed_admin)) {
@@ -1131,7 +1131,7 @@ admin_data <- tryCatch({
       
       processed_admin
     } else {
-      cat("   ❌ Processing failed or returned empty data\n")
+      cat("   Processing failed or returned empty data\n")
       cat("   Creating empty admin data structure as fallback\n")
       
       empty_admin <- tibble(
@@ -1147,7 +1147,7 @@ admin_data <- tryCatch({
     }
     
   } else {
-    cat("\n❌ Could not load admin data from any location\n")
+    cat("\nCould not load admin data from any location\n")
     cat("   Creating empty admin data structure as fallback\n")
     
     empty_admin <- tibble(
@@ -1163,7 +1163,7 @@ admin_data <- tryCatch({
   }
   
 }, error = function(e) {
-  cat("\n❌ Admin data loading failed with error:\n")
+  cat("\nAdmin data loading failed with error:\n")
   cat("   ", e$message, "\n")
   cat("   Creating empty admin data structure\n")
   
@@ -1180,10 +1180,10 @@ admin_data <- tryCatch({
 
 # Final status
 cat("\n", strrep("=", 70), "\n")
-cat("📊 FINAL ADMIN DATA STATUS:\n")
+cat("FINAL ADMIN DATA STATUS:\n")
 cat(strrep("=", 70), "\n")
 if (!is.null(admin_data) && nrow(admin_data) > 0) {
-  cat("✅ Admin data is AVAILABLE\n")
+  cat("Admin data is AVAILABLE\n")
   cat("   Rows:", nrow(admin_data), "\n")
   cat("   Columns:", paste(names(admin_data), collapse = ", "), "\n")
   
@@ -1201,7 +1201,7 @@ if (!is.null(admin_data) && nrow(admin_data) > 0) {
     cat("   Unique countries:", n_countries, "\n")
   }
 } else {
-  cat("❌ Admin data is NOT AVAILABLE\n")
+  cat("Admin data is NOT AVAILABLE\n")
   cat("   The app will still run but Admin Overview tab will show errors\n")
 }
 cat(strrep("=", 70), "\n\n")
@@ -1227,31 +1227,31 @@ load_shapefile_layer <- function(base_name, label) {
     error = function(e) NULL
   )
   if (!is.null(raw)) {
-    cat("   ℹ️ No prebuilt", paste0(base_name, "_simplified.rds"), "found -- simplifying", label, "at startup instead ",
+    cat("   No prebuilt", paste0(base_name, "_simplified.rds"), "found -- simplifying", label, "at startup instead ",
         "(run scripts\\prebuild_shapefiles.R to do this offline and speed up cold start)\n")
     return(preprocess_shapefile(raw, label, already_simplified = FALSE))
   }
 
-  cat("⚠️", label, "shapes not available\n")
+  cat(label, "shapes not available\n")
   NULL
 }
 
 load_shapefiles_safely <- function() {
-  cat("🗺️ Loading shapefiles...\n")
+  cat("Loading shapefiles...\n")
 
   shapes <- list(
     countries = tryCatch(load_shapefile_layer("africa_countries", "countries"), error = function(e) {
-      cat("⚠️ Country shapes failed: ", e$message, "\n")
+      cat("Country shapes failed: ", e$message, "\n")
       NULL
     }),
 
     provinces = tryCatch(load_shapefile_layer("africa_provinces", "provinces"), error = function(e) {
-      cat("⚠️ Province shapes failed: ", e$message, "\n")
+      cat("Province shapes failed: ", e$message, "\n")
       NULL
     }),
 
     districts = tryCatch(load_shapefile_layer("africa_districts", "districts"), error = function(e) {
-      cat("⚠️ District shapes failed: ", e$message, "\n")
+      cat("District shapes failed: ", e$message, "\n")
       NULL
     })
   )
@@ -1259,9 +1259,9 @@ load_shapefiles_safely <- function() {
   # Check if we have at least one shapefile
   shape_count <- sum(sapply(shapes, function(x) !is.null(x)))
   if (shape_count == 0) {
-    cat("❌ No shapefiles loaded - mapping features will be disabled\n")
+    cat("No shapefiles loaded - mapping features will be disabled\n")
   } else {
-    cat("✅ Loaded", shape_count, "shapefile(s)\n")
+    cat("Loaded", shape_count, "shapefile(s)\n")
   }
 
   shapes
@@ -1303,19 +1303,19 @@ ambiguous_pairs_path <- find_data_file("ambiguous_district_pairs.rds")
 AMBIGUOUS_DISTRICT_PAIRS <- if (!is.null(ambiguous_pairs_path)) {
   prebuilt_pairs <- tryCatch(readRDS(ambiguous_pairs_path), error = function(e) NULL)
   if (!is.null(prebuilt_pairs)) {
-    cat("ℹ️ Using prebuilt ambiguous_district_pairs.rds from:", ambiguous_pairs_path,
+    cat("Using prebuilt ambiguous_district_pairs.rds from:", ambiguous_pairs_path,
         "(computed offline by scripts\\prebuild_shapefiles.R)\n")
     prebuilt_pairs
   } else {
-    cat("⚠️ ambiguous_district_pairs.rds found but failed to read -- computing at startup instead\n")
+    cat("ambiguous_district_pairs.rds found but failed to read -- computing at startup instead\n")
     compute_ambiguous_district_pairs(all_districts)
   }
 } else {
-  cat("ℹ️ No prebuilt ambiguous_district_pairs.rds found -- computing at startup instead ",
+  cat("No prebuilt ambiguous_district_pairs.rds found -- computing at startup instead ",
       "(run scripts\\prebuild_shapefiles.R to do this offline and speed up cold start)\n")
   compute_ambiguous_district_pairs(all_districts)
 }
-cat("🔑 District disambiguation:", length(AMBIGUOUS_DISTRICT_PAIRS),
+cat("District disambiguation:", length(AMBIGUOUS_DISTRICT_PAIRS),
     "district name(s) recur in more than one province within their country -- these require a province match to join correctly; all other districts are unaffected.\n")
 
 # ============================================================
@@ -1324,15 +1324,15 @@ cat("🔑 District disambiguation:", length(AMBIGUOUS_DISTRICT_PAIRS),
 
 print_data_summary <- function() {
   cat("\n", strrep("=", 70), "\n")
-  cat("📊 DEPLOYMENT DATA LOADING SUMMARY\n")
+  cat("DEPLOYMENT DATA LOADING SUMMARY\n")
   cat(strrep("=", 70), "\n")
   
   info <- function(label, data) {
     if (is.null(data) || nrow(data) == 0) {
-      cat("❌ ", label, " NOT AVAILABLE\n")
+      cat(label, " NOT AVAILABLE\n")
     } else {
       size_mb <- format(utils::object.size(data), units = "MB")
-      cat("✅ ", label, " ", nrow(data), "rows,", ncol(data), "cols (", size_mb, ")\n")
+      cat(label, " ", nrow(data), "rows,", ncol(data), "cols (", size_mb, ")\n")
     }
   }
   
@@ -1355,24 +1355,24 @@ print_data_summary <- function() {
     for (col in num_cols) {
       n_hit <- sum(data[[col]] %in% sentinels, na.rm = TRUE)
       if (n_hit > 0) {
-        cat("⚠️ ", label, "column '", col, "' has", n_hit, "value(s) matching a common sentinel/placeholder pattern -- verify these aren't disguised missing data\n")
+        cat(label, "column '", col, "' has", n_hit, "value(s) matching a common sentinel/placeholder pattern -- verify these aren't disguised missing data\n")
       }
     }
   }
   check_sentinel_values("Main dataset:", dat)
   check_sentinel_values("Admin data:", admin_data)
 
-  cat("🗺️  Country shapes:", if(!is.null(all_countries)) "LOADED" else "NOT LOADED", "\n")
-  cat("🗺️  Province shapes:", if(!is.null(all_provinces)) "LOADED" else "NOT LOADED", "\n")
-  cat("🗺️  District shapes:", if(!is.null(all_districts)) "LOADED" else "NOT LOADED", "\n")
+  cat(" Country shapes:", if(!is.null(all_countries)) "LOADED" else "NOT LOADED", "\n")
+  cat(" Province shapes:", if(!is.null(all_provinces)) "LOADED" else "NOT LOADED", "\n")
+  cat(" District shapes:", if(!is.null(all_districts)) "LOADED" else "NOT LOADED", "\n")
   
-  cat("🌍 Environment:", if(is_deployment) "DEPLOYMENT" else "LOCAL DEVELOPMENT", "\n")
-  cat("📊 Sampling: INACTIVE (dat/scope/admin_data always loaded in full)\n")
+  cat("Environment:", if(is_deployment) "DEPLOYMENT" else "LOCAL DEVELOPMENT", "\n")
+  cat("Sampling: INACTIVE (dat/scope/admin_data always loaded in full)\n")
   
   # Memory usage
   mem_usage <- sum(sapply(list(dat, scope, admin_data, all_countries, all_provinces, all_districts), 
                           function(x) if(!is.null(x)) object.size(x) else 0))
-  cat("💾 Total memory usage:", format(mem_usage, units = "MB"), "\n")
+  cat("Total memory usage:", format(mem_usage, units = "MB"), "\n")
   
   cat(strrep("=", 70), "\n\n")
 }
@@ -1421,7 +1421,7 @@ country_abbrs_list <- list(
 )
 
 country_abbrs <- unlist(country_abbrs_list)
-cat("🌍 Country abbreviations loaded for", length(country_abbrs), "countries\n")
+cat("Country abbreviations loaded for", length(country_abbrs), "countries\n")
 
 # ============================================================
 # ---- Auto-detect available countries ----
@@ -1434,7 +1434,7 @@ update_blocks_with_actual_data <- function(blocks, data) {
   updated_blocks <- updated_blocks[sapply(updated_blocks, length) > 0]
   
   if (length(updated_blocks) == 0) {
-    cat("⚠️ No AFRO blocks match available data - using all blocks\n")
+    cat("No AFRO blocks match available data - using all blocks\n")
     return(blocks)
   }
   
@@ -1442,16 +1442,16 @@ update_blocks_with_actual_data <- function(blocks, data) {
 }
 
 afro_blocks <- update_blocks_with_actual_data(afro_blocks, dat)
-cat("🌍 AFRO blocks updated based on available data\n")
+cat("AFRO blocks updated based on available data\n")
 cat("Available blocks:", paste(names(afro_blocks), collapse = ", "), "\n\n")
 
 # Final memory cleanup
 if (is_deployment) {
   gc()
-  cat("💾 Final memory cleanup completed\n")
+  cat("Final memory cleanup completed\n")
 }
 
-cat("🎉 Deployment-ready data loading completed! Starting Shiny app...\n")
+cat("Deployment-ready data loading completed! Starting Shiny app...\n")
 
 # ============================================================
 # 🔎 ADMIN OVERVIEW: extra filters (Response / SIA date / Round number)
@@ -1751,7 +1751,7 @@ admin_coverage_summary <- function(
   n_countries <- dplyr::n_distinct(prop_data$Country)
   
   # Debug output to verify calculations
-  cat("\n📊 ADMIN COVERAGE CALCULATION VERIFICATION:\n")
+  cat("\nADMIN COVERAGE CALCULATION VERIFICATION:\n")
   cat("   Total rows in prop_data:", nrow(prop_data), "\n")
   cat("   Unique countries:", n_countries, "\n")
   cat("   Average coverage:", round(avg_coverage, 1), "%\n")
@@ -4085,7 +4085,7 @@ ui <- dashboardPage(
       style = "padding: 8px 15px;",
       actionButton(
         "refresh_data",
-        "🔄 Refresh",
+        "Refresh",
         class  = "btn-primary",
         style  = "background-color: #28a745; border: none; padding: 6px 12px;"
       )
@@ -4373,7 +4373,7 @@ ui <- dashboardPage(
     }
     
     .shiny-output-error:before { 
-      content: '⚠️ '; 
+      content: ''; 
     }
     
     .shiny-output-success {
@@ -4429,6 +4429,18 @@ ui <- dashboardPage(
     .sl-foot { font-size: 12px; margin-top: 8px; }
     .sl-status { margin: 12px 0 0 0; padding: 10px 14px; font-size: 13px; }
     .sl-status ul { margin: 4px 0 0 0; padding-left: 18px; }
+
+    /* ---- SOFT LOOK: no decorative icons in tab titles, box titles, buttons and cards ----
+       Kept on purpose: sidebar menu icons (the collapsed menu shows only icons), the box
+       collapse button, loading spinners and the menu expand arrows. */
+    .nav-tabs i, .nav-tabs-custom .nav-tabs i, .nav-pills i,
+    .box-title i, .box-header .box-title .fa, .box-header .box-title .fas,
+    .btn:not(.btn-box-tool) i.fa:not(.fa-spin), .btn:not(.btn-box-tool) i.fas:not(.fa-spin),
+    .btn:not(.btn-box-tool) i.far, .btn:not(.btn-box-tool) i.glyphicon,
+    .shiny-download-link i, .alert i, .callout i, .well i, .panel-heading i,
+    .im-card-h i, .im-btn i, .im-ov .btn-dl i, .hero-ctx-sub i, .info-box-icon,
+    .dataTables_wrapper .dt-buttons i { display: none !important; }
+    .info-box-content { margin-left: 0 !important; }
     .sl-start { padding: 10px 16px; max-width: 820px; }
     .sl-start h4 { margin-top: 0; }
     .sl-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 10px; }
@@ -4995,7 +5007,7 @@ ui <- dashboardPage(
       
       # 🔁 JS: Dark mode with persisted preference + iframe handling
       tags$script(HTML("
-    // 🔒 Persist dark mode preference using localStorage
+    // Persist dark mode preference using localStorage
     // Key used for storage
     var DARK_MODE_STORAGE_KEY = 'afro_sia_dark_mode';
 
@@ -5320,7 +5332,7 @@ ui <- dashboardPage(
                   checkboxInput("overview_debug", "Enable Debug Mode", value = FALSE),
             
                   actionButton(
-                    "overview_analyze", "🚀 Run Overview", 
+                    "overview_analyze", "Run Overview", 
                     class = "btn-primary-custom",
                     style = "margin-top: 15px;"
                   )
@@ -5342,7 +5354,7 @@ ui <- dashboardPage(
                     class = "valuebox-flex-container",
                     valueBoxOutput("overview_total_campaigns"),
                     valueBoxOutput("overview_total_countries"),
-                    valueBoxOutput("overview_total_provinces"),   # ⬅️ Provinces box
+                    valueBoxOutput("overview_total_provinces"),   # Provinces box
                     valueBoxOutput("overview_total_districts"),
                     valueBoxOutput("overview_data_period")
                   ),
@@ -5351,7 +5363,7 @@ ui <- dashboardPage(
                   conditionalPanel(
                     condition = "input.overview_debug == true",
                     wellPanel(
-                      h4("🔍 Debug Information"),
+                      h4("Debug Information"),
                       verbatimTextOutput("overview_debug_info"),
                       style = "background-color: #f8f9fa; margin-bottom: 20px;"
                     )
@@ -5367,7 +5379,7 @@ ui <- dashboardPage(
                     style = "text-align: center; margin-top: 20px;",
                     downloadButton(
                       "download_overview_data", 
-                      "📥 Download Filtered Data", 
+                      "Download Filtered Data", 
                       class = "btn-primary-custom",
                       style = "width: 300px;"
                     )
@@ -5427,7 +5439,7 @@ ui <- dashboardPage(
               
                     uiOutput("missed_countries_ui"),
               
-                    actionButton("missed_analyze", "🔍 Analyze Missed Children", 
+                    actionButton("missed_analyze", "Analyze Missed Children", 
                                  class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
               
                     # Download Filtered Data Button
@@ -5435,7 +5447,7 @@ ui <- dashboardPage(
                       condition = "output.missed_analysis_exists",
                       div(style = "text-align:center; margin-top:10px;",
                           downloadButton("download_missed_filtered_data", 
-                                         "📥 Download Filtered Data", 
+                                         "Download Filtered Data", 
                                          class = "btn-success", 
                                          style = "width:100%; font-weight:bold;")
                       )
@@ -5467,12 +5479,12 @@ ui <- dashboardPage(
                         fluidRow(
                           column(6,
                                  downloadButton("download_missed_table", 
-                                                "📊 Download Table", 
+                                                "Download Table", 
                                                 class = "btn-primary-custom")
                           ),
                           column(6,
                                  downloadButton("download_missed_data", 
-                                                "💾 Download Raw Data", 
+                                                "Download Raw Data", 
                                                 class = "btn-primary-custom")
                           )
                         )
@@ -5534,7 +5546,7 @@ ui <- dashboardPage(
               
                     uiOutput("coverage_countries_ui"),
               
-                    actionButton("coverage_analyze", "📊 Analyze Coverage", 
+                    actionButton("coverage_analyze", "Analyze Coverage", 
                                  class = "btn-primary-custom", style = "width:100%; font-weight:bold; margin-bottom:10px;"),
               
                     # Download Filtered Data Button
@@ -5542,7 +5554,7 @@ ui <- dashboardPage(
                       condition = "output.coverage_analysis_exists",
                       div(style = "text-align:center; margin-top:10px;",
                           downloadButton("download_coverage_filtered_data", 
-                                         "📥 Download Filtered Data", 
+                                         "Download Filtered Data", 
                                          class = "btn-success", 
                                          style = "width:100%; font-weight:bold;")
                       )
@@ -5574,12 +5586,12 @@ ui <- dashboardPage(
                         fluidRow(
                           column(6,
                                  downloadButton("download_coverage_table", 
-                                                "📊 Download Table", 
+                                                "Download Table", 
                                                 class = "btn-primary-custom")
                           ),
                           column(6,
                                  downloadButton("download_coverage_data", 
-                                                "💾 Download Raw Data", 
+                                                "Download Raw Data", 
                                                 class = "btn-primary-custom")
                           )
                         )
@@ -5666,7 +5678,7 @@ ui <- dashboardPage(
               selectInput("scope_vaccine", "Vaccine Type:",
                           choices = c("All", "nOPV2", "bOPV", "nOPV2 & bOPV"),
                           selected = "All"),
-              actionButton("scope_analyze", "🔍 Run Scope Analysis",
+              actionButton("scope_analyze", "Run Scope Analysis",
                            class = "btn-primary-custom", style = "width:100%; font-weight:bold;")
             )
           )
@@ -5693,7 +5705,7 @@ ui <- dashboardPage(
                                plotOutput("scope_map_plot", height = "650px", width = "100%"),
                                type = 8, color = "#0072BC", size = 1.2)),
                          div(style = "text-align:center; margin-top:15px;",
-                             downloadButton("download_scope_map", "🗺️ Download Map",
+                             downloadButton("download_scope_map", "Download Map",
                                             class = "btn-primary-custom", style = "width:200px;"))
                 ),
                 tabPanel(tags$div(icon("layer-group"), "Scope Summary Map"), value = "scope_summary_map",
@@ -5707,9 +5719,9 @@ ui <- dashboardPage(
                                type = 8, color = "#0072BC", size = 1.2)),
                          uiOutput("scope_summary_footnote"),
                          div(style = "text-align:center; margin-top:15px;",
-                             downloadButton("download_scope_summary_map", "🗺️ Download Summary Map",
+                             downloadButton("download_scope_summary_map", "Download Summary Map",
                                             class = "btn-primary-custom", style = "width:220px; margin-right:10px;"),
-                             downloadButton("download_scope_summary_map_pdf", "📄 Download as PDF",
+                             downloadButton("download_scope_summary_map_pdf", "Download as PDF",
                                             class = "btn-primary-custom", style = "width:220px;"))
                 )
               )
@@ -5795,7 +5807,7 @@ ui <- dashboardPage(
                         value = format(Sys.Date(), "%Y"))
             ),
             
-            actionButton("admin_analyze", "📊 Run Admin Overview", 
+            actionButton("admin_analyze", "Run Admin Overview", 
                          class = "btn-primary-custom")
           )
         ),
@@ -5832,12 +5844,12 @@ ui <- dashboardPage(
               style = "margin-top: 20px;",
               column(6, 
                      downloadButton("download_admin_coverage", 
-                                    "📥 Download Coverage Table", 
+                                    "Download Coverage Table", 
                                     class = "btn-primary-custom")
               ),
               column(6, 
                      downloadButton("download_admin_vaccinated", 
-                                    "📥 Download Vaccinated Table", 
+                                    "Download Vaccinated Table", 
                                     class = "btn-primary-custom")
               )
             )
@@ -6055,7 +6067,7 @@ ui <- dashboardPage(
               
                     actionButton(
                       "perf_analyze",
-                      "🗺️ Analyze Performance",
+                      "Analyze Performance",
                       class = "btn-primary-custom",
                       style = "width:100%; font-weight:bold; margin-bottom:10px;"
                     ),
@@ -6066,7 +6078,7 @@ ui <- dashboardPage(
                         style = "text-align:center; margin-top:10px;",
                         downloadButton(
                           "download_filtered_data",
-                          "📥 Download Filtered Data",
+                          "Download Filtered Data",
                           class = "btn-success",
                           style = "width:100%; font-weight:bold;"
                         )
@@ -6115,7 +6127,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_perf_maps",
-                            "🗺️ Download Maps",
+                            "Download Maps",
                             class = "btn-primary-custom",
                             style = "width:200px;"
                           )
@@ -6139,7 +6151,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_perf_heatmap",
-                            "🔥 Download Heatmap",
+                            "Download Heatmap",
                             class = "btn-primary-custom",
                             style = "width:220px;"
                           )
@@ -6155,7 +6167,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_perf_table",
-                            "📊 Download Table",
+                            "Download Table",
                             class = "btn-primary-custom",
                             style = "width:200px;"
                           )
@@ -6256,7 +6268,7 @@ ui <- dashboardPage(
               
                     actionButton(
                       "lqas_analyze",
-                      "🌍 Generate / Refresh",
+                      "Generate / Refresh",
                       class = "btn-primary-custom"
                     ),
               
@@ -6264,7 +6276,7 @@ ui <- dashboardPage(
                       style = "text-align:center; margin-top:15px;",
                       downloadButton(
                         "download_lqas_data",
-                        "📥 Download Filtered Data",
+                        "Download Filtered Data",
                         class = "btn-success"
                       )
                     ),
@@ -6302,7 +6314,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_lqas_map",
-                            "🗺️ Download District Map",
+                            "Download District Map",
                             class = "btn-primary-custom"
                           )
                         )
@@ -6321,7 +6333,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_lqas_province_map",
-                            "🗺️ Download Province Map",
+                            "Download Province Map",
                             class = "btn-primary-custom"
                           )
                         )
@@ -6334,7 +6346,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_lqas_table",
-                            "📊 Download Table as Image",
+                            "Download Table as Image",
                             class = "btn-primary-custom"
                           )
                         )
@@ -6355,12 +6367,12 @@ ui <- dashboardPage(
                                 style = "display:flex; gap:10px; flex-wrap:wrap;",
                                 downloadButton(
                                   "download_lqas_province_summary_image",
-                                  "🖼️ Download Province Summary Image",
+                                  "Download Province Summary Image",
                                   class = "btn-primary-custom"
                                 ),
                                 downloadButton(
                                   "download_lqas_province_summary_excel",
-                                  "📥 Download Province Summary Excel",
+                                  "Download Province Summary Excel",
                                   class = "btn-success"
                                 )
                               )
@@ -6384,7 +6396,7 @@ ui <- dashboardPage(
                           style = "text-align:center; margin-top:15px;",
                           downloadButton(
                             "download_lqas_data_preview",
-                            "📥 Download Preview Data",
+                            "Download Preview Data",
                             class = "btn-primary-custom"
                           )
                         )
@@ -6396,7 +6408,7 @@ ui <- dashboardPage(
                           style = "position:relative; z-index:9999; display:flex; justify-content:flex-end; margin: 8px 0 10px 0;",
                           actionButton(
                             "lqas_pbi_download_btn",
-                            "⬇️ Download mini-tables",
+                            "Download mini-tables",
                             style = "background:#00a65a; color:white; border:none; border-radius:6px; padding:8px 12px;"
                           )
                         ),
@@ -6435,18 +6447,18 @@ ui <- dashboardPage(
                     selectInput("reasons_viz_type", "Visualization Type:",
                                 choices = c(
                                   "Auto (smart selection)" = "auto",
-                                  "🔥 Heatmap" = "heatmap",
-                                  "📊 Grouped Bar Chart" = "bar",
-                                  "📊 Stacked Bar Chart" = "stacked_bar",
-                                  "🔲 Faceted Bar Chart" = "faceted_bar",
-                                  "⚪ Bubble Chart" = "bubble",
-                                  "🥧 Pie Chart" = "pie",
-                                  "🍩 Donut Chart" = "donut",
-                                  "🌳 Treemap" = "treemap",
-                                  "☀️ Sunburst Chart" = "sunburst",
-                                  "📡 Radar Chart" = "radar",
-                                  "🍭 Lollipop Chart" = "lollipop",
-                                  "💧 Waterfall Chart" = "waterfall"
+                                  "Heatmap" = "heatmap",
+                                  "Grouped Bar Chart" = "bar",
+                                  "Stacked Bar Chart" = "stacked_bar",
+                                  "Faceted Bar Chart" = "faceted_bar",
+                                  "Bubble Chart" = "bubble",
+                                  "Pie Chart" = "pie",
+                                  "Donut Chart" = "donut",
+                                  "Treemap" = "treemap",
+                                  "Sunburst Chart" = "sunburst",
+                                  "Radar Chart" = "radar",
+                                  "Lollipop Chart" = "lollipop",
+                                  "Waterfall Chart" = "waterfall"
                                 ),
                                 selected = "auto"),
               
@@ -6501,7 +6513,7 @@ ui <- dashboardPage(
                       uiOutput("reasons_districts_ui")
                     ),
               
-                    actionButton("reasons_analyze", "🔍 Analyze Reasons", 
+                    actionButton("reasons_analyze", "Analyze Reasons", 
                                  class = "btn-primary-custom", 
                                  style = "width: 100%; margin-top: 10px;")
                   )
@@ -6541,7 +6553,7 @@ ui <- dashboardPage(
                         plotOutput("reasons_combined_heatmap", height = "1100px"),
                         div(style = "text-align: center; margin-top: 15px;",
                             downloadButton("download_reasons_combined_plot", 
-                                           "📊 Download Combined Visualization", 
+                                           "Download Combined Visualization", 
                                            class = "btn-primary-custom")
                         )
                       )
@@ -6564,7 +6576,7 @@ ui <- dashboardPage(
                         plotOutput("absence_heatmap", height = "600px"),
                         div(style = "text-align: center; margin-top: 15px;",
                             downloadButton("download_absence_plot", 
-                                           "📊 Download Absence Visualization", 
+                                           "Download Absence Visualization", 
                                            class = "btn-primary-custom")
                         )
                       ),
@@ -6591,7 +6603,7 @@ ui <- dashboardPage(
                         width = 12, solidHeader = TRUE, status = "info",
                         plotOutput("nc_heatmap", height = "600px"),
                         div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_nc_plot", "📊 Download NC Visualization", class = "btn-primary-custom")
+                            downloadButton("download_nc_plot", "Download NC Visualization", class = "btn-primary-custom")
                         )
                       ),
                       tabsetPanel(
@@ -6617,7 +6629,7 @@ ui <- dashboardPage(
                         width = 12, solidHeader = TRUE, status = "info",
                         plotOutput("traditional_heatmap", height = "600px"),
                         div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_traditional_plot", "📊 Download Traditional Visualization", class = "btn-primary-custom")
+                            downloadButton("download_traditional_plot", "Download Traditional Visualization", class = "btn-primary-custom")
                         )
                       ),
                       tabsetPanel(
@@ -6642,7 +6654,7 @@ ui <- dashboardPage(
                         width = 12, solidHeader = TRUE, status = "info",
                         DTOutput("comparative_summary_table"),
                         div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_comparative_summary", "💾 Download Comparison", class = "btn-primary-custom")
+                            downloadButton("download_comparative_summary", "Download Comparison", class = "btn-primary-custom")
                         )
                       ),
                       box(
@@ -6718,7 +6730,7 @@ ui <- dashboardPage(
                           # Priority Plot Box with Download Button
                           box(
                             title = div(
-                              "Priority Breakdown: Country → Province → District",
+                              "Priority Breakdown: Country, Province, District",
                               div(style = "float:right; margin-left:10px;",
                                   downloadButton("download_priority_plot", 
                                                  label = "Download PNG", 
@@ -6918,7 +6930,7 @@ ui <- dashboardPage(
                                             "Child not born", "Security", "Other"),
                                 selected = "Non compliance"),
               
-                    actionButton("unresolved_analyze", "⚠️ Analyze Unresolved Cases", 
+                    actionButton("unresolved_analyze", "Analyze Unresolved Cases", 
                                  class = "btn-primary-custom")
                   )
                 )
@@ -6946,7 +6958,7 @@ ui <- dashboardPage(
                         plotOutput("unresolved_map", height = "600px"),
                         div(style = "text-align: center; margin-top: 15px;",
                             downloadButton("download_unresolved_map", 
-                                           "🗺️ Download Map", 
+                                           "Download Map", 
                                            class = "btn-primary-custom")
                         )
                       ),
@@ -6955,7 +6967,7 @@ ui <- dashboardPage(
                         DTOutput("unresolved_data_table"),
                         div(style = "text-align: center; margin-top: 15px;",
                             downloadButton("download_unresolved_data", 
-                                           "💾 Download Data", 
+                                           "Download Data", 
                                            class = "btn-primary-custom")
                         )
                       )
@@ -7362,7 +7374,7 @@ server <- function(input, output, session) {
   options(shiny.fullstacktrace = FALSE)
   
   # Use sequential plan instead of multisession to reduce memory
-  future::plan(future::sequential)  # ← CHANGE TO SEQUENTIAL
+  future::plan(future::sequential)  # CHANGE TO SEQUENTIAL
   
   # NOTE: this used to also run a reactiveTimer(30000) that forced a full gc()
   # sweep every 30 seconds for the entire life of every session, regardless of
@@ -7391,7 +7403,7 @@ server <- function(input, output, session) {
     force_gc()
     
     # Run minimal processing
-    showNotification("🔄 Applying filters...", type = "message", duration = 2)
+    showNotification("Applying filters...", type = "message", duration = 2)
   })
   
   
@@ -7425,12 +7437,12 @@ server <- function(input, output, session) {
       )
       
       progress$set(value = 1.0)
-      showNotification(paste("✅", operation_name, "completed!"), type = "message")
+      showNotification(paste(operation_name, "completed!"), type = "message")
       force_gc()
       return(result)
       
     }, error = function(e) {
-      showNotification(paste("❌ Error in", operation_name, ":", e$message), 
+      showNotification(paste("Error in", operation_name, ":", e$message), 
                        type = "error", duration = 10)
       return(NULL)
     })
@@ -7936,7 +7948,7 @@ server <- function(input, output, session) {
     cat("Dates in data:", paste(range(overview_filtered()$round_start_date, na.rm = TRUE), collapse = " to "), "\n")
     cat("==============================\n")
     
-    showNotification("📊 Updating LQAS Repository Overview...", type = "message")
+    showNotification("Updating LQAS Repository Overview...", type = "message")
   })
   
   # ---- Value Boxes ----
@@ -8058,10 +8070,10 @@ server <- function(input, output, session) {
       options = list(
         dom = 'Bfrtip',
         buttons = list(
-          list(extend = 'copy',  text = '📋 Copy'),
-          list(extend = 'csv',   text = '📄 CSV'),
-          list(extend = 'excel', text = '📊 Excel'),
-          list(extend = 'colvis', text = '👁️ Show/Hide Columns')
+          list(extend = 'copy',  text = 'Copy'),
+          list(extend = 'csv',   text = 'CSV'),
+          list(extend = 'excel', text = 'Excel'),
+          list(extend = 'colvis', text = 'Show/Hide Columns')
         ),
         scrollX     = TRUE,
         scrollY     = 400,
@@ -8343,7 +8355,7 @@ server <- function(input, output, session) {
     
     # Debug: Check if function exists
     if (!exists("generate_scope_plots_app")) {
-      showNotification("❌ ERROR: Scope analysis function not found!", type = "error", duration = 10)
+      showNotification("ERROR: Scope analysis function not found!", type = "error", duration = 10)
       scope_analysis_running(FALSE)
       return()
     }
@@ -8818,15 +8830,9 @@ server <- function(input, output, session) {
       
       # ---- Build color-coded summary ----
       cov_icon <- dplyr::case_when(
-        avg_cov >= 90 ~ "🟩 **High Performance**",
-        avg_cov >= 80 ~ "🟨 **Moderate**",
-        TRUE ~ "🟥 **Low**"
-      )
-      
-      ge95_icon <- dplyr::case_when(
-        pct_ge95 >= 70 ~ "🟩",
-        pct_ge95 >= 40 ~ "🟨",
-        TRUE ~ "🟥"
+        avg_cov >= 90 ~ "**High Performance**",
+        avg_cov >= 80 ~ "**Moderate**",
+        TRUE ~ "**Low**"
       )
       
       # ADDED: Block type indicator in summary
@@ -8835,11 +8841,11 @@ server <- function(input, output, session) {
       # ---- Text summary ----
       extra_txt <- admin_extra_filters_text(response_selection, date_selection, round_selection)
       insights <- paste0(
-        "📊 <strong>", block_type_text, " Analysis</strong><br>",
-        if (nzchar(extra_txt)) paste0("🔎 <em>", htmltools::htmlEscape(extra_txt), "</em><br>") else "",
+        "<strong>", block_type_text, " Analysis</strong><br>",
+        if (nzchar(extra_txt)) paste0("<em>", htmltools::htmlEscape(extra_txt), "</em><br>") else "",
         cov_icon, ": ", round(avg_cov, 1), "% average coverage across ", n_countries, " countries.  <br>",
-        ge95_icon, " ", pct_ge95, "% of districts reached ≥95% coverage.  <br>",
-        "👶 **", total_vacc, " million of doses administrated** in the selected period."
+        pct_ge95, "% of districts reached ≥95% coverage.  <br>",
+        "**", total_vacc, " million of doses administrated** in the selected period."
       )
       
       # ---- Store results ----
@@ -9037,7 +9043,7 @@ server <- function(input, output, session) {
     # Only run when the Missed Children sub-tab (inside LQAS Repository Overview) is open
     if (!is.null(input$tabs) && !overview_subtab_is("missed_children")) return()
     
-    showNotification("🔍 Analyzing missed children data...", type = "message", duration = 3)
+    showNotification("Analyzing missed children data...", type = "message", duration = 3)
     
     safe_analysis({
       
@@ -9089,7 +9095,7 @@ server <- function(input, output, session) {
       result <- do.call(missed_children_disaggregated, params)
       missed_analysis(result)
       
-      showNotification("✅ Analysis completed successfully!", type = "message", duration = 3)
+      showNotification("Analysis completed successfully!", type = "message", duration = 3)
       
     }, "Missed Children Analysis")
   })
@@ -9471,7 +9477,7 @@ server <- function(input, output, session) {
   observeEvent(input$coverage_analyze, {
     if (!overview_subtab_is("coverage")) return()  # Only run if the Coverage Analysis sub-tab is open
     
-    showNotification("📊 Analyzing coverage data...", type = "message", duration = 3)
+    showNotification("Analyzing coverage data...", type = "message", duration = 3)
     
     safe_analysis({
       # Validate inputs
@@ -9510,7 +9516,7 @@ server <- function(input, output, session) {
       result <- do.call(coverage_disaggregated, params)
       coverage_analysis(result)
       
-      showNotification("✅ Coverage analysis completed successfully!", type = "message", duration = 3)
+      showNotification("Coverage analysis completed successfully!", type = "message", duration = 3)
       
     }, "Coverage Analysis")
   })
@@ -10035,7 +10041,7 @@ server <- function(input, output, session) {
     
     if (!exists("district_lqas_performance")) {
       showNotification(
-        "❌ ERROR: district_lqas_performance() not found!",
+        "ERROR: district_lqas_performance() not found!",
         type = "error",
         duration = 10
       )
@@ -10195,7 +10201,7 @@ server <- function(input, output, session) {
 
         error = function(e) {
           showNotification(
-            paste0("❌ District Performance failed: ", e$message),
+            paste0("District Performance failed: ", e$message),
             type = "error",
             duration = 12
           )
@@ -10818,7 +10824,7 @@ server <- function(input, output, session) {
   observeEvent(input$lqas_analyze, {
     if (!district_subtab_is("lqas_maps")) return()
     
-    showNotification("🔄 Running optimized LQAS analysis...", type = "message", duration = 3)
+    showNotification("Running optimized LQAS analysis...", type = "message", duration = 3)
     
     safe_analysis({
       
@@ -11111,10 +11117,10 @@ server <- function(input, output, session) {
       easyClose = TRUE,
       footer = modalButton("Close"),
       tags$p("Choose what to download:"),
-      downloadButton("lqas_pbi_download_all", "📦 Download ALL tables (ZIP of Excel by country)", class = "btn btn-primary"),
+      downloadButton("lqas_pbi_download_all", "Download ALL tables (ZIP of Excel by country)", class = "btn btn-primary"),
       tags$hr(),
       selectInput("lqas_pbi_country_pick", "Country:", choices = ctrys, selected = if (length(ctrys) > 0) ctrys[1] else NULL),
-      downloadButton("lqas_pbi_download_one_imgs", "🖼️ Download selected country (ZIP of PNG tables for PPT)", class = "btn btn-success"),
+      downloadButton("lqas_pbi_download_one_imgs", "Download selected country (ZIP of PNG tables for PPT)", class = "btn btn-success"),
       tags$hr(),
       tags$p(
         style = "color:#6b7280; font-size:12px; margin:0;",
@@ -11642,9 +11648,9 @@ server <- function(input, output, session) {
   output$reasons_geo_indicator <- renderUI({
     geo_level <- input$reasons_geo_level
     geo_text <- case_when(
-      geo_level == "country" ~ "🌍 Analyzing at COUNTRY level",
-      geo_level == "province" ~ "🏛️ Analyzing at PROVINCE level",
-      geo_level == "district" ~ "📍 Analyzing at DISTRICT level"
+      geo_level == "country" ~ "Analyzing at COUNTRY level",
+      geo_level == "province" ~ "Analyzing at PROVINCE level",
+      geo_level == "district" ~ "Analyzing at DISTRICT level"
     )
     div(icon("info-circle"), strong(geo_text), style = "color: #2c3e50; font-size: 14px;")
   })
@@ -11652,19 +11658,19 @@ server <- function(input, output, session) {
   output$reasons_viz_indicator <- renderUI({
     viz_type <- input$reasons_viz_type
     viz_text <- case_when(
-      viz_type == "heatmap" ~ "🔥 Heatmap visualization selected",
-      viz_type == "bar" ~ "📊 Grouped Bar Chart selected",
-      viz_type == "stacked_bar" ~ "📊 Stacked Bar Chart selected",
-      viz_type == "faceted_bar" ~ "🔲 Faceted Bar Chart selected",
-      viz_type == "bubble" ~ "⚪ Bubble Chart selected",
-      viz_type == "pie" ~ "🥧 Pie Chart selected",
-      viz_type == "donut" ~ "🍩 Donut Chart selected",
-      viz_type == "treemap" ~ "🌳 Treemap selected",
-      viz_type == "sunburst" ~ "☀️ Sunburst Chart selected",
-      viz_type == "radar" ~ "📡 Radar Chart selected",
-      viz_type == "lollipop" ~ "🍭 Lollipop Chart selected",
-      viz_type == "waterfall" ~ "💧 Waterfall Chart selected",
-      viz_type == "auto" ~ "🤖 Auto mode - will choose best visualization",
+      viz_type == "heatmap" ~ "Heatmap visualization selected",
+      viz_type == "bar" ~ "Grouped Bar Chart selected",
+      viz_type == "stacked_bar" ~ "Stacked Bar Chart selected",
+      viz_type == "faceted_bar" ~ "Faceted Bar Chart selected",
+      viz_type == "bubble" ~ "Bubble Chart selected",
+      viz_type == "pie" ~ "Pie Chart selected",
+      viz_type == "donut" ~ "Donut Chart selected",
+      viz_type == "treemap" ~ "Treemap selected",
+      viz_type == "sunburst" ~ "Sunburst Chart selected",
+      viz_type == "radar" ~ "Radar Chart selected",
+      viz_type == "lollipop" ~ "Lollipop Chart selected",
+      viz_type == "waterfall" ~ "Waterfall Chart selected",
+      viz_type == "auto" ~ "Auto mode - will choose best visualization",
       TRUE ~ "Visualization ready"
     )
     div(icon("chart-bar"), strong(viz_text), style = "color: #2c3e50; font-size: 14px; margin-top: 5px;")
@@ -13302,7 +13308,7 @@ server <- function(input, output, session) {
     if (!district_subtab_is("unresolved")) return()  # Only run if the Unresolved Cases sub-tab is open
 
     # Show loading state
-    showNotification("🔄 Running optimized unresolved cases analysis...", type = "message", duration = 3)
+    showNotification("Running optimized unresolved cases analysis...", type = "message", duration = 3)
 
     safe_analysis({
       # Clear previous results to free memory

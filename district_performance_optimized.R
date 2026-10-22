@@ -442,8 +442,8 @@ district_lqas_performance <- function(data,
         y = NULL,
         caption = paste0(
           "Note: Values show % of HIGH-performing districts (high/total districts in parentheses where space permits)\n",
-          "▸ WHO Target: ≥80% High-Performing Districts\n",
-          "▲▼ Trend indicators: Month-over-month changes >5 percentage points (available in underlying data)\n",
+          "WHO Target: ≥80% High-Performing Districts\n",
+          "Trend indicators: Month-over-month changes >5 percentage points (available in underlying data)\n",
           "Source: PEP SIA Repository | World Health Organization AFRO | Generated: ", 
           format(Sys.Date(), "%d %B %Y")
         )
