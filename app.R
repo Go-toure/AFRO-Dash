@@ -281,6 +281,14 @@ if (SLIDES_BUILDER_AVAILABLE) {
   cat("Generate Slides builder files not found (slides_builder.R / im_slides.R)\n")
 }
 
+# Quick Start Guide page + PDF download (self-contained; PDF uses base grid graphics only)
+QSG_AVAILABLE <- file.exists("quick_start_guide.R")
+if (QSG_AVAILABLE) {
+  source("quick_start_guide.R")
+} else {
+  cat("Quick Start Guide file not found (quick_start_guide.R)\n")
+}
+
 cat("✅ External map functions loaded from optimized files\n")
 # ============================================================
 # ---- List numeric .rds files ----
@@ -7243,164 +7251,25 @@ ui <- dashboardPage(
     
 
     # ============================================================
-    # ℹ️ QUICK START GUIDE (Fixed with conditional panel)
+    # QUICK START GUIDE (content and PDF export live in quick_start_guide.R)
     # ============================================================
     tabItem(
       tabName = "guide",
-      conditionalPanel(  # ADD THIS CONDITIONAL PANEL
+      conditionalPanel(
         condition = "input.tabs == 'guide'",
         fluidPage(
-          # ---- HEADER BANNER ----
-          tags$div(
-            style = "
-          background-color: #0072B2; 
-          color: white; 
-          padding: 20px; 
-          border-radius: 8px; 
-          text-align: center; 
-          margin-bottom: 20px;
-        ",
-            tags$img(
-              src = 'https://www.who.int/ResourcePackages/WHO/assets/dist/images/logos/en/h-logo-blue.svg',
-              height = '50px', 
-              style = 'margin-bottom: 10px;'
-            ),
-            h2("WHO AFRO SIA Dashboard"),
-            p("Integrated Digital Platform for Monitoring Supplementary Immunization Activities (SIA) Across the WHO African Region")
-          ),
-          
-          # ---- OVERVIEW + QR CODE ----
-          fluidRow(
-            column(
-              width = 7,
-              tags$div(
-                class = "alert-info",
-                h4("About this Dashboard"),
-                p("The WHO AFRO SIA Dashboard provides a comprehensive view of Supplementary Immunization Activities (SIA) data across the African Region."),
-                p("It integrates multiple data streams: including LQAS, administrative coverage, missed children, and performance monitoring into a single, interactive platform for real-time analysis and visualization."),
-                br(),
-                h4("Key Objectives"),
-                tags$ul(
-                  tags$li("Track and compare SIA performance across countries and regions"),
-                  tags$li("Support data-driven decision-making and field coordination"),
-                  tags$li("Improve accountability and timeliness of data reporting"),
-                  tags$li("Facilitate continuous improvement in campaign quality and coverage")
-                )
-              )
-            ),
-            
-            column(
-              width = 5,
-              tags$div(
-                style = "
-              text-align: center; 
-              border: 2px solid #0072B2; 
-              border-radius: 12px; 
-              padding: 20px; 
-              background-color: #f8f9fa;
-            ",
-                h4("📱 Access the Dashboard Anywhere"),
-                p("Scan this QR code to open the live dashboard on your mobile device:"),
-                tags$img(
-                  src = "AFRO_SIA_Dashboard_QR.png",
-                  width = "250px",
-                  alt = "WHO AFRO SIA Dashboard QR Code",
-                  style = "border: 3px solid #0072B2; border-radius: 12px; margin-top: 10px;"
-                ),
-                br(), br(),
-                tags$img(
-                  src = www_asset("gis_centre.jpeg"),
-                  alt = "AFRO GIS Centre",
-                  title = "AFRO GIS Centre",
-                  style = "height: 90px; width: auto; margin-bottom: 8px;"
-                ),
-                tags$p(
-                  style = "text-align:center; font-size:13px; color:gray;",
-                  paste0("© WHO AFRO | ", DASHBOARD_VERSION, " | Updated ", DASHBOARD_DATE)
-                )
-              )
-            )
-          ),
-          
-          # ---- QUICK START SECTIONS ----
-          br(),
-          tags$div(
-            class = "alert-info",
-            h4("Quick Start Guide"),
-            tags$p("This dashboard provides comprehensive analysis of Supplementary Immunization Activities across the AFRO region with optimized performance and memory management."),
-            
-            h4("Key Features"),
-            tags$div(class = "row",
-                     tags$div(class = "col-md-6",
-                              tags$ul(
-                                tags$li(tags$b("SIA Scope Analysis:"), " View vaccination campaign scope and coverage by geographic area"),
-                                tags$li(tags$b("LQAS Repository Overview:"), " Repository overview, with Missed Children and Coverage Analysis as sub-tabs"),
-                                tags$li(tags$b("🗺️ LQAS District Performance:"), " Monitor LQAS performance at district level, with LQAS Summary Maps, Reasons Analysis and Unresolved Cases as sub-tabs"),
-                                tags$li(tags$b("🌍 IM Settlement Maps:"), " Visualize settlement-level footprint maps to locate missed children and guide field teams effectively")
-                              )
-                     ),
-                     tags$div(class = "col-md-6",
-                              tags$ul(
-                                tags$li(tags$b("Admin Data:"), " Comprehensive administrative data overview"),
-                                tags$li(tags$b("Dynamic Reports & Exports:"), " Download results as maps, tables, or PowerPoint summaries")
-                              )
-                     )
-            ),
-            
-            h4("Performance Tips"),
-            tags$ul(
-              tags$li("Start with specific time periods rather than 'All Data'"),
-              tags$li("Use AFRO Block filters to focus on specific regions"),
-              tags$li("Limit country selections to 10–15 countries for optimal performance"),
-              tags$li("Use the refresh button to clear memory and restart analysis")
-            ),
-            
-            h4("Technical Features"),
-            tags$ul(
-              tags$li("Stable Data Loading"),
-              tags$li("Performance Optimized"),
-              tags$li("Error Protected"),
-              tags$li("📱 Responsive design for all devices")
-            ),
-            
-            h4("Data Sources"),
-            tags$p("This dashboard uses data from the PEP SIA repository and includes:"),
-            tags$ul(
-              tags$li("Vaccination campaign data"),
-              tags$li("LQAS survey results"),
-              tags$li("Geographic shapefiles for mapping"),
-              tags$li("District and settlement-level performance metrics"),
-              tags$li("Administrative coverage data")
-            ),
-            
-            h4("👥 Technical Support"),
-            tags$p(
-              "For technical assistance or data questions, please contact the WHO AFRO DIM Team:",
-              br(),
-              tags$a(href = "mailto:dimafro@who.int", "dimafro@who.int"),
-              " | ",
-              tags$a(href = "mailto:tourayk@who.int", "tourayk@who.int"),
-              " | ",
-              tags$a(href = "mailto:mwanzam@who.int", "mwanzam@who.int")
-            ),
-            
-            tags$div(style = "
-          text-align: center; 
-          margin-top: 20px; 
-          padding: 15px; 
-          background-color: #f8f9fa; 
-          border-radius: 8px;
-        ",
-                     tags$p(tags$b("System Status:"), " ✅ Stable | 🟢 Optimized"),
-                     tags$p(tags$em("Version:"), DASHBOARD_VERSION),
-                     tags$p(tags$em("Last Updated:"), DASHBOARD_DATE),
-                     tags$p(tags$em("Environment:"), if (interactive()) "Development (Sample Data)" else "Production (Full Data)")
-            )
-          ),
-          
-          # ---- DEBUG PANEL (Collapsed by default) ----
+          if (QSG_AVAILABLE) {
+            qsg_ui(version = DASHBOARD_VERSION, date = DASHBOARD_DATE,
+                   qr_src = "AFRO_SIA_Dashboard_QR.png",
+                   gis_src = www_asset("gis_centre.jpeg"),
+                   logo_src = "https://www.who.int/ResourcePackages/WHO/assets/dist/images/logos/en/h-logo-blue.svg")
+          } else {
+            tags$p("The Quick Start Guide is not available (quick_start_guide.R not found).")
+          },
+
+          # ---- DEBUG PANEL (collapsed by default) ----
           box(
-            title = "🔧 System Debug Information",
+            title = "System information (for support)",
             width = 12,
             status = "warning",
             solidHeader = TRUE,
@@ -14306,6 +14175,16 @@ server <- function(input, output, session) {
   })
   outputOptions(output, "slides_generated", suspendWhenHidden = FALSE)
 
+
+  # ---- Quick Start Guide: PDF download ----
+  output$guide_pdf <- downloadHandler(
+    filename = function() paste0("WHO_AFRO_SIA_Dashboard_Quick_Start_Guide_", format(Sys.Date(), "%Y%m%d"), ".pdf"),
+    content = function(file) {
+      req(QSG_AVAILABLE)
+      qsg_pdf(file, version = DASHBOARD_VERSION, date = DASHBOARD_DATE,
+              qr_path = file.path("www", "AFRO_SIA_Dashboard_QR.png"))
+    }
+  )
 
   # ---- Go Home Handler (for logo click) ----
   observeEvent(input$go_home, {
