@@ -5200,17 +5200,17 @@ ui <- dashboardPage(
             style = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;",
             tags$p(
               style = "margin:0; font-size:13px; color:#4b5563;",
-              "Live calendar of supplementary immunization activities from PolioGo. If the page stays blank, sign in to PolioGo in this browser or use the button to open it in a new tab."
+              "Calendar of supplementary immunization activities from PolioGo. If the page stays blank, open it in a new tab."
             ),
             tags$a(
               href = "https://poliogo.afro.who.int/dashboard/polio/calendar/accountId/1/order/first_round_started_at/campaignType/polio/campaignCategory/all/periodType/quarter/showIntegrated/true",
               target = "_blank", rel = "noopener",
               class = "btn btn-default btn-sm",
-              "Open in new tab"
+              "Open full calendar in new tab"
             )
           ),
           tags$iframe(
-            src = "https://poliogo.afro.who.int/dashboard/polio/calendar/accountId/1/order/first_round_started_at/campaignType/polio/campaignCategory/all/periodType/quarter/showIntegrated/true",
+            src = "https://poliogo.afro.who.int/dashboard/polio/embeddedCalendar/",
             style = "width:100%; height:calc(100vh - 230px); min-height:600px; border:none;",
             frameborder = "0",
             allowfullscreen = TRUE
