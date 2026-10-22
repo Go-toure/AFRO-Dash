@@ -11,7 +11,7 @@ QSG_TITLE <- "WHO AFRO SIA Dashboard"
 QSG_SUBTITLE <- "Quick Start Guide"
 QSG_TAGLINE <- paste("Integrated digital platform for monitoring Supplementary Immunization Activities (SIA)",
                      "across the WHO African Region")
-QSG_CONTACTS <- c("dimafro@who.int", "tourayk@who.int", "mwanzam@who.int")
+QSG_CONTACTS <- c("afrgodim@who.int", "tourayk@who.int", "mwanzam@who.int")
 
 # ---- content ----------------------------------------------------------------------
 # section: list(title, paras, bullets, steps, table = data.frame(a, b), table_head = c("A", "B"), image = "qr")
@@ -103,7 +103,7 @@ qsg_content <- function() {
          paras2 = "The date of the latest data is shown on At a Glance."),
 
     list(title = "Technical support",
-         paras = "For technical assistance or data questions, please contact the WHO AFRO DIM Team:",
+         paras = "For technical assistance or data questions, please contact the WHO AFRO GIS CENTRE Team:",
          contacts = TRUE)
   )
 }
