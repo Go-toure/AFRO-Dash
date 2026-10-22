@@ -186,9 +186,14 @@ qsg_pdf <- function(file, version = "", date = "", qr_path = NULL, gis_path = NU
   W <- 8.27; H <- 11.69; ML <- 0.8; MR <- 0.8; MT <- 0.85; MB <- 0.85
   navy <- "#0B3C5D"; ink <- "#1F2937"; grey <- "#4B5563"; rule <- "#CBD5E1"; zebra <- "#F1F5F9"; head_bg <- "#E3F0FA"
   CW <- W - ML - MR
-  ascii <- function(s) iconv(as.character(s), to = "ASCII//TRANSLIT", sub = "")
+  # ASCII text; the hyphen is swapped for the Latin-1 hyphen glyph, because the PDF device draws a plain
+  # hyphen-minus as a longer minus sign
+  ascii <- function(s) {
+    s <- iconv(as.character(s), to = "ASCII//TRANSLIT", sub = "")
+    enc2utf8(gsub("-", "\u00ad", s, fixed = TRUE))
+  }
 
-  grDevices::pdf(file, width = W, height = H, family = "Helvetica", onefile = TRUE,
+  grDevices::pdf(file, width = W, height = H, family = "Helvetica", onefile = TRUE, encoding = "ISOLatin1.enc",
                  title = paste(QSG_TITLE, "-", QSG_SUBTITLE))
   on.exit(grDevices::dev.off(), add = TRUE)
 
@@ -266,9 +271,13 @@ qsg_pdf <- function(file, version = "", date = "", qr_path = NULL, gis_path = NU
   }
   table <- function(head, df) {
     c1 <- 1.75; c2 <- CW - c1; pad <- 0.07
-    row <- function(a, b, face1 = "bold", bg = NULL, fcol = ink, face2 = "plain") {
+    row <- function(a, b, face1 = "bold", bg = NULL, fcol = ink, face2 = "plain", repeat_head = TRUE) {
       la <- wrap(a, c1 - 2 * pad, 9.5, face1); lb <- wrap(b, c2 - 2 * pad, 9.5, face2)
       h <- max(length(la), length(lb)) * lh(9.5) + 2 * pad
+      if (repeat_head && st$y + h > H - MB) {
+        new_page()
+        row(head[1], head[2], "bold", head_bg, navy, "bold", repeat_head = FALSE)
+      }
       ensure(h)
       if (!is.null(bg)) grid::grid.rect(x = U(ML), y = Y(st$y), width = U(CW), height = U(h), just = c("left", "top"), gp = grid::gpar(fill = bg, col = NA))
       top <- st$y
@@ -277,7 +286,7 @@ qsg_pdf <- function(file, version = "", date = "", qr_path = NULL, gis_path = NU
       st$y <- top + h
       grid::grid.lines(x = U(c(ML, W - MR)), y = Y(c(st$y, st$y)), gp = grid::gpar(col = rule, lwd = 0.5))
     }
-    row(head[1], head[2], "bold", head_bg, navy, "bold")
+    row(head[1], head[2], "bold", head_bg, navy, "bold", repeat_head = FALSE)
     for (i in seq_len(nrow(df))) row(df$a[i], df$b[i], "bold", if (i %% 2 == 0) zebra else NULL)
     st$y <- st$y + 0.1
   }
