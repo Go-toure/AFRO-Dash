@@ -5148,7 +5148,7 @@
       "checksum": "8799f3582b7bab5f4fd39bc454c02787"
     },
     "app.R": {
-      "checksum": "95eaf574c6652ccddb766325db43010b"
+      "checksum": "5a6709455a8c3eb56a1cde9b041c8f0a"
     },
     "app_updt_21072026.R": {
       "checksum": "01cd36ceef5ca6e834e2201e5064a3b3"
@@ -5170,6 +5170,9 @@
     },
     "im_overview_module.R": {
       "checksum": "47def3f929233592591a69a94cfb4a54"
+    },
+    "im_slides.R": {
+      "checksum": "28641e89dcef59d9e67e03c1d6e112dc"
     },
     "im_settlement_module.R": {
       "checksum": "eeeaa4e04cb0fbcf5eca58aa71054f08"
@@ -5438,6 +5441,9 @@
     "shapefile_prep_utils.R": {
       "checksum": "2ec16b78957b21ea270e95dbbb30bc5e"
     },
+    "slides_builder.R": {
+      "checksum": "168e0a15648d5acbcb39b9f4a39d3a62"
+    },
     "snapshot_module.R": {
       "checksum": "2b765ea4b48adde223ad3665281a7a3a"
     },
@@ -5446,6 +5452,9 @@
     },
     "www/AFRO_SIA_Dashboard_QR.png": {
       "checksum": "bc74aa1ded841009aadb35969b8e43e5"
+    },
+    "www/slides_template_16x9.pptx": {
+      "checksum": "d9b0aba35f0c3fde92c15d768a05f325"
     },
     "www/who_afro_logo.png": {
       "checksum": "28d43e19cee2286ac6b827da307b8fa9"

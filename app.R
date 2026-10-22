@@ -271,6 +271,16 @@ if (SNAPSHOT_AVAILABLE) {
   cat("Snapshot page disabled (snapshot_module.R not found)\n")
 }
 
+# Generate Slides: PowerPoint builder + static Independent Monitoring analyses for the deck.
+# Both are plain function files (officer / flextable / ggplot2, no extra packages).
+SLIDES_BUILDER_AVAILABLE <- file.exists("slides_builder.R") && file.exists("im_slides.R")
+if (SLIDES_BUILDER_AVAILABLE) {
+  source("slides_builder.R")
+  source("im_slides.R")
+} else {
+  cat("Generate Slides builder files not found (slides_builder.R / im_slides.R)\n")
+}
+
 cat("✅ External map functions loaded from optimized files\n")
 # ============================================================
 # ---- List numeric .rds files ----
@@ -4400,6 +4410,24 @@ ui <- dashboardPage(
       background-color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
+
+    /* ---- Generate Slides page ---- */
+    .sl-h { font-size: 14px; font-weight: 600; color: #0b3c5d; margin: 2px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid rgba(148,163,184,.35); }
+    .sl-links { font-size: 12px; margin: -2px 0 6px 0; }
+    .sl-settings .checkbox label { font-size: 13px; }
+    .sl-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .sl-bar-nav { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #374151; }
+    .sl-prev-title { font-size: 16px; font-weight: 600; color: #0b3c5d; margin: 4px 0 2px 0; }
+    .sl-foot { font-size: 12px; margin-top: 8px; }
+    .sl-start { padding: 10px 16px; max-width: 820px; }
+    .sl-start h4 { margin-top: 0; }
+    .sl-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 10px; }
+    .sl-metric { background: #eef6fc; border-radius: 10px; padding: 14px 16px; }
+    .sl-metric-v { font-size: 28px; font-weight: 600; color: #0b3c5d; line-height: 1.15; }
+    .sl-metric-l { font-size: 13px; color: #374151; margin-top: 4px; }
+    body.dark-mode .sl-metric { background: #111b2e; }
+    body.dark-mode .sl-metric-v { color: #7cc4ff; }
+    body.dark-mode .sl-metric-l, body.dark-mode .sl-h, body.dark-mode .sl-prev-title, body.dark-mode .sl-bar-nav { color: #e5e7eb; }
     
     .flextable {
       width: 100% !important;
@@ -7041,184 +7069,167 @@ ui <- dashboardPage(
       fluidRow(
         column(
           width = 12,
-          # PowerPoint Settings Box - Initially hidden
+          # Settings
           conditionalPanel(
             condition = "input.tabs == 'generate_slides'",
             box(
-              title = tags$div(icon("cog"), "PowerPoint Slide Generation Settings"),
+              title = tags$div(icon("cog"), "Slide settings"),
               width = 12,
               status = "primary",
               solidHeader = TRUE,
               collapsible = TRUE,
               collapsed = FALSE,
               id = "slide_settings_box",
-              
-              # Slide Overview Filters
-              h4("Slide Overview Filters"),
+              class = "sl-settings",
+
               fluidRow(
-                column(6,
-                       selectInput("slide_time_type", "Timeframe Type:",
-                                   choices = c("Last X Months" = "months",
-                                               "Specific Year(s)" = "years",
-                                               "All Data" = "all"),
-                                   selected = "months"),
-                       conditionalPanel(
-                         condition = "input.slide_time_type == 'months'",
-                         numericInput("slide_months", "Number of Months:", value = 6, min = 1, max = 36)
-                       ),
-                       conditionalPanel(
-                         condition = "input.slide_time_type == 'years'",
-                         textInput("slide_years", "Year(s):", 
-                                   placeholder = "e.g., 2023,2024",
-                                   value = format(Sys.Date(), "%Y"))
-                       ),
-                       selectInput("slide_block", "AFRO Block:",
-                                   choices = c("All", names(afro_blocks)), 
-                                   selected = "All")
+                # ---- 1. period and place ----
+                column(4,
+                  tags$h4(class = "sl-h", "1. Period and place"),
+                  selectInput("slide_time_type", "Timeframe type",
+                              choices = c("Last X months" = "months",
+                                          "Specific year(s)" = "years",
+                                          "All data" = "all"),
+                              selected = "months"),
+                  conditionalPanel(
+                    condition = "input.slide_time_type == 'months'",
+                    numericInput("slide_months", "Number of months", value = 6, min = 1, max = 36)
+                  ),
+                  conditionalPanel(
+                    condition = "input.slide_time_type == 'years'",
+                    textInput("slide_years", "Year(s)",
+                              placeholder = "e.g., 2025 or 2024, 2025",
+                              value = format(Sys.Date(), "%Y"))
+                  ),
+                  selectInput("slide_block", "AFRO block",
+                              choices = c("All", names(afro_blocks)), selected = "All"),
+                  selectizeInput("slide_countries", "Countries (optional)",
+                                 choices = character(0), multiple = TRUE,
+                                 options = list(placeholder = "All countries in the block",
+                                                maxItems = 15, plugins = list("remove_button"),
+                                                dropdownParent = "body")),
+                  selectizeInput("slide_provinces", "Provinces (optional)",
+                                 choices = character(0), multiple = TRUE,
+                                 options = list(placeholder = "Choose a country first",
+                                                maxItems = 20, plugins = list("remove_button"),
+                                                dropdownParent = "body")),
+                  selectizeInput("slide_districts", "Districts (optional)",
+                                 choices = character(0), multiple = TRUE,
+                                 options = list(placeholder = "Choose a country first",
+                                                maxItems = 30, plugins = list("remove_button"),
+                                                dropdownParent = "body"))
                 ),
-                column(6,
-                       selectizeInput("slide_countries", "Countries (Optional):",
-                                      choices = character(0),
-                                      multiple = TRUE,
-                                      options = list(
-                                        placeholder = 'Select one or more countries',
-                                        maxItems = 15,
-                                        plugins = list('remove_button'),
-                                        dropdownParent = 'body'
-                                      )),
-                       selectizeInput("slide_provinces", "Provinces (Optional):",
-                                      choices = character(0),
-                                      multiple = TRUE,
-                                      options = list(
-                                        placeholder = 'Select one or more provinces',
-                                        maxItems = 20,
-                                        plugins = list('remove_button'),
-                                        dropdownParent = 'body'
-                                      )),
-                       selectizeInput("slide_districts", "Districts (Optional):",
-                                      choices = character(0),
-                                      multiple = TRUE,
-                                      options = list(
-                                        placeholder = 'Select one or more districts',
-                                        maxItems = 30,
-                                        plugins = list('remove_button'),
-                                        dropdownParent = 'body'
-                                      ))
+
+                # ---- 2. what to include ----
+                column(4,
+                  tags$h4(class = "sl-h", "2. What to include"),
+                  div(class = "sl-links",
+                      actionLink("slide_select_all", "Select all"), " | ",
+                      actionLink("slide_select_none", "Clear")),
+                  checkboxGroupInput(
+                    "slide_analyses", NULL,
+                    choices = c(
+                      "SIA Scope Analysis" = "scope",
+                      "Admin Data Overview" = "admin",
+                      "Missed Children Analysis" = "missed",
+                      "Coverage Analysis" = "coverage",
+                      "LQAS District Performance" = "district_perf",
+                      "LQAS Summary Maps" = "lqas_maps",
+                      "Reasons Analysis" = "reasons",
+                      "Unresolved Cases" = "unresolved",
+                      "IM Overview (key numbers, coverage, trend, risk)" = "im_overview",
+                      "IM Reasons for Missed Children" = "im_reasons",
+                      "IM Priority Districts" = "im_priority"
+                    ),
+                    selected = c("scope", "admin", "missed", "coverage", "im_overview")
+                  ),
+                  conditionalPanel(
+                    condition = "input.slide_analyses && input.slide_analyses.includes('unresolved')",
+                    selectInput("slide_unresolved_reason", "Unresolved cases: reason",
+                                choices = c("All", "Non compliance", "Child absent", "House not visited",
+                                            "Child was asleep", "Child is visitor", "Vaccinated NFM",
+                                            "Child not born", "Security", "Other"),
+                                selected = "All")
+                  )
+                ),
+
+                # ---- 3. output and presentation ----
+                column(4,
+                  tags$h4(class = "sl-h", "3. Output and presentation"),
+                  checkboxGroupInput("slide_outputs", "Output types",
+                                     choices = c("Maps" = "maps",
+                                                 "Charts (heatmaps, trends, bars)" = "charts",
+                                                 "Summary tables" = "tables",
+                                                 "Key numbers" = "metrics"),
+                                     selected = c("maps", "charts", "tables", "metrics")),
+                  textInput("slide_presentation_title", "Presentation title",
+                            value = "WHO AFRO SIA Dashboard Analysis"),
+                  textInput("slide_author", "Author", value = "WHO AFRO GIS CENTRE - Outbreak Team"),
+                  selectInput("slide_template", "Slide style",
+                              choices = c("WHO blue (default)" = "default",
+                                          "Minimal (white)" = "minimal",
+                                          "Corporate (dark grey)" = "corporate"))
                 )
               ),
-              
-              # Analysis Selection
-              h4("Select Analyses to Include in Slides"),
-              fluidRow(
-                column(4,
-                       checkboxGroupInput("slide_analyses", "Analyses:",
-                                          choices = c(
-                                            "SIA Scope Analysis" = "scope",
-                                            "Admin Data Overview" = "admin",
-                                            "Missed Children Analysis" = "missed",
-                                            "Coverage Analysis" = "coverage",
-                                            "LQAS District Performance" = "district_perf",
-                                            "LQAS Summary Maps" = "lqas_maps",
-                                            "Reasons Analysis" = "reasons",
-                                            "Unresolved Cases" = "unresolved"
-                                          ),
-                                          selected = c("scope", "admin", "missed", "coverage"))
-                ),
-                column(4,
-                       checkboxGroupInput("slide_outputs", "Output Types:",
-                                          choices = c(
-                                            "Summary Tables" = "tables",
-                                            "Maps" = "maps",
-                                            "Charts/Plots" = "charts",
-                                            "Value Box Metrics" = "metrics"
-                                          ),
-                                          selected = c("tables", "maps", "metrics"))
-                ),
-                column(4,
-                       textInput("slide_presentation_title", "Presentation Title:",
-                                 value = "WHO AFRO SIA Dashboard Analysis"),
-                       textInput("slide_author", "Author:",
-                                 value = "WHO AFRO DIM Team"),
-                       selectInput("slide_template", "PowerPoint Template:",
-                                   choices = c("Default WHO Template" = "default",
-                                               "Minimal" = "minimal",
-                                               "Corporate" = "corporate")),
-                       
-                       # Unresolved Cases Reason Selector
-                       conditionalPanel(
-                         condition = "input.slide_analyses.includes('unresolved')",
-                         selectInput("slide_unresolved_reason", "Unresolved Cases - Show Specific Reason:",
-                                     choices = c("All", "Non compliance", "Child absent", "House not visited", 
-                                                 "Child was asleep", "Child is visitor", "Vaccinated NFM",
-                                                 "Child not born", "Security", "Other"),
-                                     selected = "All")
-                       )
-                )
-              ),
-              
-              # Action Buttons
+
               fluidRow(
                 column(12,
-                       actionButton("generate_slides", "📊 Generate PowerPoint Slides", 
+                       actionButton("generate_slides", "Generate slides",
+                                    icon = icon("file-powerpoint"),
                                     class = "btn-primary-custom",
-                                    style = "width:100%; font-weight:bold; margin-top:20px;")
+                                    style = "width:100%; font-weight:bold; margin-top:12px;")
                 )
               )
             )
           ),
-          
-          # Slide Preview Box - Initially hidden, appears after generation
+
+          # Preview and download (appears after generation)
           conditionalPanel(
             condition = "input.tabs == 'generate_slides' && output.slides_generated",
             box(
-              title = tags$div(icon("eye"), "Slide Preview"),
+              title = tags$div(icon("eye"), "Review and download"),
               width = 12,
               status = "info",
               solidHeader = TRUE,
               collapsible = TRUE,
               collapsed = FALSE,
               id = "slide_preview_box",
-              
+
+              div(class = "sl-bar",
+                  div(class = "sl-bar-nav",
+                      actionButton("prev_slide", "Previous", icon = icon("chevron-left"), class = "btn-default"),
+                      textOutput("slide_counter", inline = TRUE),
+                      actionButton("next_slide", "Next", icon = icon("chevron-right"), class = "btn-default")),
+                  downloadButton("download_slides", "Download PowerPoint (.pptx)", class = "btn-primary-custom")),
+
               uiOutput("slide_preview_ui"),
-              
-              # Slide navigation
-              conditionalPanel(
-                condition = "output.slides_generated",
-                fluidRow(
-                  column(12, style = "text-align:center; margin-top:15px;",
-                         actionButton("prev_slide", "◀ Previous", class = "btn-default"),
-                         actionButton("next_slide", "Next ▶", class = "btn-default"),
-                         textOutput("slide_counter", inline = TRUE)
-                  )
-                )
-              )
+              tags$p(class = "text-muted sl-foot",
+                     "The file also has a title slide, an 'About this report' slide and a closing notes slide.")
             )
           ),
-          
-          # Initial message when no slides generated yet
+
+          # Getting started (before anything is generated)
           conditionalPanel(
             condition = "input.tabs == 'generate_slides' && !output.slides_generated",
             box(
-              title = tags$div(icon("info-circle"), "Getting Started"),
+              title = tags$div(icon("info-circle"), "Getting started"),
               width = 12,
               status = "info",
               solidHeader = TRUE,
               tags$div(
-                style = "text-align: center; padding: 40px;",
-                tags$h4("Ready to Create Your Presentation?"),
-                tags$p("Configure your settings in the panel above and click 'Generate PowerPoint Slides' to create your presentation."),
-                tags$p("You can select which analyses to include and customize the output to your needs."),
-                tags$br(),
-                tags$div(
-                  style = "background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #0072B2;",
-                  tags$h5("💡 Tips for Best Results:"),
-                  tags$ul(
-                    style = "text-align: left;",
-                    tags$li("Start with specific time periods rather than 'All Data' for faster generation"),
-                    tags$li("Select 3-5 key analyses to keep your presentation focused"),
-                    tags$li("Use geographic filters to focus on specific regions or countries"),
-                    tags$li("Preview each slide before downloading the final presentation")
-                  )
+                class = "sl-start",
+                tags$h4("Build a presentation in three steps"),
+                tags$ol(
+                  tags$li("Pick the period and, if you like, a block, countries, provinces or districts."),
+                  tags$li("Tick the analyses (SIA, LQAS, administrative data and Independent Monitoring) and the output types."),
+                  tags$li("Click Generate slides, review each slide, then download the PowerPoint.")
+                ),
+                tags$h5("Tips"),
+                tags$ul(
+                  tags$li("A specific period or country generates faster than 'All data'."),
+                  tags$li("3 to 5 analyses keep a presentation focused."),
+                  tags$li("Missed Children and Coverage use rolling months: a chosen year is converted to the months since 1 January of that year."),
+                  tags$li("Those two analyses also work at country level, so a province or district filter does not apply to them.")
                 )
               )
             )
@@ -7227,8 +7238,7 @@ ui <- dashboardPage(
       )
     ),
     
-    
-    
+
     # ============================================================
     # ℹ️ QUICK START GUIDE (Fixed with conditional panel)
     # ============================================================
@@ -13999,582 +14009,284 @@ server <- function(input, output, session) {
   # ============================================================
   
   # Reactive values for slide generation
-  slide_analysis_results <- reactiveVal(list())
+  slide_analysis_results <- reactiveVal(list())   # raw results per analysis (what the .pptx is built from)
+  slide_items_rv <- reactiveVal(list())           # flat list of previewable slides (one per map / chart / table)
+  slide_meta_rv <- reactiveVal(NULL)              # settings used at generation time
   current_slide_index <- reactiveVal(1)
   slides_generated <- reactiveVal(FALSE)
-  
-  # Initialize country selection for slides
+
+  # drop the "" placeholder and NA from a multi-select value
+  slide_clean <- function(x) {
+    x <- setdiff(as.character(x), c("", NA))
+    if (length(x)) x else NULL
+  }
+
+  slide_all_keys <- c("scope", "admin", "missed", "coverage", "district_perf", "lqas_maps",
+                      "reasons", "unresolved", "im_overview", "im_reasons", "im_priority")
+  observeEvent(input$slide_select_all, {
+    updateCheckboxGroupInput(session, "slide_analyses", selected = slide_all_keys)
+  })
+  observeEvent(input$slide_select_none, {
+    updateCheckboxGroupInput(session, "slide_analyses", selected = character(0))
+  })
+
+  # Country choices follow the selected block
   observe({
     req(dat, input$slide_block)
-    
     available_countries <- if (input$slide_block != "All") {
       afro_blocks[[input$slide_block]]
     } else {
       sort(unique(dat$country))
     }
-    
-    updateSelectizeInput(
-      session, 
-      "slide_countries",
-      choices = c("All" = "", available_countries),
-      selected = character(0)
-    )
+    updateSelectizeInput(session, "slide_countries",
+                         choices = available_countries, selected = character(0))
   })
-  
-  # Update province choices for slides
+
+  # Province choices follow the selected countries (empty again when none is selected)
   observe({
-    req(dat, input$slide_countries)
-    
-    if (length(input$slide_countries) > 0 && !all(input$slide_countries == "")) {
-      provinces <- dat %>%
-        filter(country %in% input$slide_countries) %>%
-        distinct(province) %>%
-        pull(province) %>%
-        sort() %>%
-        na.omit()
-      
-      updateSelectizeInput(
-        session, 
-        "slide_provinces",
-        choices = c("All" = "", provinces),
-        selected = character(0)
-      )
-    } else {
-      updateSelectizeInput(
-        session, 
-        "slide_provinces",
-        choices = c("All" = ""),
-        selected = character(0)
-      )
-    }
+    req(dat)
+    sc <- slide_clean(input$slide_countries)
+    provs <- if (length(sc)) sort(unique(na.omit(dat$province[dat$country %in% sc]))) else character(0)
+    updateSelectizeInput(session, "slide_provinces", choices = provs,
+                         selected = intersect(isolate(input$slide_provinces), provs))
   })
-  
-  # Update district choices for slides
+
+  # District choices follow the selected countries / provinces
   observe({
-    req(dat, input$slide_countries)
-    
-    if (length(input$slide_countries) > 0 && !all(input$slide_countries == "")) {
-      districts_data <- dat %>%
-        filter(country %in% input$slide_countries)
-      
-      if (!is.null(input$slide_provinces) && 
-          length(input$slide_provinces) > 0 && 
-          !all(input$slide_provinces == "")) {
-        districts_data <- districts_data %>%
-          filter(province %in% input$slide_provinces)
-      }
-      
-      districts <- districts_data %>%
-        distinct(district) %>%
-        pull(district) %>%
-        sort() %>%
-        na.omit()
-      
-      updateSelectizeInput(
-        session, 
-        "slide_districts",
-        choices = c("All" = "", districts),
-        selected = character(0)
-      )
-    } else {
-      updateSelectizeInput(
-        session, 
-        "slide_districts",
-        choices = c("All" = ""),
-        selected = character(0)
-      )
+    req(dat)
+    sc <- slide_clean(input$slide_countries)
+    sp <- slide_clean(input$slide_provinces)
+    dists <- character(0)
+    if (length(sc)) {
+      dd <- dat[dat$country %in% sc, , drop = FALSE]
+      if (length(sp)) dd <- dd[dd$province %in% sp, , drop = FALSE]
+      dists <- sort(unique(na.omit(dd$district)))
     }
+    updateSelectizeInput(session, "slide_districts", choices = dists,
+                         selected = intersect(isolate(input$slide_districts), dists))
   })
-  
-  # Reset slides when leaving the tab
-  observeEvent(input$tabs, {
-    if (input$tabs != "generate_slides") {
-      # Reset slide state when leaving the tab
-      slides_generated(FALSE)
-      slide_analysis_results(list())
-      current_slide_index(1)
-    }
-  })
-  
+
   # Generate Slides Function
   observeEvent(input$generate_slides, {
     if (input$tabs != "generate_slides") return()
-    
-    showNotification("🔄 Generating analysis results for PowerPoint...", type = "message", duration = 5)
-    
-    safe_analysis({
-      # Clear previous results
-      slide_analysis_results(list())
-      current_slide_index(1)
-      slides_generated(FALSE)
-      
-      # Prepare common parameters
-      common_params <- list()
-      
-      # Time parameters
-      if (input$slide_time_type == "months") {
-        common_params$x_months <- input$slide_months
-      } else if (input$slide_time_type == "years" && input$slide_years != "") {
-        common_params$year_selection <- as.numeric(strsplit(input$slide_years, ",")[[1]])
+
+    analyses <- input$slide_analyses
+    outputs  <- input$slide_outputs
+    if (!length(analyses)) { showNotification("Select at least one analysis to include.", type = "warning"); return() }
+    if (!length(outputs))  { showNotification("Select at least one output type.", type = "warning"); return() }
+
+    # ---- timeframe -----------------------------------------------------------------
+    tt <- input$slide_time_type
+    months <- NULL; years <- NULL
+    if (identical(tt, "months")) months <- as.integer(input$slide_months)
+    if (identical(tt, "years")) {
+      years <- as.integer(regmatches(input$slide_years, gregexpr("[0-9]{4}", input$slide_years))[[1]])
+      if (!length(years)) { showNotification("Enter at least one 4-digit year, e.g. 2025.", type = "warning"); return() }
+    }
+    if (identical(tt, "months") && (is.na(months) || months < 1)) {
+      showNotification("Number of months must be at least 1.", type = "warning"); return()
+    }
+    # analyses that only know "last N months" (or a single year) get the closest equivalent
+    months_back <- if (!is.null(months)) months else if (!is.null(years))
+      min(120L, max(1L, as.integer(ceiling(as.numeric(Sys.Date() - as.Date(paste0(min(years), "-01-01"))) / 30.44)))) else 60L
+    single_year <- if (length(years) == 1) years else NULL
+
+    # ---- geography -----------------------------------------------------------------
+    block     <- if (!identical(input$slide_block, "All")) input$slide_block else NULL
+    countries <- slide_clean(input$slide_countries)
+    provinces <- slide_clean(input$slide_provinces)
+    districts <- slide_clean(input$slide_districts)
+    geo_args  <- list(block_selection = block, country_selection = countries,
+                      province_selection = provinces, district_selection = districts)
+    lookups   <- list(afro_blocks = afro_blocks, all_countries = all_countries, all_provinces = all_provinces,
+                      all_districts = all_districts, ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS)
+
+    # call fn with only the arguments it accepts (the analysis functions differ); NULLs are dropped
+    # except for names listed in keep_null, which are passed explicitly as NULL
+    notes <- character(0)
+    call_fn <- function(fn, args, label, keep_null = character(0)) {
+      fm <- names(formals(fn))
+      if (!("..." %in% fm)) args <- args[names(args) %in% fm]
+      nul <- vapply(args, is.null, logical(1))
+      args <- args[!nul | names(args) %in% keep_null]
+      if ((length(provinces) || length(districts)) && !all(c("province_selection", "district_selection") %in% fm))
+        notes <<- c(notes, paste0(label, " works at country level: the province / district filter is not applied"))
+      do.call(fn, args)
+    }
+
+    results <- list(); failures <- character(0)
+    label_of <- function(k) SLB_ANALYSIS_LABELS[[k]]
+    run_one <- function(key, expr_fn) {
+      res <- tryCatch(expr_fn(), error = function(e) {
+        failures <<- c(failures, paste0(label_of(key), ": ", conditionMessage(e))); NULL })
+      if (!is.null(res)) results[[key]] <<- res
+    }
+
+    n_total <- length(analyses); i_done <- 0
+    withProgress(message = "Preparing slides", value = 0, {
+      for (k in analyses) {
+        setProgress(value = i_done / n_total, detail = label_of(k))
+        i_done <- i_done + 1
+        switch(k,
+          scope = run_one(k, function() call_fn(generate_scope_plots_app,
+            c(list(scope_data = scope), geo_args, list(x_months = months, year_selection = years), lookups), label_of(k))),
+          admin = run_one(k, function() list(
+            coverage = call_fn(admin_coverage_summary,
+              c(list(admin_data = admin_data, afro_blocks = afro_blocks, x_months = months, year_selection = years,
+                     block_selection = if (is.null(block)) "All" else block, country_selection = countries), list()),
+              label_of(k), keep_null = "x_months"),
+            vaccinated = call_fn(admin_vaccinated_summary,
+              c(list(admin_data = admin_data, afro_blocks = afro_blocks, x_months = months, year_selection = years,
+                     block_selection = if (is.null(block)) "All" else block, country_selection = countries), list()),
+              label_of(k), keep_null = "x_months"))),
+          missed = run_one(k, function() call_fn(missed_children_disaggregated,
+            c(list(data = dat, x_months = months_back), geo_args, list(afro_blocks = afro_blocks)), label_of(k))),
+          coverage = run_one(k, function() call_fn(coverage_disaggregated,
+            c(list(data = dat, x_months = months_back), geo_args, list(afro_blocks = afro_blocks)), label_of(k))),
+          district_perf = run_one(k, function() call_fn(district_lqas_performance,
+            c(list(data = dat), geo_args, list(x_months = months, year_selection = years), lookups), label_of(k))),
+          lqas_maps = run_one(k, function() call_fn(generate_lqas_summary_map_optimized,
+            c(list(data = dat), geo_args, list(x_months = months, year_selection = years), lookups), label_of(k))),
+          reasons = run_one(k, function() call_fn(reasons_heatmap_analysis,
+            c(list(data = dat), geo_args,
+              list(x_months = if (is.null(single_year)) (if (is.null(months) && is.null(years)) NULL else months_back) else NULL,
+                   specific_year = single_year, afro_blocks = afro_blocks), list()), label_of(k))),
+          unresolved = run_one(k, function() call_fn(generate_unresolved_NC_plots_DS_optimized,
+            c(list(data = dat), geo_args,
+              list(x = if (is.null(single_year)) (if (is.null(months) && is.null(years)) NULL else months_back) else NULL,
+                   y = single_year,
+                   selected_reason = if (!is.null(input$slide_unresolved_reason) &&
+                                         !identical(input$slide_unresolved_reason, "All")) input$slide_unresolved_reason else NULL),
+              lookups), label_of(k))),
+          NULL)
       }
-      
-      # Geographic parameters
-      common_params$block_selection <- if (input$slide_block != "All") input$slide_block else NULL
-      common_params$country_selection <- if (!is.null(input$slide_countries) && 
-                                             length(input$slide_countries) > 0) input$slide_countries else NULL
-      
-      results <- list()
-      
-      # 1. SIA Scope Analysis
-      if ("scope" %in% input$slide_analyses) {
-        showNotification("Running Scope Analysis...", type = "message")
-        scope_result <- tryCatch({
-          do.call(generate_scope_plots_app, c(
-            list(scope_data = scope),
-            common_params,
-            list(
-              afro_blocks = afro_blocks,
-              all_countries = all_countries,
-              all_provinces = all_provinces,
-              all_districts = all_districts,
-              ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS
-            )
-          ))
-        }, error = function(e) {
-          showNotification(paste("Scope Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(scope_result)) results$scope <- scope_result
+
+      # ---- Independent Monitoring analyses (static versions of the IM Overview views) ----
+      im_keys <- intersect(analyses, c("im_overview", "im_reasons", "im_priority"))
+      if (length(im_keys)) {
+        setProgress(value = i_done / n_total, detail = "Independent Monitoring")
+        im_df <- tryCatch(ims_prepare(ims_load(), afro_blocks = afro_blocks, block = block, countries = countries,
+                                      provinces = provinces, districts = districts, x_months = months, years = years),
+                          error = function(e) NULL)
+        if (is.null(im_df)) {
+          failures <- c(failures, "IM analyses: no Independent Monitoring records for these filters")
+        } else {
+          im_res <- tryCatch(ims_run(im_keys, im_df, countries, provinces, districts), error = function(e) {
+            failures <<- c(failures, paste0("IM analyses: ", conditionMessage(e))); list() })
+          for (k in names(im_res)) results[[k]] <- im_res[[k]]
+        }
       }
-      
-      # 2. Admin Data Overview
-      if ("admin" %in% input$slide_analyses) {
-        showNotification("Running Admin Overview...", type = "message")
-        admin_result <- tryCatch({
-          list(
-            coverage = admin_coverage_summary(
-              admin_data = admin_data,
-              afro_blocks = afro_blocks,
-              block_selection = common_params$block_selection,
-              country_selection = common_params$country_selection,
-              x_months = common_params$x_months,
-              year_selection = common_params$year_selection
-            ),
-            vaccinated = admin_vaccinated_summary(
-              admin_data = admin_data,
-              afro_blocks = afro_blocks,
-              block_selection = common_params$block_selection,
-              country_selection = common_params$country_selection,
-              x_months = common_params$x_months,
-              year_selection = common_params$year_selection
-            )
-          )
-        }, error = function(e) {
-          showNotification(paste("Admin Overview failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(admin_result)) results$admin <- admin_result
+      setProgress(value = 1)
+    })
+
+    # ---- flat list of previewable slides, filtered by the chosen output types ----
+    items <- list()
+    for (k in intersect(slide_all_keys, names(results))) {
+      for (it in slb_items(k, results[[k]])) {
+        if (!is.null(it) && it$kind %in% outputs) { it$key <- k; items[[length(items) + 1]] <- it }
       }
-      
-      # 3. Missed Children Analysis
-      if ("missed" %in% input$slide_analyses) {
-        showNotification("Running Missed Children Analysis...", type = "message")
-        missed_result <- tryCatch({
-          do.call(missed_children_disaggregated, c(
-            list(data = dat),
-            common_params
-          ))
-        }, error = function(e) {
-          showNotification(paste("Missed Children Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(missed_result)) results$missed <- missed_result
-      }
-      
-      # 4. Coverage Analysis
-      if ("coverage" %in% input$slide_analyses) {
-        showNotification("Running Coverage Analysis...", type = "message")
-        coverage_result <- tryCatch({
-          do.call(coverage_disaggregated, c(
-            list(data = dat),
-            common_params
-          ))
-        }, error = function(e) {
-          showNotification(paste("Coverage Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(coverage_result)) results$coverage <- coverage_result
-      }
-      
-      # 5. District Performance
-      if ("district_perf" %in% input$slide_analyses) {
-        showNotification("Running District Performance Analysis...", type = "message")
-        district_result <- tryCatch({
-          do.call(district_lqas_performance, c(
-            list(data = dat),
-            common_params,
-            list(
-              afro_blocks = afro_blocks,
-              all_countries = all_countries,
-              all_provinces = all_provinces,
-              all_districts = all_districts,
-              ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS
-            )
-          ))
-        }, error = function(e) {
-          showNotification(paste("District Performance Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(district_result)) results$district_perf <- district_result
-      }
-      
-      # 6. LQAS Summary Maps
-      if ("lqas_maps" %in% input$slide_analyses) {
-        showNotification("Running LQAS Summary Maps Analysis...", type = "message")
-        lqas_result <- tryCatch({
-          do.call(generate_lqas_summary_map_optimized, c(
-            list(data = dat),
-            common_params,
-            list(
-              all_countries = all_countries,
-              all_provinces = all_provinces,
-              all_districts = all_districts,
-              afro_blocks = afro_blocks,
-              ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS
-            )
-          ))
-        }, error = function(e) {
-          showNotification(paste("LQAS Summary Maps Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(lqas_result)) results$lqas_maps <- lqas_result
-      }
-      
-      # 7. Reasons Analysis
-      if ("reasons" %in% input$slide_analyses) {
-        showNotification("Running Reasons Analysis...", type = "message")
-        reasons_result <- tryCatch({
-          do.call(reasons_heatmap_analysis, c(
-            list(data = dat),
-            common_params
-          ))
-        }, error = function(e) {
-          showNotification(paste("Reasons Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(reasons_result)) results$reasons <- reasons_result
-      }
-      
-      # 8. Unresolved Cases
-      if ("unresolved" %in% input$slide_analyses) {
-        showNotification("Running Unresolved Cases Analysis...", type = "message")
-        unresolved_result <- tryCatch({
-          do.call(generate_unresolved_NC_plots_DS_optimized, c(
-            list(data = dat),
-            common_params,
-            list(
-              all_countries = all_countries,
-              all_provinces = all_provinces,
-              all_districts = all_districts,
-              afro_blocks = afro_blocks,
-              ambiguous_district_pairs = AMBIGUOUS_DISTRICT_PAIRS,
-              # "All" (the default) preserves the previous behavior of
-              # building every reason; picking a specific reason here now
-              # builds only that one -- both faster, and it makes the
-              # "Show Specific Reason" dropdown actually take effect for
-              # the slide preview above, which previously always showed
-              # plots[[1]] regardless of this selection.
-              selected_reason = if (!is.null(input$slide_unresolved_reason) &&
-                                    !identical(input$slide_unresolved_reason, "All")) {
-                input$slide_unresolved_reason
-              } else NULL
-            )
-          ))
-        }, error = function(e) {
-          showNotification(paste("Unresolved Cases Analysis failed:", e$message), type = "warning")
-          NULL
-        })
-        if (!is.null(unresolved_result)) results$unresolved <- unresolved_result
-      }
-      
-      # Store results
-      slide_analysis_results(results)
-      slides_generated(TRUE)
-      
-      showNotification("✅ Analysis results ready for PowerPoint generation!", type = "message", duration = 5)
-      
-    }, "Slide Generation Analysis")
+    }
+
+    period_text <- if (!is.null(months)) paste("Last", months, "months")
+                   else if (!is.null(years)) paste("Year", paste(years, collapse = ", ")) else "All available data"
+    geo_text <- if (length(countries)) slb_label_n(countries)
+                else if (!is.null(block)) paste(block, "block") else "All AFRO countries"
+    if (length(provinces)) geo_text <- paste0(geo_text, " | ", length(provinces), " province(s)")
+    if (length(districts)) geo_text <- paste0(geo_text, " | ", length(districts), " district(s)")
+
+    slide_meta_rv(list(
+      meta = list(title = input$slide_presentation_title, author = input$slide_author,
+                  period_text = period_text, geo_text = geo_text),
+      analyses = analyses, outputs = outputs, template = input$slide_template))
+    slide_analysis_results(results)
+    slide_items_rv(items)
+    current_slide_index(1)
+    slides_generated(length(items) > 0)
+
+    if (length(unique(notes))) showNotification(paste(unique(notes), collapse = ". "), type = "message", duration = 10)
+    if (length(failures)) showNotification(paste("Not included:", paste(failures, collapse = " | ")),
+                                           type = "warning", duration = 15)
+    if (length(items)) {
+      showNotification(paste0("Ready: ", length(items), " content slides. Review them below, then download."),
+                       type = "message", duration = 6)
+    } else {
+      showNotification("No slides could be built for these settings. Try a wider period or other analyses.", type = "warning")
+    }
   })
-  
-  # Slide Preview UI
+
+  # ---- Slide preview: one generic viewer that mirrors the exported slides ----
+  slide_current_item <- reactive({
+    items <- slide_items_rv()
+    if (!length(items)) return(NULL)
+    items[[min(max(current_slide_index(), 1), length(items))]]
+  })
+
   output$slide_preview_ui <- renderUI({
-    if (!slides_generated() || length(slide_analysis_results()) == 0) {
-      return(
-        tags$div(
-          class = "alert alert-info",
-          style = "text-align:center; padding:40px;",
-          tags$h4("No slides generated yet"),
-          tags$p("Configure your settings and click 'Generate PowerPoint Slides' to create your presentation."),
-          tags$p("You can select which analyses to include and customize the output.")
-        )
-      )
+    it <- slide_current_item()
+    if (is.null(it)) {
+      return(tags$div(class = "alert alert-info", style = "text-align:center; padding:40px;",
+                      tags$h4("No slides generated yet"),
+                      tags$p("Choose your settings and click 'Generate slides'.")))
     }
-    
-    current_index <- current_slide_index()
-    results <- slide_analysis_results()
-    analysis_names <- names(results)
-    
-    if (current_index > length(analysis_names)) {
-      current_index <- 1
-      current_slide_index(1)
-    }
-    
-    current_analysis <- analysis_names[current_index]
-    analysis_data <- results[[current_analysis]]
-    
-    # Create preview based on analysis type
-    preview_content <- switch(
-      current_analysis,
-      scope = {
-        if (!is.null(analysis_data$plot)) {
-          tagList(
-            tags$h4("SIA Scope Analysis - Map Preview"),
-            plotOutput("slide_preview_scope_plot", height = "400px")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No map available for scope analysis")
-        }
-      },
-      admin = {
-        tagList(
-          tags$h4("Admin Data Overview Preview"),
-          tags$p("Coverage and vaccination summary tables will be included in the presentation."),
-          fluidRow(
-            column(6, uiOutput("slide_preview_admin_coverage")),
-            column(6, uiOutput("slide_preview_admin_vaccinated"))
-          )
-        )
-      },
-      missed = {
-        if (!is.null(analysis_data$flextable)) {
-          tagList(
-            tags$h4("Missed Children Analysis Preview"),
-            uiOutput("slide_preview_missed_table")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No table available for missed children analysis")
-        }
-      },
-      coverage = {
-        if (!is.null(analysis_data$flextable)) {
-          tagList(
-            tags$h4("Coverage Analysis Preview"),
-            uiOutput("slide_preview_coverage_table")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No table available for coverage analysis")
-        }
-      },
-      district_perf = {
-        if (!is.null(analysis_data$multiplot)) {
-          tagList(
-            tags$h4("District Performance Analysis - Map Preview"),
-            plotOutput("slide_preview_district_plot", height = "400px")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No map available for district performance analysis")
-        }
-      },
-      lqas_maps = {
-        if (!is.null(analysis_data$map)) {
-          tagList(
-            tags$h4("LQAS Summary Maps - Preview"),
-            plotOutput("slide_preview_lqas_plot", height = "400px")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No map available for LQAS summary analysis")
-        }
-      },
-      reasons = {
-        if (!is.null(analysis_data$plot)) {
-          tagList(
-            tags$h4("Reasons Analysis - Heatmap Preview"),
-            plotOutput("slide_preview_reasons_plot", height = "400px")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No heatmap available for reasons analysis")
-        }
-      },
-      unresolved = {
-        if (!is.null(analysis_data$plots) && length(analysis_data$plots) > 0) {
-          tagList(
-            tags$h4("Unresolved Cases - Map Preview"),
-            plotOutput("slide_preview_unresolved_plot", height = "400px")
-          )
-        } else {
-          tags$div(class = "alert alert-warning", "No map available for unresolved cases analysis")
-        }
-      },
-      tags$div(class = "alert alert-info", "Preview not available for this analysis type")
-    )
-    
-    return(preview_content)
+    body <- switch(it$type,
+      plot = plotOutput("slide_preview_plot", height = "480px"),
+      table = div(class = "flextable-output", style = "max-height: 520px; overflow: auto;", htmltools_value(it$obj)),
+      metrics = div(class = "sl-metrics",
+        lapply(seq_along(it$obj), function(i) {
+          m <- it$obj[[i]]
+          div(class = "sl-metric", div(class = "sl-metric-v", m$value), div(class = "sl-metric-l", m$label))
+        })),
+      NULL)
+    tagList(
+      tags$h4(class = "sl-prev-title", it$title),
+      if (!is.null(it$sub) && nzchar(it$sub)) tags$p(class = "text-muted", it$sub),
+      body)
   })
-  
-  # Preview plots and tables
-  output$slide_preview_scope_plot <- renderPlot({
-    results <- slide_analysis_results()
-    if (!is.null(results$scope$plot)) {
-      results$scope$plot
-    }
+
+  output$slide_preview_plot <- renderPlot({
+    it <- slide_current_item()
+    req(it, identical(it$type, "plot"))
+    it$obj
   })
-  
-  output$slide_preview_missed_table <- renderUI({
-    results <- slide_analysis_results()
-    if (!is.null(results$missed$flextable)) {
-      div(class = "flextable-output", htmltools_value(results$missed$flextable))
-    }
-  })
-  
-  output$slide_preview_coverage_table <- renderUI({
-    results <- slide_analysis_results()
-    if (!is.null(results$coverage$flextable)) {
-      div(class = "flextable-output", htmltools_value(results$coverage$flextable))
-    }
-  })
-  
-  output$slide_preview_district_plot <- renderPlot({
-    results <- slide_analysis_results()
-    if (!is.null(results$district_perf$multiplot)) {
-      results$district_perf$multiplot
-    }
-  })
-  
-  output$slide_preview_lqas_plot <- renderPlot({
-    results <- slide_analysis_results()
-    if (!is.null(results$lqas_maps$map)) {
-      results$lqas_maps$map
-    }
-  })
-  
-  output$slide_preview_reasons_plot <- renderPlot({
-    results <- slide_analysis_results()
-    if (!is.null(results$reasons$plot)) {
-      results$reasons$plot
-    }
-  })
-  
-  output$slide_preview_unresolved_plot <- renderPlot({
-    results <- slide_analysis_results()
-    if (!is.null(results$unresolved$plots) && length(results$unresolved$plots) > 0) {
-      # Show first available plot for preview
-      results$unresolved$plots[[1]]
-    }
-  })
-  
-  output$slide_preview_admin_coverage <- renderUI({
-    results <- slide_analysis_results()
-    if (!is.null(results$admin$coverage$flextable)) {
-      div(class = "flextable-output", style = "max-height: 300px; overflow-y: auto;", 
-          htmltools_value(results$admin$coverage$flextable))
-    }
-  })
-  
-  output$slide_preview_admin_vaccinated <- renderUI({
-    results <- slide_analysis_results()
-    if (!is.null(results$admin$vaccinated$flextable)) {
-      div(class = "flextable-output", style = "max-height: 300px; overflow-y: auto;", 
-          htmltools_value(results$admin$vaccinated$flextable))
-    }
-  })
-  
+
   # Slide navigation
   observeEvent(input$next_slide, {
-    results <- slide_analysis_results()
-    current_index <- current_slide_index()
-    if (current_index < length(results)) {
-      current_slide_index(current_index + 1)
-    }
+    n <- length(slide_items_rv())
+    if (current_slide_index() < n) current_slide_index(current_slide_index() + 1)
   })
-  
   observeEvent(input$prev_slide, {
-    current_index <- current_slide_index()
-    if (current_index > 1) {
-      current_slide_index(current_index - 1)
-    }
+    if (current_slide_index() > 1) current_slide_index(current_slide_index() - 1)
   })
-  
   output$slide_counter <- renderText({
-    results <- slide_analysis_results()
-    current_index <- current_slide_index()
-    paste("Slide", current_index, "of", length(results))
+    paste("Slide", min(current_slide_index(), max(length(slide_items_rv()), 1)), "of", length(slide_items_rv()))
   })
-  
-  # Enhanced PowerPoint Generation Function
-  generate_powerpoint <- function() {
-    req(slides_generated())
-    results <- slide_analysis_results()
-    
-    showNotification("🔄 Creating PowerPoint presentation...", type = "message", duration = 10)
-    
-    tryCatch({
-      # Create a new PowerPoint presentation
-      pres <- officer::read_pptx()
-      
-      # Add title slide
-      pres <- pres %>%
-        officer::add_slide(layout = "Title Slide", master = "Office Theme") %>%
-        officer::ph_with(value = input$slide_presentation_title, 
-                         location = officer::ph_location_type(type = "ctrTitle")) %>%
-        officer::ph_with(value = paste("Generated:", Sys.Date()), 
-                         location = officer::ph_location_type(type = "subTitle")) %>%
-        officer::ph_with(value = input$slide_author, 
-                         location = officer::ph_location_type(type = "dt"))
-      
-      # ... rest of the PowerPoint generation code remains the same ...
-      
-      return(pres)
-      
-    }, error = function(e) {
-      showNotification(paste("PowerPoint generation failed:", e$message), type = "error")
-      return(NULL)
-    })
-  }
-  
-  # Download handler for PowerPoint
+
+  # Download handler for PowerPoint: built from the results generated above
   output$download_slides <- downloadHandler(
-    filename = function() {
-      paste0("SIA_Analysis_Presentation_", Sys.Date(), ".pptx")
-    },
+    filename = function() paste0("SIA_Analysis_Presentation_", format(Sys.Date(), "%Y%m%d"), ".pptx"),
     content = function(file) {
-      withProgress(
-        message = 'Generating PowerPoint file...',
-        detail = 'This may take a few moments...',
-        value = 0.3,
-        {
-          pres <- generate_powerpoint()
-          incProgress(0.7, detail = "Saving presentation...")
-          
-          if (!is.null(pres)) {
-            print(pres, target = file)
-            incProgress(1, detail = "Download ready!")
-            showNotification("✅ PowerPoint presentation generated successfully!", type = "message")
-          } else {
-            showNotification("❌ Failed to generate PowerPoint", type = "error")
-          }
-        }
-      )
+      m <- slide_meta_rv()
+      req(m, length(slide_analysis_results()) > 0)
+      out <- NULL
+      withProgress(message = "Building PowerPoint...", value = 0.1, {
+        out <- slb_build_pptx(slide_analysis_results(), meta = m$meta, analyses = m$analyses,
+                              outputs = m$outputs, template = m$template,
+                              progress = function(msg) incProgress(0.04, detail = msg))
+        incProgress(0.2, detail = "Saving...")
+        print(out$pres, target = file)
+      })
+      if (length(out$skipped))
+        showNotification(paste("Not in the file:", paste(out$skipped, collapse = " | ")), type = "warning", duration = 12)
     }
   )
-  
+
   # Conditional panel output
   output$slides_generated <- reactive({
     slides_generated()
   })
   outputOptions(output, "slides_generated", suspendWhenHidden = FALSE)
-  
-  
-  
+
+
   # ---- Go Home Handler (for logo click) ----
   observeEvent(input$go_home, {
     updateTabItems(session, "tabs", "snapshot")
