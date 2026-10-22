@@ -6255,9 +6255,15 @@ ui <- dashboardPage(
                       "lqas_perf_filter",
                       "Performance Range (Optional):",
                       choices = c(
-                        "High Performing (80-100%)" = "high_performing",
-                        "Low Performing (0-25%)"    = "low_performing"
+                        "Low Performing (0-25%)"        = "0-25%",
+                        "Moderate-Low (25-50%)"         = "25-50%",
+                        "Moderate-High (50-80%)"        = "50-80%",
+                        "High Performing (80-100%)"     = "80-100%"
                       )
+                    ),
+                    tags$div(
+                      style = "font-size:12px; color:#6b7280; margin:-6px 0 12px 0;",
+                      "Tick one or more ranges to show only those districts in the maps and tables. Leave empty to show all."
                     ),
               
                     checkboxInput(
@@ -10834,8 +10840,6 @@ server <- function(input, output, session) {
       } else NULL
       
       selected_pf <- input$lqas_perf_filter %||% character(0)
-      high_performing <- "high_performing" %in% selected_pf
-      low_performing  <- "low_performing"  %in% selected_pf
       
       country_selection <- if (!is.null(input$lqas_countries) && length(input$lqas_countries) > 0 && !all(input$lqas_countries == "")) {
         input$lqas_countries
@@ -10860,8 +10864,7 @@ server <- function(input, output, session) {
         country_selection = country_selection,
         province_selection = province_selection,
         district_selection = district_selection,
-        high_performing_filter = isTRUE(high_performing),
-        low_performing_filter  = isTRUE(low_performing),
+        performance_ranges     = if (length(selected_pf) > 0) selected_pf else NULL,
         show_province_labels   = isTRUE(input$lqas_show_province_labels),
         all_countries = all_countries,
         all_provinces = all_provinces,
@@ -11051,9 +11054,7 @@ server <- function(input, output, session) {
     }
     
     selected <- input$lqas_perf_filter %||% character(0)
-    keep_levels <- character(0)
-    if ("high_performing" %in% selected) keep_levels <- c(keep_levels, "80-100%")
-    if ("low_performing"  %in% selected) keep_levels <- c(keep_levels, "0-25%")
+    keep_levels <- intersect(c("0-25%", "25-50%", "50-80%", "80-100%"), selected)
     
     if (length(keep_levels) > 0) {
       dfv <- dfv %>% dplyr::filter(.data$High.perf.summary %in% keep_levels)

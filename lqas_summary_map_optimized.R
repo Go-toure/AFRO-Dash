@@ -25,6 +25,7 @@ generate_lqas_summary_map_optimized <- function(data,
                                                 district_selection = NULL,
                                                 high_performing_filter = NULL,
                                                 low_performing_filter = NULL,
+                                                performance_ranges = NULL,
                                                 show_province_labels = FALSE,
                                                 all_countries = NULL,
                                                 all_provinces = NULL,
@@ -335,7 +336,7 @@ generate_lqas_summary_map_optimized <- function(data,
     }
   }
   
-  create_afro_block_summary_table_optimized <- function(pd, block_selection = NULL, block_type = "afro") {
+  create_afro_block_summary_table_optimized <- function(pd, block_selection = NULL, block_type = "afro", ranges = NULL) {
     
     pd <- pd |>
       dplyr::ungroup() |>
@@ -385,14 +386,20 @@ generate_lqas_summary_map_optimized <- function(data,
     )
     for (col in expected_columns) if (!col %in% names(wide)) wide[[col]] <- 0
     
+    all_bins  <- c("0-25%", "25-50%", "50-80%", "80-100%")
+    keep_bins <- if (is.null(ranges) || length(ranges) == 0) all_bins else all_bins[all_bins %in% ranges]
+    if (length(keep_bins) == 0) keep_bins <- all_bins
+    bin_cols <- unlist(lapply(keep_bins, function(b) c(paste("Total districts", b), paste0("Proportion_% ", b))))
+    
     wide <- wide |>
-      dplyr::select(
-        !!rlang::sym(display_var),
-        `Total districts 0-25%`, `Proportion_% 0-25%`,
-        `Total districts 25-50%`, `Proportion_% 25-50%`,
-        `Total districts 50-80%`, `Proportion_% 50-80%`,
-        `Total districts 80-100%`, `Proportion_% 80-100%`
-      )
+      dplyr::select(!!rlang::sym(display_var), dplyr::all_of(bin_cols)) |>
+      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ tidyr::replace_na(.x, 0)))
+    
+    # Only the selected ranges are shown: drop blocks/countries with no district in them.
+    if (length(keep_bins) < length(all_bins)) {
+      tot_cols <- paste("Total districts", keep_bins)
+      wide <- wide[rowSums(wide[, tot_cols, drop = FALSE]) > 0, , drop = FALSE]
+    }
     
     names(wide)[1] <- if (!is.null(block_selection) && block_selection != "All") "country" else "AFRO_block"
     
@@ -402,20 +409,25 @@ generate_lqas_summary_map_optimized <- function(data,
     } else {
       paste0("LQAS District Performance Summary by Block | ", block_type_text)
     }
+    if (length(keep_bins) < length(all_bins)) {
+      table_caption <- paste0(table_caption, " | Performance range: ", paste(keep_bins, collapse = ", "))
+    }
+    
+    bin_bg  <- c("0-25%" = "red4", "25-50%" = "tomato", "50-80%" = "yellow", "80-100%" = "green4")
+    pos     <- seq(2, by = 2, length.out = length(keep_bins))
     
     ft <- flextable::flextable(wide) |>
       flextable::theme_vanilla() |>
       flextable::set_caption(table_caption) |>
-      flextable::bg(j = c(2,4,6,8), bg = c("red4","tomato","yellow","green4"), part = "header") |>
-      flextable::color(j = c(2,4,8), color = "white", part = "header") |>
-      flextable::color(j = 6, color = "black", part = "header") |>
+      flextable::bg(j = pos, bg = unname(bin_bg[keep_bins]), part = "header") |>
+      flextable::color(j = pos, color = ifelse(keep_bins == "50-80%", "black", "white"), part = "header") |>
       flextable::align(align = "center", part = "all") |>
       flextable::autofit()
     
     list(ft = ft, data = wide)
   }
   
-  create_province_summary_table_optimized <- function(province_perf_df) {
+  create_province_summary_table_optimized <- function(province_perf_df, ranges = NULL) {
     
     if (is.null(province_perf_df) || nrow(province_perf_df) == 0) {
       empty_df <- tibble::tibble(
@@ -455,9 +467,23 @@ generate_lqas_summary_map_optimized <- function(data,
       dplyr::arrange(.data$country, dplyr::desc(.data$`high (%)`), .data$province) |>
       dplyr::select(.data$country, .data$province, .data$`high (%)`)
     
+    prov_caption <- "Province Summary | Proportion of 'high' performance records"
+    if (!is.null(ranges) && length(ranges) > 0 && length(ranges) < 4) {
+      prov_df <- prov_df |>
+        dplyr::filter(
+          dplyr::case_when(
+            .data$`high (%)` < 25 ~ "0-25%",
+            .data$`high (%)` < 50 ~ "25-50%",
+            .data$`high (%)` < 80 ~ "50-80%",
+            TRUE ~ "80-100%"
+          ) %in% ranges
+        )
+      prov_caption <- paste0(prov_caption, " | Performance range: ", paste(ranges, collapse = ", "))
+    }
+    
     ft <- flextable::flextable(prov_df) |>
       flextable::theme_vanilla() |>
-      flextable::set_caption("Province Summary | Proportion of 'high' performance records") |>
+      flextable::set_caption(prov_caption) |>
       flextable::bg(part = "header", bg = "#1F4E79") |>
       flextable::color(part = "header", color = "white") |>
       flextable::align(align = "center", part = "header") |>
@@ -817,9 +843,21 @@ generate_lqas_summary_map_optimized <- function(data,
   # -----------------------------
   # Filtered for district map
   # -----------------------------
+  # Performance range: any combination of 0-25%, 25-50%, 50-80%, 80-100% (a district
+  # is kept when its bin is one of the ticked ranges). The two older TRUE/FALSE
+  # arguments are still understood and map to the 80-100% and 0-25% ranges.
+  all_bins   <- c("0-25%", "25-50%", "50-80%", "80-100%")
+  sel_ranges <- performance_ranges
+  if (is.null(sel_ranges) || length(sel_ranges) == 0) {
+    sel_ranges <- c(if (isTRUE(low_performing_filter)) "0-25%",
+                    if (isTRUE(high_performing_filter)) "80-100%")
+  }
+  sel_ranges <- all_bins[all_bins %in% sel_ranges]
+  range_filter_on <- length(sel_ranges) > 0 && length(sel_ranges) < length(all_bins)
+  if (!range_filter_on) sel_ranges <- character(0)
+  
   performance_data <- performance_data_full
-  if (isTRUE(high_performing_filter)) performance_data <- performance_data |> dplyr::filter(.data$High.perf.summary == "80-100%")
-  if (isTRUE(low_performing_filter))  performance_data <- performance_data |> dplyr::filter(.data$High.perf.summary == "0-25%")
+  if (range_filter_on) performance_data <- performance_data |> dplyr::filter(.data$High.perf.summary %in% sel_ranges)
   if (nrow(performance_data) == 0) stop("No data available after applying performance percentage filters.")
 
   # Disambiguated join key -- ambiguous_district_pairs is passed in explicitly
@@ -875,10 +913,10 @@ generate_lqas_summary_map_optimized <- function(data,
   }
   
   map_title <- paste(title_base, "-", title_suffix)
-  if (isTRUE(high_performing_filter)) map_title <- paste(map_title, "- High Performing (80-100%)")
-  if (isTRUE(low_performing_filter))  map_title <- paste(map_title, "- Low Performing (0-25%)")
+  if (range_filter_on) map_title <- paste(map_title, "- Performance range:", paste(sel_ranges, collapse = ", "))
   
   province_map_title <- paste("Province LQAS Summary Map -", title_suffix)
+  if (range_filter_on) province_map_title <- paste(province_map_title, "- Performance range:", paste(sel_ranges, collapse = ", "))
   
   # -----------------------------
   # District map
@@ -934,7 +972,8 @@ generate_lqas_summary_map_optimized <- function(data,
   blk_tbl <- create_afro_block_summary_table_optimized(
     pd = pd_for_table,
     block_selection = block_selection,
-    block_type = block_type
+    block_type = block_type,
+    ranges = sel_ranges
   )
   
   # -----------------------------
@@ -949,7 +988,7 @@ generate_lqas_summary_map_optimized <- function(data,
     dplyr::semi_join(shp_keys, by = c("country_key", "district_key")) |>
     dplyr::select(-.data$country_key, -.data$district_key)
   
-  province_tbl <- create_province_summary_table_optimized(mappable_month_level)
+  province_tbl <- create_province_summary_table_optimized(mappable_month_level, ranges = sel_ranges)
   
   # -----------------------------
   # Province map data + join
@@ -1048,11 +1087,19 @@ generate_lqas_summary_map_optimized <- function(data,
                   .data$yearmonth, .data$round_start_date, .data$performance,
                   .data$High.perf.summary, .data$high_performance_percentage) |>
     dplyr::arrange(.data$country, .data$province, .data$district, .data$yearmonth)
+  if (range_filter_on) {
+    filtered_export_data <- filtered_export_data |>
+      dplyr::filter(.data$High.perf.summary %in% sel_ranges)
+  }
   
   map_district_set <- pd_for_table |>
     dplyr::select(.data$country, .data$province, .data$district, .data$AFRO_block,
                   .data$High.perf.summary, .data$high_performance_percentage) |>
     dplyr::distinct()
+  if (range_filter_on) {
+    map_district_set <- map_district_set |>
+      dplyr::filter(.data$High.perf.summary %in% sel_ranges)
+  }
   
   map_province_set <- province_map_data |>
     dplyr::select(.data$country, .data$province, .data$`high (%)`, .data$province_bin) |>
