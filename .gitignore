@@ -26,3 +26,12 @@ _to_delete/
 *.done
 *.bak_logo
 __pycache__/
+
+# local clutter
+_tmp_cmp/
+_to_delete/
+*.bak
+*.bak_*
+*.done
+*.bak_logo
+__pycache__/
