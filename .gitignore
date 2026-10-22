@@ -17,3 +17,12 @@ logs/
 input/africa_countries.rds
 input/africa_provinces.rds
 input/africa_districts.rds
+
+# local clutter
+_tmp_cmp/
+_to_delete/
+*.bak
+*.bak_*
+*.done
+*.bak_logo
+__pycache__/
