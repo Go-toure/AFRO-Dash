@@ -4154,6 +4154,9 @@ ui <- dashboardPage(
       # Landing page: headline numbers of the monitoring programme and the campaigns
       menuItem("At a Glance", tabName = "snapshot", icon = icon("tachometer-alt"), selected = TRUE),
       
+      # SIA calendar from PolioGo (embedded page)
+      menuItem("SIA Calendar (PolioGo)", tabName = "sia_calendar", icon = icon("calendar-alt")),
+      
       # NEW: Add Power BI Dashboard as the first menu item
       menuItem("Campaigns Overview (Power BI)", 
                tabName = "powerbi_dashboard", 
@@ -5066,7 +5069,7 @@ ui <- dashboardPage(
           
           // Create loading overlay if it doesn't exist
           if (!$container.find('.iframe-loading-overlay').length) {
-            var $overlay = $('<div class=\"iframe-loading-overlay\"><div class=\"iframe-loading-spinner\"></div><div class=\"iframe-loading-text\">Loading Power BI dashboard...</div></div>');
+            var $overlay = $('<div class=\"iframe-loading-overlay\"><div class=\"iframe-loading-spinner\"></div><div class=\"iframe-loading-text\">Loading...</div></div>');
             $container.addClass('iframe-loading-container').prepend($overlay);
           } else {
             // Show loading overlay again when tab becomes active
@@ -5083,7 +5086,7 @@ ui <- dashboardPage(
           $iframe.off('error').on('error', function() {
             console.log('Iframe failed to load');
             $container.find('.iframe-loading-overlay')
-              .html('<div class=\"iframe-loading-text\" style=\"color: #dc3545;\">Failed to load Power BI dashboard. Please check your connection.</div>')
+              .html('<div class=\"iframe-loading-text\" style=\"color: #dc3545;\">Failed to load this page. Please check your connection.</div>')
               .delay(3000)
               .fadeOut(500, function() {
                 $(this).addClass('hidden');
@@ -5183,6 +5186,41 @@ ui <- dashboardPage(
     
     # ============================================================
     # 📊 POWER BI DASHBOARD - Campaigns Overview
+    # ============================================================
+    tabItem(
+      tabName = "sia_calendar",
+      fluidRow(
+        box(
+          title = tags$div("SIA Calendar (PolioGo)"),
+          width = 12,
+          status = "primary",
+          solidHeader = TRUE,
+          collapsible = FALSE,
+          tags$div(
+            style = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;",
+            tags$p(
+              style = "margin:0; font-size:13px; color:#4b5563;",
+              "Live calendar of supplementary immunization activities from PolioGo. If the page stays blank, sign in to PolioGo in this browser or use the button to open it in a new tab."
+            ),
+            tags$a(
+              href = "https://poliogo.afro.who.int/dashboard/polio/calendar/accountId/1/order/first_round_started_at/campaignType/polio/campaignCategory/all/periodType/quarter/showIntegrated/true",
+              target = "_blank", rel = "noopener",
+              class = "btn btn-default btn-sm",
+              "Open in new tab"
+            )
+          ),
+          tags$iframe(
+            src = "https://poliogo.afro.who.int/dashboard/polio/calendar/accountId/1/order/first_round_started_at/campaignType/polio/campaignCategory/all/periodType/quarter/showIntegrated/true",
+            style = "width:100%; height:calc(100vh - 230px); min-height:600px; border:none;",
+            frameborder = "0",
+            allowfullscreen = TRUE
+          )
+        )
+      )
+    ),
+
+    # ============================================================
+    # POWER BI DASHBOARD - Campaigns Overview
     # ============================================================
     tabItem(
       tabName = "powerbi_dashboard",
