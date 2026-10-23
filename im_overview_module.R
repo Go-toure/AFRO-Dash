@@ -64,18 +64,17 @@ im_load_data <- function(path = IM_DATA_FILE) {
   if ("cv" %in% names(df)) df$cv <- pmin(pmax(df$cv, 0), 1)
   for (dc in intersect(c("round_start_date", "start_date_im_end", "start_date"), names(df)))
     df[[dc]] <- tryCatch(as.Date(df[[dc]]), error = function(e) as.Date(NA))
-  if (exists("focus_filter", mode = "function")) df <- focus_filter(df)   # block-focused deployment
   attr(df, "im_published_at") <- if (is.null(published)) file.mtime(path) else published
   df
 }
 
 # block menu choices (only the focus block on a block-focused deployment)
 im_block_choices <- function() {
-  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) c("All", FOCUS_BLOCK)
+  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) c("All", focus_block())
   else c("All", "LCB", "WA", "DRC", "CEA", "ESA")
 }
 im_region_label <- function() {
-  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "Block") else "AFRO Regional"
+  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) paste(focus_block(), "Block") else "AFRO Regional"
 }
 
 # ---- styling (scoped to .im-ov; light + dark) ---------------------------------
@@ -2210,7 +2209,13 @@ im_data_cached <- function(path = IM_DATA_FILE) {
     .im_cache$data  <- im_load_data(path)
     .im_cache$mtime <- mt
   }
-  .im_cache$data
+  d <- .im_cache$data   # unfiltered, shared; narrowed down to the visitor's block below
+  if (!is.null(d) && exists("focus_filter", mode = "function") && FOCUS_ACTIVE()) {
+    pub <- attr(d, "im_published_at")
+    d <- focus_filter(d)
+    attr(d, "im_published_at") <- pub
+  }
+  d
 }
 
 # columns shown by default in the explorer (everything else stays available via "Show/Hide Columns")

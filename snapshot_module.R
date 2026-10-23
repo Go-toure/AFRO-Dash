@@ -120,7 +120,14 @@ snap_read_stats <- function(path, src) {
   d
 }
 
+# data for the visitor's block (the cache below stays unfiltered and is shared by all visitors)
 snap_load <- function(files = SNAP_FILES) {
+  out <- snap_load_all(files)
+  if (is.null(out) || !exists("focus_filter", mode = "function") || !FOCUS_ACTIVE()) return(out)
+  out$M <- focus_filter(out$M); out$A <- focus_filter(out$A); out$S <- focus_filter(out$S)
+  out
+}
+snap_load_all <- function(files = SNAP_FILES) {
   mt <- vapply(files, function(f) if (file.exists(f)) as.numeric(file.mtime(f)) else NA_real_, numeric(1))
   if (!is.null(.snap_cache$data) && identical(.snap_cache$mt, mt)) return(.snap_cache$data)
 
@@ -192,8 +199,6 @@ snap_load <- function(files = SNAP_FILES) {
                                                    snap_read_stats(files$stats_lqas, "LQAS"))))
   if (!is.null(st)) st$country <- snap_canon_country(st$country, ref)
 
-  # block-focused deployment: keep only that block's countries
-  if (exists("focus_filter", mode = "function")) { M <- focus_filter(M); A <- focus_filter(A); st <- focus_filter(st) }
 
   out <- list(M = M, A = A, S = st, im_published = im_pub, ref = ref)
   .snap_cache$data <- out
@@ -375,7 +380,7 @@ snap_ui <- function(id) {
         shiny::div(
           shiny::tags$h2("Polio SIA at a Glance"),
           shiny::tags$p(if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE())
-                          paste0("WHO AFRO | ", FOCUS_BLOCK, " block | Independent monitoring (LQAS & IM) and campaign delivery")
+                          paste0("WHO AFRO | ", focus_block(), " block | Independent monitoring (LQAS & IM) and campaign delivery")
                         else "WHO AFRO | Independent monitoring (LQAS & IM) and campaign delivery"),
           shiny::uiOutput(ns("asof"))),
         shiny::div(class = "snap-actions",

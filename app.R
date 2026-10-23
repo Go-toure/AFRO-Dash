@@ -15,23 +15,57 @@ DASHBOARD_VERSION <- "v1.0"
 DASHBOARD_DATE <- format(Sys.Date(), "%B %Y")
 
 # ---- Focus block (optional) ----
-# Set the environment variable DASH_BLOCK (for example LCB) on a deployment and the whole
-# dashboard is limited to that block: every dataset, block menu and chart only holds its
-# countries. Leave it empty for the usual AFRO-wide dashboard. Same code, same repository.
+# One dashboard, one link per block. The block is read from the address the visitor opens:
+#   https://<host>/LCB   https://<host>/WA   https://<host>/AFRO (or just https://<host>/)
+#   https://<host>/?block=LCB  works too (use it if the host does not pass sub-paths on).
+# Every dataset, block menu and chart then only holds that block's countries - for that visitor only.
+# Optional: set the environment variable DASH_BLOCK (for example LCB) to LOCK a whole deployment to
+# one block; the address is then ignored.
 # (<<- puts these in the global environment so the module files, which are sourced there,
 # can see them too.)
 FOCUS_BLOCK <<- toupper(trimws(Sys.getenv("DASH_BLOCK", "")))
-FOCUS_COUNTRIES <<- NULL   # filled in below, once the block definitions are known
-FOCUS_ACTIVE <<- function() !is.null(FOCUS_COUNTRIES) && length(FOCUS_COUNTRIES) > 0
+FOCUS_COUNTRIES <<- NULL   # (locked deployments only) filled in below, once the block definitions are known
+.route_block <<- ""        # block of the page being built (set for each page request)
+.blocks_raw <<- NULL       # block definitions as written, filled in below
+# block of the current visitor: DASH_BLOCK when locked, else the one found in the address
+focus_block <<- function() {
+  if (nzchar(FOCUS_BLOCK)) return(FOCUS_BLOCK)
+  s <- tryCatch(shiny::getDefaultReactiveDomain(), error = function(e) NULL)
+  if (!is.null(s) && !is.null(s$userData$route_block)) return(s$userData$route_block)
+  .route_block
+}
+focus_countries <<- function() {
+  b <- focus_block()
+  if (!nzchar(b) || is.null(.blocks_raw) || !(b %in% names(.blocks_raw))) return(NULL)
+  cs <- toupper(.blocks_raw[[b]])
+  if ("CHAD" %in% cs) cs <- c(cs, "TCHAD")
+  cs
+}
+FOCUS_ACTIVE <<- function() length(focus_countries()) > 0
 focus_keep <<- function(x) {
-  if (!FOCUS_ACTIVE()) return(rep(TRUE, length(x)))
-  toupper(trimws(as.character(x))) %in% FOCUS_COUNTRIES
+  cs <- focus_countries()
+  if (is.null(cs)) return(rep(TRUE, length(x)))
+  toupper(trimws(as.character(x))) %in% cs
 }
 focus_filter <<- function(df, cols = c("country", "Country", "COUNTRY")) {
   if (is.null(df) || !FOCUS_ACTIVE()) return(df)
   col <- intersect(cols, names(df))
   if (!length(col)) return(df)
   df[focus_keep(df[[col[1]]]), , drop = FALSE]
+}
+# block named in an address: last part of the path (/LCB, /WA ...) or ?block=LCB ; "" = whole region
+route_block_from <<- function(path, query = "") {
+  known <- if (is.null(.blocks_raw)) character(0) else names(.blocks_raw)
+  pick <- function(x) {
+    x <- toupper(trimws(utils::URLdecode(as.character(x))))
+    if (length(x) == 1 && !is.na(x) && x %in% known) x else ""
+  }
+  q <- tryCatch(shiny::parseQueryString(as.character(if (is.null(query)) "" else query)), error = function(e) list())
+  if (!is.null(q$block)) return(pick(q$block))
+  parts <- strsplit(as.character(if (is.null(path)) "" else path), "/", fixed = TRUE)[[1]]
+  parts <- parts[nzchar(parts)]
+  if (!length(parts)) return("")
+  pick(parts[length(parts)])
 }
 # Version tag for the sidebar logo URL. Browsers cache static files by URL, so after
 # the logo file is replaced they keep showing the old image; tying the URL to the
@@ -1415,7 +1449,9 @@ afro_blocks <- list(
 )
 
 
-# Focus block: keep only the countries of DASH_BLOCK (when that setting names a known block).
+.blocks_raw <<- afro_blocks
+
+# Locked deployment: keep only the countries of DASH_BLOCK (when that setting names a known block).
 if (nzchar(FOCUS_BLOCK) && FOCUS_BLOCK %in% names(afro_blocks)) {
   FOCUS_COUNTRIES <<- toupper(afro_blocks[[FOCUS_BLOCK]])
   if ("CHAD" %in% FOCUS_COUNTRIES) FOCUS_COUNTRIES <<- c(FOCUS_COUNTRIES, "TCHAD")
@@ -1485,6 +1521,25 @@ if (FOCUS_ACTIVE()) {
   cat("Focus block data:", nrow(dat), "LQAS rows\n")
 }
 afro_blocks <- update_blocks_with_actual_data(afro_blocks, dat)
+afro_blocks_all <<- afro_blocks
+ist_blocks_all  <<- ist_blocks
+# block definitions for the visitor on the current page / session
+afro_blocks_now <<- function() {
+  b <- focus_block()
+  if (nzchar(b) && b %in% names(afro_blocks_all)) afro_blocks_all[b] else afro_blocks_all
+}
+ist_blocks_now <<- function() {
+  cs <- focus_countries()
+  if (is.null(cs)) return(ist_blocks_all)
+  x <- lapply(ist_blocks_all, function(v) intersect(v, cs))
+  x[lengths(x) > 0]
+}
+# country list of the settlement tab for the visitor on the current page
+settlement_choices_now <<- function() {
+  if (!FOCUS_ACTIVE() || nzchar(FOCUS_BLOCK)) return(settlement_file_choices)
+  res <- tryCatch(if (IMSET_AVAILABLE) imset_file_choices(input_folder) else character(0), error = function(e) character(0))
+  if (length(res)) res else settlement_file_choices
+}
 cat("AFRO blocks updated based on available data\n")
 cat("Available blocks:", paste(names(afro_blocks), collapse = ", "), "\n\n")
 
@@ -4098,10 +4153,10 @@ if (!"Lato" %in% extrafont::fonts()) {
 # UI
 # ============================================================
 
-ui <- dashboardPage(
+ui_for_block <- function() dashboardPage(
   dashboardHeader(
     title = paste(
-      if (FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "SIA Dashboard") else "WHO AFRO SIA Dashboard",
+      if (FOCUS_ACTIVE()) paste(focus_block(), "SIA Dashboard") else "WHO AFRO SIA Dashboard",
       DASHBOARD_VERSION, "|", DASHBOARD_DATE
     ),
     titleWidth = 300,
@@ -5303,7 +5358,7 @@ ui <- dashboardPage(
                   selectizeInput(
                     "overview_block", 
                     "Selected Block:",
-                    choices = c("All", names(afro_blocks)), 
+                    choices = c("All", names(afro_blocks_now())), 
                     selected = "All",
                     options = list(
                       placeholder = 'Select Block...',
@@ -5454,7 +5509,7 @@ ui <- dashboardPage(
               
                     # MODIFIED: Dynamic Block Selection
                     selectInput("missed_block", "Selected Block:",
-                                choices = c("All", names(afro_blocks)), 
+                                choices = c("All", names(afro_blocks_now())), 
                                 selected = "All"),
               
                     selectInput("missed_time_type", "Time Period Type:",
@@ -5561,7 +5616,7 @@ ui <- dashboardPage(
               
                     # MODIFIED: Dynamic Block Selection
                     selectInput("coverage_block", "Selected Block:",
-                                choices = c("All", names(afro_blocks)), 
+                                choices = c("All", names(afro_blocks_now())), 
                                 selected = "All"),
               
                     selectInput("coverage_time_type", "Time Period Type:",
@@ -5685,7 +5740,7 @@ ui <- dashboardPage(
               
               # MODIFIED: Dynamic Block Selection
               selectInput("scope_block", "Selected Block:",
-                          choices = c("All", names(afro_blocks)), selected = "All"),
+                          choices = c("All", names(afro_blocks_now())), selected = "All"),
               
               # Country filter - DROPDOWN (FIXED Z-INDEX)
               selectizeInput("scope_countries", "Country/Countries:",
@@ -5798,7 +5853,7 @@ ui <- dashboardPage(
             
             # MODIFIED: Dynamic Block Selection
             selectInput("admin_block", "Selected Block:", 
-                        choices = c("All", names(afro_blocks)), 
+                        choices = c("All", names(afro_blocks_now())), 
                         selected = "All"),
             
             uiOutput("admin_countries_ui"),
@@ -6247,7 +6302,7 @@ ui <- dashboardPage(
               
                     selectInput(
                       "lqas_block", "Selected Block:",
-                      choices = c("All", names(afro_blocks)),
+                      choices = c("All", names(afro_blocks_now())),
                       selected = "All"
                     ),
               
@@ -6529,7 +6584,7 @@ ui <- dashboardPage(
               
                     # Dynamic Block Selection
                     selectInput("reasons_block", "Selected Block:",
-                                choices = c("All", names(afro_blocks)),
+                                choices = c("All", names(afro_blocks_now())),
                                 selected = "All"),
               
                     selectInput("reasons_time_type", "Time Period:",
@@ -6933,7 +6988,7 @@ ui <- dashboardPage(
               
                     # MODIFIED: Dynamic Block Selection
                     selectInput("unresolved_block", "Selected Block:",
-                                choices = c("All", names(afro_blocks)),
+                                choices = c("All", names(afro_blocks_now())),
                                 selected = "All"),
               
                     # Country filter - DROPDOWN
@@ -7098,7 +7153,7 @@ ui <- dashboardPage(
             fluidRow(
               box(
                 title = "Data Filters", width = 12, class = "imx-fbody", solidHeader = TRUE, status = "primary",
-                selectInput("settlement_file_id", "Country", choices = settlement_file_choices),
+                selectInput("settlement_file_id", "Country", choices = settlement_choices_now()),
                 selectInput("settlement_monitoring", "Monitoring",
                             choices = c("In process" = "InProcess", "End process" = "EndProcess", "Both" = "ALL"), selected = "InProcess"),
                 dateRangeInput("settlement_date_range", "Date Range:",
@@ -7175,7 +7230,7 @@ ui <- dashboardPage(
                               value = format(Sys.Date(), "%Y"))
                   ),
                   selectInput("slide_block", "AFRO block",
-                              choices = c("All", names(afro_blocks)), selected = "All"),
+                              choices = c("All", names(afro_blocks_now())), selected = "All"),
                   selectizeInput("slide_countries", "Countries (optional)",
                                  choices = character(0), multiple = TRUE,
                                  options = list(placeholder = "All countries in the block",
@@ -7236,7 +7291,7 @@ ui <- dashboardPage(
                                                  "Key numbers" = "metrics"),
                                      selected = c("maps", "charts", "tables", "metrics")),
                   textInput("slide_presentation_title", "Presentation title",
-                            value = if (FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "SIA Dashboard Analysis") else "WHO AFRO SIA Dashboard Analysis"),
+                            value = if (FOCUS_ACTIVE()) paste(focus_block(), "SIA Dashboard Analysis") else "WHO AFRO SIA Dashboard Analysis"),
                   textInput("slide_author", "Author", value = "WHO AFRO GIS CENTRE - Outbreak Team"),
                   selectInput("slide_template", "Slide style",
                               choices = c("WHO blue (default)" = "default",
@@ -7375,11 +7430,37 @@ vbox_fun <- function(value, subtitle, icon_name, color = "blue") {
 
 
 
+# ---- page for each request: block taken from the address (/LCB, /WA ... or ?block=LCB) ----
+ui <- function(req) {
+  path <- as.character(if (is.null(req$PATH_INFO)) "/" else req$PATH_INFO)
+  # /LCB/ -> /LCB so the page's relative links (scripts, styles) resolve from the root
+  if (!nzchar(FOCUS_BLOCK) && nchar(path) > 1 && grepl("/$", path)) {
+    return(shiny::httpResponse(302L, "text/plain", "", list(Location = sub("/+$", "", path))))
+  }
+  if (!nzchar(FOCUS_BLOCK)) .route_block <<- route_block_from(path, req$QUERY_STRING)
+  ui_for_block()
+}
+
 # ============================================================
 # SERVER
 # ============================================================
 
 server <- function(input, output, session) {
+
+  # ---- block of this visitor: from the address (/LCB, /WA ... or ?block=LCB) ----
+  # The shared data stay untouched; this session works on its own filtered copies, so
+  # several blocks can be open at the same time on the same deployment.
+  if (!nzchar(FOCUS_BLOCK)) {
+    session$userData$route_block <- route_block_from(isolate(session$clientData$url_pathname),
+                                                     isolate(session$clientData$url_search))
+    if (FOCUS_ACTIVE()) {
+      dat        <- focus_filter(dat)
+      scope      <- focus_filter(scope)
+      admin_data <- focus_filter(admin_data)
+    }
+  }
+  afro_blocks <- afro_blocks_now()
+  ist_blocks  <- ist_blocks_now()
   
   # IM Overview tab (module defined in im_overview_module.R)
   if (SNAPSHOT_AVAILABLE) snap_server("snap", blocks = afro_blocks)
@@ -7923,6 +8004,7 @@ server <- function(input, output, session) {
       return(df)
     }, "Data Filtering")
   }) %>% bindCache(
+    focus_block(),
     input$overview_time_type,
     input$overview_daterange,
     input$overview_years,
@@ -14266,7 +14348,7 @@ server <- function(input, output, session) {
 # ============================================================
 # Run the application
 # ============================================================
-shinyApp(ui, server)
+shinyApp(ui, server, uiPattern = ".*")
 
 
 
