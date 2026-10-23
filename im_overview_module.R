@@ -64,8 +64,18 @@ im_load_data <- function(path = IM_DATA_FILE) {
   if ("cv" %in% names(df)) df$cv <- pmin(pmax(df$cv, 0), 1)
   for (dc in intersect(c("round_start_date", "start_date_im_end", "start_date"), names(df)))
     df[[dc]] <- tryCatch(as.Date(df[[dc]]), error = function(e) as.Date(NA))
+  if (exists("focus_filter", mode = "function")) df <- focus_filter(df)   # block-focused deployment
   attr(df, "im_published_at") <- if (is.null(published)) file.mtime(path) else published
   df
+}
+
+# block menu choices (only the focus block on a block-focused deployment)
+im_block_choices <- function() {
+  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) c("All", FOCUS_BLOCK)
+  else c("All", "LCB", "WA", "DRC", "CEA", "ESA")
+}
+im_region_label <- function() {
+  if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "Block") else "AFRO Regional"
 }
 
 # ---- styling (scoped to .im-ov; light + dark) ---------------------------------
@@ -224,7 +234,7 @@ im_overview_ui <- function(id) {
     # ---- filters ----------------------------------------------------------------
     shiny::div(class = "im-filters",
       shiny::fluidRow(
-        shiny::column(2, shiny::selectInput(ns("ov_block"),    "AFRO Block", c("All", "LCB", "WA", "DRC", "CEA", "ESA"))),
+        shiny::column(2, shiny::selectInput(ns("ov_block"),    "AFRO Block", im_block_choices())),
         shiny::column(2, shiny::selectInput(ns("ov_country"),  "Country",  "All")),
         shiny::column(2, shiny::selectInput(ns("ov_province"), "Province", "All")),
         shiny::column(2, shiny::selectInput(ns("ov_district"), "District", "All")),
@@ -454,7 +464,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     div(class="hero-ctx fade-up",
       div(style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;position:relative;z-index:1;",
         div(
-          div(class="hero-ctx-title", "AFRO Regional IM Intelligence"),
+          div(class="hero-ctx-title", paste(im_region_label(), "IM Intelligence")),
           div(class="hero-ctx-sub",
             tagList(bs_icon("geo-alt-fill", class = "me-1",
                              style = "vertical-align:-0.1em;"), ctx))
@@ -536,7 +546,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
                        "display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;"),
         div(
           div(style="font-size:16.8px;font-weight:800;letter-spacing:.02em;",
-              "AFRO REGIONAL INDEPENDENT MONITORING INTELLIGENCE"),
+              toupper(paste(im_region_label(), "INDEPENDENT MONITORING INTELLIGENCE"))),
           div(style="font-size:12.5px;color:#6C7A8D;margin-top:2px;",
               paste0("Generated: ", format(Sys.Date(), "%d %b %Y"), "  |  Live filtered snapshot"))
         ),
@@ -2226,7 +2236,7 @@ im_repository_ui <- function(id) {
         shinydashboard::box(
           title = shiny::tags$div(shiny::icon("filter"), "IM Repository Filters"),
           width = NULL, status = "primary", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE,
-          shiny::selectizeInput(ns("rp_block"), "AFRO Block:", c("All", "LCB", "WA", "DRC", "CEA", "ESA"),
+          shiny::selectizeInput(ns("rp_block"), "AFRO Block:", im_block_choices(),
             selected = "All", options = list(dropdownParent = "body")),
           shiny::selectizeInput(ns("rp_country"), "Countries (optional):", choices = NULL, multiple = TRUE,
             options = list(placeholder = "All countries", dropdownParent = "body", plugins = list("remove_button"))),

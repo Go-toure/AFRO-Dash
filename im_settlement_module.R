@@ -170,7 +170,9 @@ imset_file_index <- local({
       cache <<- if (length(rows)) do.call(rbind, rows) else NULL
       sig <<- s
     }
-    cache
+    # block-focused deployment: list only that block's countries (filtered on every call, because
+    # the index may be built before the focus setting is known)
+    if (!is.null(cache) && exists("focus_keep", mode = "function")) cache[focus_keep(cache$COUNTRY), , drop = FALSE] else cache
   }
 })
 

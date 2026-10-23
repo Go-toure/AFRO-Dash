@@ -252,6 +252,7 @@ ims_load <- function(path = file.path("input", "AFRO_IM_data.rds")) {
   if (is.null(.ims_cache$data) || !identical(.ims_cache$mtime, mt)) {
     d <- tryCatch(readRDS(path), error = function(e) NULL)
     .ims_cache$data <- if (is.null(d)) NULL else as.data.frame(d, stringsAsFactors = FALSE)
+    if (!is.null(.ims_cache$data) && exists("focus_filter", mode = "function")) .ims_cache$data <- focus_filter(.ims_cache$data)
     .ims_cache$mtime <- mt
   }
   .ims_cache$data

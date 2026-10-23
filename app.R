@@ -13,6 +13,26 @@ invisible(tryCatch(suppressWarnings(Sys.setlocale("LC_TIME", "C")), error = func
 # ---- Version and metadata ----
 DASHBOARD_VERSION <- "v1.0"
 DASHBOARD_DATE <- format(Sys.Date(), "%B %Y")
+
+# ---- Focus block (optional) ----
+# Set the environment variable DASH_BLOCK (for example LCB) on a deployment and the whole
+# dashboard is limited to that block: every dataset, block menu and chart only holds its
+# countries. Leave it empty for the usual AFRO-wide dashboard. Same code, same repository.
+# (<<- puts these in the global environment so the module files, which are sourced there,
+# can see them too.)
+FOCUS_BLOCK <<- toupper(trimws(Sys.getenv("DASH_BLOCK", "")))
+FOCUS_COUNTRIES <<- NULL   # filled in below, once the block definitions are known
+FOCUS_ACTIVE <<- function() !is.null(FOCUS_COUNTRIES) && length(FOCUS_COUNTRIES) > 0
+focus_keep <<- function(x) {
+  if (!FOCUS_ACTIVE()) return(rep(TRUE, length(x)))
+  toupper(trimws(as.character(x))) %in% FOCUS_COUNTRIES
+}
+focus_filter <<- function(df, cols = c("country", "Country", "COUNTRY")) {
+  if (is.null(df) || !FOCUS_ACTIVE()) return(df)
+  col <- intersect(cols, names(df))
+  if (!length(col)) return(df)
+  df[focus_keep(df[[col[1]]]), , drop = FALSE]
+}
 # Version tag for the sidebar logo URL. Browsers cache static files by URL, so after
 # the logo file is replaced they keep showing the old image; tying the URL to the
 # file's content makes every logo change show up immediately.
@@ -1395,6 +1415,16 @@ afro_blocks <- list(
 )
 
 
+# Focus block: keep only the countries of DASH_BLOCK (when that setting names a known block).
+if (nzchar(FOCUS_BLOCK) && FOCUS_BLOCK %in% names(afro_blocks)) {
+  FOCUS_COUNTRIES <<- toupper(afro_blocks[[FOCUS_BLOCK]])
+  if ("CHAD" %in% FOCUS_COUNTRIES) FOCUS_COUNTRIES <<- c(FOCUS_COUNTRIES, "TCHAD")
+  cat("Focus block active:", FOCUS_BLOCK, "-", paste(FOCUS_COUNTRIES, collapse = ", "), "\n")
+} else {
+  if (nzchar(FOCUS_BLOCK)) cat("DASH_BLOCK='", FOCUS_BLOCK, "' is not a known block - showing the whole region\n", sep = "")
+  FOCUS_BLOCK <<- ""
+}
+
 ist_blocks <- list(
   "CENTRAL" = c("ANGOLA", "BURUNDI", "CAMEROON", "CENTRAL AFRICAN REPUBLIC", "CONGO", 
                 "DEMOCRATIC REPUBLIC OF THE CONGO", "EQUATORIAL GUINEA", "GABON", 
@@ -1441,6 +1471,19 @@ update_blocks_with_actual_data <- function(blocks, data) {
   updated_blocks
 }
 
+if (FOCUS_ACTIVE()) {
+  dat        <- focus_filter(dat)
+  scope      <- focus_filter(scope)
+  admin_data <- focus_filter(admin_data)
+  afro_blocks <- afro_blocks[FOCUS_BLOCK]
+  ist_blocks  <- lapply(ist_blocks, function(x) intersect(x, FOCUS_COUNTRIES))
+  ist_blocks  <- ist_blocks[lengths(ist_blocks) > 0]
+  # country list of the settlement tab was built earlier, before the focus setting was known
+  settlement_file_choices <- tryCatch(
+    if (IMSET_AVAILABLE) imset_file_choices(input_folder) else character(0),
+    error = function(e) character(0))
+  cat("Focus block data:", nrow(dat), "LQAS rows\n")
+}
 afro_blocks <- update_blocks_with_actual_data(afro_blocks, dat)
 cat("AFRO blocks updated based on available data\n")
 cat("Available blocks:", paste(names(afro_blocks), collapse = ", "), "\n\n")
@@ -4058,7 +4101,8 @@ if (!"Lato" %in% extrafont::fonts()) {
 ui <- dashboardPage(
   dashboardHeader(
     title = paste(
-      "WHO AFRO SIA Dashboard", DASHBOARD_VERSION, "|", DASHBOARD_DATE
+      if (FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "SIA Dashboard") else "WHO AFRO SIA Dashboard",
+      DASHBOARD_VERSION, "|", DASHBOARD_DATE
     ),
     titleWidth = 300,
     
@@ -4155,7 +4199,8 @@ ui <- dashboardPage(
       menuItem("At a Glance", tabName = "snapshot", icon = icon("tachometer-alt"), selected = TRUE),
       
       # NEW: Add Power BI Dashboard as the first menu item
-      menuItem("Campaigns Overview (Power BI)", 
+      # (the Power BI report covers the whole region, so a block-focused dashboard hides it)
+      if (!FOCUS_ACTIVE()) menuItem("Campaigns Overview (Power BI)", 
                tabName = "powerbi_dashboard", 
                icon = icon("chart-line")),
       
@@ -7191,7 +7236,7 @@ ui <- dashboardPage(
                                                  "Key numbers" = "metrics"),
                                      selected = c("maps", "charts", "tables", "metrics")),
                   textInput("slide_presentation_title", "Presentation title",
-                            value = "WHO AFRO SIA Dashboard Analysis"),
+                            value = if (FOCUS_ACTIVE()) paste(FOCUS_BLOCK, "SIA Dashboard Analysis") else "WHO AFRO SIA Dashboard Analysis"),
                   textInput("slide_author", "Author", value = "WHO AFRO GIS CENTRE - Outbreak Team"),
                   selectInput("slide_template", "Slide style",
                               choices = c("WHO blue (default)" = "default",

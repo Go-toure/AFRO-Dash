@@ -192,6 +192,9 @@ snap_load <- function(files = SNAP_FILES) {
                                                    snap_read_stats(files$stats_lqas, "LQAS"))))
   if (!is.null(st)) st$country <- snap_canon_country(st$country, ref)
 
+  # block-focused deployment: keep only that block's countries
+  if (exists("focus_filter", mode = "function")) { M <- focus_filter(M); A <- focus_filter(A); st <- focus_filter(st) }
+
   out <- list(M = M, A = A, S = st, im_published = im_pub, ref = ref)
   .snap_cache$data <- out
   .snap_cache$mt <- mt
@@ -371,7 +374,9 @@ snap_ui <- function(id) {
       shiny::div(class = "snap-hero",
         shiny::div(
           shiny::tags$h2("Polio SIA at a Glance"),
-          shiny::tags$p("WHO AFRO | Independent monitoring (LQAS & IM) and campaign delivery"),
+          shiny::tags$p(if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE())
+                          paste0("WHO AFRO | ", FOCUS_BLOCK, " block | Independent monitoring (LQAS & IM) and campaign delivery")
+                        else "WHO AFRO | Independent monitoring (LQAS & IM) and campaign delivery"),
           shiny::uiOutput(ns("asof"))),
         shiny::div(class = "snap-actions",
           shiny::tags$button(type = "button", class = "btn btn-default", onclick = "window.print()",
