@@ -5171,14 +5171,14 @@
     "im_overview_module.R": {
       "checksum": "40ec4c0b179279d760a6fcd46f145232"
     },
-    "im_slides.R": {
-      "checksum": "29af1bed2eac7ef6a4f45fac3f57dea9"
-    },
     "im_settlement_module.R": {
       "checksum": "765e686803dc236bba4c2de93d7d0019"
     },
+    "im_slides.R": {
+      "checksum": "29af1bed2eac7ef6a4f45fac3f57dea9"
+    },
     "input/10267.csv.gz": {
-      "checksum": "b6b8ca33c02883353afe014d074a006b"
+      "checksum": "26ba4ac09c30a978b83cb9dd1f0d28f6"
     },
     "input/15780.csv.gz": {
       "checksum": "823e7dbb69d1d2a6bc18238e14b65e30"
@@ -5187,7 +5187,7 @@
       "checksum": "cbf57dc6058bf04152eb4d730cf57568"
     },
     "input/4344.csv.gz": {
-      "checksum": "fcce417d68d766aa2faf368af54ebbe6"
+      "checksum": "fadccc41d391c3d43af41a82a2709710"
     },
     "input/4385.csv.gz": {
       "checksum": "5f525ff58fd6dfe0bb9888cf1f5fef3f"
@@ -5210,6 +5210,9 @@
     "input/4498.csv.gz": {
       "checksum": "b389e8afc7f5662b0eb0d53095a8d0fe"
     },
+    "input/4987.csv.gz": {
+      "checksum": "d2eec81dae623f8d2c6ed7b7e156608f"
+    },
     "input/4997.csv.gz": {
       "checksum": "20df30dd0b55321eba2b4e04ca4be2d3"
     },
@@ -5223,7 +5226,7 @@
       "checksum": "caaafd4d8ee24feb4317c113ef37ab2c"
     },
     "input/5772.csv.gz": {
-      "checksum": "5b980549411d73517e422b42c59aac60"
+      "checksum": "a7bc4efd6cc3841dba4c36cee9fddc45"
     },
     "input/5887.csv.gz": {
       "checksum": "6f96ed4e399df91cf862f8a244bebda0"
@@ -5280,7 +5283,7 @@
       "checksum": "23d077adb2523ae73380c80af111866e"
     },
     "input/AFRO_IM_data.rds": {
-      "checksum": "a8094902176ffd48a203b67adca566c9"
+      "checksum": "01f36f4dbb5310f7749af4e94e626aaf"
     },
     "input/AFRO_LQAS_combined.rds": {
       "checksum": "65d91ae1eac2db1dc04619850a3d1be1"
@@ -5292,7 +5295,7 @@
       "checksum": "325bc886556d55b6e5b5eb92f1e1476b"
     },
     "input/AFRO_snapshot_stats_IM.csv": {
-      "checksum": "3e006faff11c0df12c4bfdd01244851e"
+      "checksum": "77a4060b012736bb7585f0802da1ca9a"
     },
     "input/AFRO_snapshot_stats_LQAS.csv": {
       "checksum": "e962919263142a7e13b805b3e018ce9c"
@@ -5432,11 +5435,11 @@
     "plot_map.R": {
       "checksum": "d996a92539b0812470cb56ef8a600557"
     },
-    "runtime.txt": {
-      "checksum": "ebaff0821f06095c9f2ef6962b81f19a"
-    },
     "quick_start_guide.R": {
       "checksum": "e1d7feb884f4b0be885607febb85af05"
+    },
+    "runtime.txt": {
+      "checksum": "ebaff0821f06095c9f2ef6962b81f19a"
     },
     "scope_analysis_optimized.R": {
       "checksum": "404cbede25606c6255c08031c2682128"
