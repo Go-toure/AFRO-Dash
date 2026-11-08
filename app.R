@@ -5953,6 +5953,11 @@ ui_for_block <- function() dashboardPage(
               valueBoxOutput("admin_avg_coverage", width = 3)
             ),
             
+            # Output type: the original flextable or the modern view (cards + country/month boxes)
+            radioButtons("admin_output_type", "Output type:",
+                         choices = c("Table" = "table", "Modern view" = "modern"),
+                         selected = "table", inline = TRUE),
+            
             tabsetPanel(
               tabPanel(
                 tags$div(icon("chart-bar"), "District Coverage ≥95%"), 
@@ -5961,22 +5966,6 @@ ui_for_block <- function() dashboardPage(
               tabPanel(
                 tags$div(icon("child"), "Children Vaccinated (Millions)"), 
                 uiOutput("admin_vaccinated_table_ui")
-              ),
-              tabPanel(
-                tags$div(icon("th-large"), "Countries by Month"),
-                uiOutput("admin_cm_ui"),
-                div(style = "margin-top: 12px;",
-                    downloadButton("download_admin_cm",
-                                   "Download Countries by Month (PNG)",
-                                   class = "btn-primary-custom"))
-              ),
-              tabPanel(
-                tags$div(icon("syringe"), "Vaccinated by Month"),
-                uiOutput("admin_vm_ui"),
-                div(style = "margin-top: 12px;",
-                    downloadButton("download_admin_vm",
-                                   "Download Vaccinated by Month (PNG)",
-                                   class = "btn-primary-custom"))
               )
             ),
             
@@ -5984,12 +5973,12 @@ ui_for_block <- function() dashboardPage(
               style = "margin-top: 20px;",
               column(6, 
                      downloadButton("download_admin_coverage", 
-                                    "Download Coverage Table", 
+                                    "Download Coverage (PNG)", 
                                     class = "btn-primary-custom")
               ),
               column(6, 
                      downloadButton("download_admin_vaccinated", 
-                                    "Download Vaccinated Table", 
+                                    "Download Vaccinated (PNG)", 
                                     class = "btn-primary-custom")
               )
             )
@@ -9087,6 +9076,7 @@ server <- function(input, output, session) {
   # ---- Coverage Table ----
   output$admin_coverage_table_ui <- renderUI({
     req(admin_overview())
+    if (identical(input$admin_output_type, "modern")) return(uiOutput("admin_cm_ui"))
     ft <- admin_overview()$coverage$flextable
     if (!is.null(ft)) {
       div(class = "flextable-output", htmltools_value(ft))
@@ -9098,6 +9088,7 @@ server <- function(input, output, session) {
   # ---- Vaccinated Table ----
   output$admin_vaccinated_table_ui <- renderUI({
     req(admin_overview())
+    if (identical(input$admin_output_type, "modern")) return(uiOutput("admin_vm_ui"))
     ft <- admin_overview()$vaccinated$flextable
     if (!is.null(ft)) {
       div(class = "flextable-output", htmltools_value(ft))
@@ -9150,20 +9141,6 @@ server <- function(input, output, session) {
     admin_cm_plot()
   }, res = 96)
   
-  output$download_admin_cm <- downloadHandler(
-    filename = function() paste0("Admin_Countries_by_Month_", Sys.Date(), ".png"),
-    content = function(file) {
-      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
-      res <- admin_overview()$coverage
-      # PNG carries the headline cards on top of the chart
-      ggplot2::ggsave(file,
-                      admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text),
-                      width = 13,
-                      height = admin_country_month_height_cards(res$dist_df),
-                      dpi = 200, bg = "white")
-    }
-  )
-  
   # ---- Vaccinated by Month (one named box per country and campaign month) ----
   admin_vm_plot <- reactive({
     req(admin_overview())
@@ -9207,24 +9184,22 @@ server <- function(input, output, session) {
     admin_vm_plot()
   }, res = 96)
   
-  output$download_admin_vm <- downloadHandler(
-    filename = function() paste0("Admin_Vaccinated_by_Month_", Sys.Date(), ".png"),
-    content = function(file) {
-      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
-      res <- admin_overview()$vaccinated
-      ggplot2::ggsave(file,
-                      admin_vacc_with_cards_gg(res$doses_df, res$block_display, res$period_text),
-                      width = 13, height = admin_vacc_height_cards(res$doses_df),
-                      dpi = 200, bg = "white")
-    }
-  )
-  
   # ---- Downloads ----
   output$download_admin_coverage <- downloadHandler(
     filename = function() {
-      paste0("Admin_Coverage_", Sys.Date(), ".png")
+      paste0(if (identical(input$admin_output_type, "modern")) "Admin_Coverage_Modern_" else "Admin_Coverage_",
+             Sys.Date(), ".png")
     },
     content = function(file) {
+      if (identical(input$admin_output_type, "modern") && ADMIN_HEATMAP_AVAILABLE) {
+        req(admin_overview())
+        res <- admin_overview()$coverage
+        ggplot2::ggsave(file,
+                        admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text),
+                        width = 13, height = admin_country_month_height_cards(res$dist_df),
+                        dpi = 200, bg = "white")
+        return(invisible(NULL))
+      }
       withProgress(
         message = 'Generating coverage table...',
         detail = 'Rendering high-quality image...',
@@ -9241,9 +9216,19 @@ server <- function(input, output, session) {
   
   output$download_admin_vaccinated <- downloadHandler(
     filename = function() {
-      paste0("Admin_Vaccinated_", Sys.Date(), ".png")
+      paste0(if (identical(input$admin_output_type, "modern")) "Admin_Vaccinated_Modern_" else "Admin_Vaccinated_",
+             Sys.Date(), ".png")
     },
     content = function(file) {
+      if (identical(input$admin_output_type, "modern") && ADMIN_HEATMAP_AVAILABLE) {
+        req(admin_overview())
+        res <- admin_overview()$vaccinated
+        ggplot2::ggsave(file,
+                        admin_vacc_with_cards_gg(res$doses_df, res$block_display, res$period_text),
+                        width = 13, height = admin_vacc_height_cards(res$doses_df),
+                        dpi = 200, bg = "white")
+        return(invisible(NULL))
+      }
       withProgress(
         message = 'Generating vaccinated table...',
         detail = 'Rendering high-quality image...',
