@@ -9,7 +9,8 @@
 
 ADMIN_HM_COL <- list(
   green = "#3D8B6E", gold = "#E3B23C", red = "#B83B5E",
-  navy = "#14454F", text = "#22313A", muted = "#66737A"
+  navy = "#14454F", text = "#22313A", muted = "#66737A",
+  blue = "#2F7F9E", teal = "#2A9D8F", purple = "#7A5C99"
 )
 
 admin_coverage_country_month_data <- function(dist_df) {
@@ -25,7 +26,7 @@ admin_card_px <- function(txt, base = 26, min_px = 12, avail_px = 215) {
   n <- max(nchar(as.character(txt)), 1)
   max(min_px, min(base, floor(avail_px / (0.6 * n))))
 }
-admin_card_mm <- function(txt, base = 8.5, avail = 135) {
+admin_card_mm <- function(txt, base = 8.5, avail = 118) {
   n <- pmax(nchar(as.character(txt)), 1)
   pmin(base, pmax(3.2, avail / n))
 }
@@ -236,12 +237,12 @@ admin_vacc_cards <- function(doses_df) {
     list(value = paste0(format(round(tot, 1), nsmall = 1, big.mark = ","), " M"), label = "Total vaccinated",
          sub = paste0("across ", nrow(d), " country campaigns"), col = C$navy),
     list(value = as.character(dplyr::n_distinct(d$Country)), label = "Countries",
-         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$green),
+         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$blue),
     list(value = format(bm$floor_date, "%b %Y"), label = "Busiest month",
-         sub = paste0(format(round(bm$m, 1), nsmall = 1), " M vaccinated"), col = C$gold),
+         sub = paste0(format(round(bm$m, 1), nsmall = 1), " M vaccinated"), col = C$teal),
     list(value = ifelse(bc$Country == "DRC", "Democratic Republic of the Congo",
                  ifelse(bc$Country == "CAR", "Central African Republic", nice(bc$Country))), label = "Largest total",
-         sub = paste0(format(round(bc$m, 1), nsmall = 1), " M vaccinated over the period"), col = C$red)
+         sub = paste0(format(round(bc$m, 1), nsmall = 1), " M vaccinated over the period"), col = C$purple)
   )
 }
 
