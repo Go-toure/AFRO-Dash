@@ -324,16 +324,13 @@ im_overview_ui <- function(id) {
 
     # ---- Row 2 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(7, card("Operational Failure Profile",   plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools")),
-      shiny::column(5, card("QC Flag Distribution", plt("chart_qc_pie", "360px"), "dl_qc_pie", icon_name = "pie-chart-fill"))
+      shiny::column(12, card("Operational Failure Profile",  plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools"))
     ),
     # ---- Row 3 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(7, card("Social Mobilisation vs Coverage", plt("chart_sm_quadrant", "450px"), "dl_sm_quad", icon_name = "diagram-3-fill",
+      shiny::column(12, card("Social Mobilisation vs Coverage", plt("chart_sm_quadrant", "450px"), "dl_sm_quad", icon_name = "diagram-3-fill",
         legend = shiny::div(class = "im-legend",
-          sp(C$red, "\u25CF Low SM+CV"), sp(C$orange, "\u25CF Low SM"), sp(C$purple, "\u25CF Low CV"), sp(C$blue, "\u25CF High SM+CV")))),
-      shiny::column(5, card("Countries / Areas Below 80% CV",
-        shiny::div(style = "padding:4px 8px;", shiny::uiOutput(ns("alert_low_cv"))), "dl_alert_cv", icon_name = "exclamation-triangle-fill"))
+          sp(C$red, "\u25CF Low SM+CV"), sp(C$orange, "\u25CF Low SM"), sp(C$purple, "\u25CF Low CV"), sp(C$blue, "\u25CF High SM+CV"))))
     ),
     # ---- Row 4 ------------------------------------------------------------------------
     shiny::fluidRow(
