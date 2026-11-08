@@ -238,16 +238,15 @@ im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region =
       actions
     ),
     div(style = "padding:18px 20px;",
-      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:14px;margin-bottom:16px;",
+      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;margin-bottom:16px;",
         box(fn(v$hh),        "Households visited", who_blue),
-        box(fp(v$cov),       "Regional coverage",  who_blue, "target 90%", if (ok(v$cov)) v$cov / 0.9),
+        box(fn(v$vacc),      "Children found vaccinated", teal,
+            if (ok(v$seen)) paste0("of ", fn(v$seen), " children checked")),
         box(fn(v$missed),    "Missed children",    alert_red),
         box(fp(v$aware),     "Caregiver awareness", gold, "target 80%", if (ok(v$aware)) v$aware / 0.8),
-        box(if (ok(v$risk)) round(v$risk, 1) else dash, "Mean risk score", alert_red),
-        box(fn(v$critical),  "Critical districts", purple, "risk score 70 or more"),
         box(fn(v$rounds),    "Campaign rounds",    dark_blue),
-        box(fn(v$records),   "Records",            dark_blue, "in the current filter"),
         box(fn(v$countries), "Countries",          teal),
+        box(fn(v$provinces), "Provinces",          teal),
         box(fn(v$districts), "Districts",          teal)
       ),
       div(style = "font-size:11.8px;color:#3A3A3A;margin-bottom:10px;",
@@ -549,6 +548,8 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     n_country  <- if ("country" %in% names(df)) n_distinct(df$country, na.rm=TRUE) else 0
     n_district <- if (all(c("country","province","district") %in% names(df)))
                      n_distinct(paste(df$country, df$province, df$district)) else 0
+    n_province <- if (all(c("country","province") %in% names(df)))
+                     n_distinct(paste(df$country, df$province)) else NA
     n_rounds   <- if (all(c("country","response","roundnumber") %in% names(df)))
                      n_distinct(paste(df$country, df$response, df$roundnumber)) else NA
 
@@ -596,9 +597,9 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     )
 
     im_snapshot_card(
-      v = list(hh = hh_visited, cov = regional_cv, missed = total_missed, aware = mean_awareness,
-               risk = mean_risk, critical = risk_counts$critical, rounds = n_rounds, records = nrow(df),
-               countries = n_country, districts = n_district, high = risk_counts$high, moderate = risk_counts$moderate),
+      v = list(hh = hh_visited, vacc = tf, seen = tp, missed = total_missed, aware = mean_awareness,
+               rounds = n_rounds, countries = n_country, provinces = n_province, districts = n_district,
+               high = risk_counts$high, moderate = risk_counts$moderate),
       ctx = ctx, pub_txt = pub_txt, actions = actions, region = im_region_label())
   })
   # ?? Overview filtered data ????????????????????????????????????????????????????
