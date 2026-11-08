@@ -258,6 +258,67 @@ im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region =
 }
 
 # ---- UI -----------------------------------------------------------------------
+# ---- Modern view of "% districts at 95%+ CV by country, vaccine and month" ----------------
+# One box per country / vaccine / month, three coverage bands, a legend top-right and a few
+# light summary cards under the title.
+IM_CV95_COL <- list(green = "#3D8B6E", gold = "#E3B23C", red = "#B83B5E", blue = "#2F7F9E", ink = "#1A2637")
+
+im_nice_name <- function(x) {
+  x <- as.character(x)
+  out <- vapply(x, function(s) {
+    if (is.na(s)) return(NA_character_)
+    if (toupper(trimws(s)) == "CAR") return("Central African Republic")
+    s2 <- gsub("\\b([a-z])", "\\U\\1", tolower(s), perl = TRUE)
+    gsub("(?<= )(Of|The|And|De|Du|Des)(?= )", "\\L\\1", s2, perl = TRUE)
+  }, character(1), USE.NAMES = FALSE)
+  out
+}
+
+# adds row_lbl ("Angola  ·  nOPV2"); rows are the country (and vaccine, when present)
+im_cv95_prep <- function(tbl) {
+  row_grp <- intersect(c("country", "vaccine_type"), names(tbl))
+  tbl$row_main <- im_nice_name(tbl[[row_grp[1]]])
+  tbl$row_sub  <- if (length(row_grp) > 1) as.character(tbl[[row_grp[2]]]) else ""
+  tbl$row_lbl  <- if (length(row_grp) > 1) paste0(tbl$row_main, "  \u00B7  ", tbl$row_sub) else tbl$row_main
+  tbl
+}
+
+im_cv95_height <- function(tbl) max(300, 30 * length(unique(tbl$row_lbl)) + 100)
+
+im_cv95_cards_html <- function(tbl) {
+  if (is.null(tbl) || !nrow(tbl)) return(NULL)
+  K <- IM_CV95_COL
+  v <- tbl$prop_cv95; n <- sum(!is.na(v))
+  n95  <- sum(v >= 0.95, na.rm = TRUE)
+  nmid <- sum(v >= 0.80 & v < 0.95, na.rm = TRUE)
+  nlow <- sum(v < 0.80, na.rm = TRUE)
+  pct  <- function(k) paste0(round(100 * k / max(n, 1)), "% of boxes")
+  lo   <- which.min(v)
+  card <- function(label, value, sub, col)
+    shiny::div(style = paste0("flex:1 1 190px;min-width:170px;padding:10px 16px;border-radius:14px;",
+                              "background:", col, "10;border:1px solid ", col, "30;border-left:5px solid ", col, ";"),
+      shiny::div(style = "font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75;", label),
+      shiny::div(style = paste0("font-size:24px;font-weight:700;line-height:1.25;color:", col, ";"), value),
+      shiny::div(style = "font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
+                 title = sub, sub))
+  shiny::div(style = "display:flex;gap:12px;flex-wrap:wrap;margin:2px 4px 10px;",
+    card("At 95% or more", paste0(n95, " of ", n), pct(n95), K$green),
+    card("Close to target (80–94.9%)", paste0(nmid, " of ", n), pct(nmid), K$gold),
+    card("Below 80%", paste0(nlow, " of ", n), pct(nlow), K$red),
+    card("Lowest box", paste0(round(100 * v[lo], 1), "%"),
+         paste0(tbl$row_lbl[lo], " · ", tbl$period[lo]), K$blue))
+}
+
+IM_CV95_LEGEND <- function() {
+  K <- IM_CV95_COL
+  chip <- function(col, txt)
+    shiny::tags$span(style = "display:inline-flex;align-items:center;gap:6px;font-size:12px;",
+      shiny::tags$span(style = paste0("width:12px;height:12px;border-radius:3px;background:", col, ";display:inline-block;")),
+      txt)
+  shiny::div(style = "display:flex;gap:14px;flex-wrap:wrap;align-items:center;",
+    chip(K$green, "95% or more"), chip(K$gold, "80–94.9%"), chip(K$red, "Below 80%"))
+}
+
 im_overview_ui <- function(id) {
   ns <- shiny::NS(id)
   C  <- IM_PAL
@@ -334,7 +395,17 @@ im_overview_ui <- function(id) {
     ),
     # ---- Row 4 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(12, card("% Districts \u226595% CV \u2014 Country \u00D7 Vaccine Type \u00D7 Month", plt("chart_cv95", "520px"), "dl_cv95", icon_name = "bar-chart-line-fill"))
+      shiny::column(12, shiny::div(class = "im-card",
+        shiny::div(class = "im-card-h", style = "align-items:flex-start;",
+          shiny::div(
+            shiny::div(style = "font-size:17px;font-weight:700;", "Campaign coverage by country, vaccine and month"),
+            shiny::div(style = "font-size:12.5px;opacity:.7;margin-top:2px;",
+                       "Share of monitored districts with coverage (CV) of 95% or more \u2014 one box per country, vaccine and month")),
+          shiny::div(style = "display:flex;align-items:center;gap:16px;flex-wrap:wrap;",
+            IM_CV95_LEGEND(), dl("dl_cv95"))),
+        shiny::div(class = "im-card-b",
+          shiny::uiOutput(ns("cv95_cards")),
+          shiny::uiOutput(ns("cv95_plot_ui")))))
     )
   )
 }
@@ -1241,7 +1312,122 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
       arrange(period_key)
   })
 
+  # ?? Modern view: cards and chart for "% districts at 95%+ CV" ??????????????????
+  output$cv95_cards <- shiny::renderUI({
+    tbl <- tryCatch(cv95_tbl(), error = function(e) NULL)
+    if (is.null(tbl) || !nrow(tbl)) return(NULL)
+    im_cv95_cards_html(im_cv95_prep(tbl))
+  })
+  output$cv95_plot_ui <- shiny::renderUI({
+    tbl <- tryCatch(cv95_tbl(), error = function(e) NULL)
+    h <- if (is.null(tbl) || !nrow(tbl)) 300 else im_cv95_height(im_cv95_prep(tbl))
+    plotly::plotlyOutput(session$ns("chart_cv95"), height = paste0(h, "px"))
+  })
+
   output$chart_cv95 <- renderPlotly({
+    tbl <- cv95_tbl(); req(tbl)
+    if (!nrow(tbl)) return(NULL)
+    K   <- IM_CV95_COL
+    tbl <- im_cv95_prep(tbl)
+
+    row_info <- tbl %>% distinct(row_lbl, row_main, row_sub) %>% arrange(row_lbl)
+    period_order <- tbl %>% distinct(period_key, period) %>% arrange(period_key) %>% pull(period)
+    rows    <- rev(row_info$row_lbl)         # alphabetical, top to bottom
+    periods <- period_order
+    # two-tone row labels: country in ink, vaccine in muted grey
+    sub_of  <- setNames(row_info$row_sub,  row_info$row_lbl)
+    main_of <- setNames(row_info$row_main, row_info$row_lbl)
+    row_txt <- vapply(rows, function(r) {
+      if (is.na(sub_of[[r]]) || !nzchar(sub_of[[r]])) main_of[[r]]
+      else paste0(main_of[[r]], "  <span style=\"color:#8A94A6\">", sub_of[[r]], "</span>")
+    }, character(1), USE.NAMES = FALSE)
+
+    mat <- matrix(NA_real_, nrow = length(rows), ncol = length(periods), dimnames = list(rows, periods))
+    cnt <- matrix("",       nrow = length(rows), ncol = length(periods), dimnames = list(rows, periods))
+    for (i in seq_len(nrow(tbl))) {
+      r <- tbl$row_lbl[i]; p <- tbl$period[i]
+      mat[r, p] <- tbl$prop_cv95[i]
+      cnt[r, p] <- paste0(tbl$n_cv95[i], " of ", tbl$n_dist[i], " districts")
+    }
+    band_col <- function(v) ifelse(v >= 0.95, K$green, ifelse(v >= 0.80, K$gold, K$red))
+
+    hover_mat <- matrix("", nrow = length(rows), ncol = length(periods))
+    annots <- list(); cells <- list()
+    for (ri in seq_along(rows)) for (ci in seq_along(periods)) {
+      v <- mat[rows[ri], periods[ci]]
+      if (is.na(v)) {
+        hover_mat[ri, ci] <- paste0(rows[ri], "<br>", periods[ci], "<br>No data")
+        cells[[length(cells) + 1]] <- list(r = ri - 1L, c = ci - 1L, f = "rgba(127,140,155,0.10)")
+      } else {
+        hover_mat[ri, ci] <- paste0("<b>", main_of[[rows[ri]]], " ", sub_of[[rows[ri]]], "</b><br>", periods[ci],
+          "<br><b>", round(v * 100, 1), "%</b> of districts at 95% or more",
+          "<br>", cnt[rows[ri], periods[ci]])
+        cells[[length(cells) + 1]] <- list(r = ri - 1L, c = ci - 1L, f = band_col(v))
+        annots <- c(annots, list(list(
+          x = periods[ci], y = rows[ri], showarrow = FALSE,
+          text = paste0("<b>", round(v * 100, 1), "%</b>"),
+          font = list(size = 12, family = "Inter, sans-serif",
+                      color = if (v >= 0.80 && v < 0.95) K$ink else "white"))))
+      }
+    }
+
+    h <- im_cv95_height(tbl)
+    # Rounded tiles: the heatmap keeps the hover; the JS below draws one rounded box per cell
+    # underneath it (sized from the real plot area, redrawn on resize) and then hides the
+    # heatmap's own square fill. Without JS the plain square heatmap simply stays visible.
+    js <- "function(el, x, data) {
+      var last = '';
+      function draw() {
+        var fl = el._fullLayout; if (!fl || !fl.xaxis || !fl.yaxis) return;
+        var cw = fl.xaxis._length / data.ncol, ch = fl.yaxis._length / data.nrow;
+        if (!isFinite(cw) || !isFinite(ch) || cw <= 0 || ch <= 0) return;
+        var key = Math.round(cw) + 'x' + Math.round(ch); if (key === last) return; last = key;
+        var g = 3, rad = Math.min(9, cw / 2 - g, ch / 2 - g); if (rad < 0) rad = 0;
+        var gx = g / cw, gy = g / ch, rx = rad / cw, ry = rad / ch, shapes = [];
+        data.cells.forEach(function(c) {
+          var x0 = c.c - 0.5 + gx, x1 = c.c + 0.5 - gx, y0 = c.r - 0.5 + gy, y1 = c.r + 0.5 - gy;
+          shapes.push({type: 'path', layer: 'below', line: {width: 0}, fillcolor: c.f,
+            path: 'M' + (x0 + rx) + ',' + y0 + ' L' + (x1 - rx) + ',' + y0 + ' Q' + x1 + ',' + y0 + ' ' + x1 + ',' + (y0 + ry) +
+                  ' L' + x1 + ',' + (y1 - ry) + ' Q' + x1 + ',' + y1 + ' ' + (x1 - rx) + ',' + y1 +
+                  ' L' + (x0 + rx) + ',' + y1 + ' Q' + x0 + ',' + y1 + ' ' + x0 + ',' + (y1 - ry) +
+                  ' L' + x0 + ',' + (y0 + ry) + ' Q' + x0 + ',' + y0 + ' ' + (x0 + rx) + ',' + y0 + ' Z'});
+        });
+        Plotly.relayout(el, {shapes: shapes});
+        Plotly.restyle(el, {colorscale: [[[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0)']]]}, [0]);
+      }
+      draw();
+      el.on('plotly_afterplot', draw);
+    }"
+
+    plot_ly(
+      x = periods, y = rows, z = mat, type = "heatmap",
+      text = hover_mat, hovertemplate = "%{text}<extra></extra>",
+      colorscale = list(c(0, K$red), c(0.7999, K$red), c(0.8, K$gold),
+                        c(0.9499, K$gold), c(0.95, K$green), c(1, K$green)),
+      zmin = 0, zmax = 1, xgap = 6, ygap = 6, showscale = FALSE
+    ) %>%
+      im_layout(
+        .title    = NULL,
+        .filename = "IM_cv95_heatmap",
+        xaxis = list(title = "", ticks = "", side = "top",
+                     tickangle = if (length(periods) > 14) -40 else 0, showgrid = FALSE,
+                     zeroline = FALSE, tickfont = list(size = 12, color = "#4A5568", family = "Inter")),
+        yaxis = list(title = "", ticks = "", showgrid = FALSE, zeroline = FALSE,
+                     tickmode = "array", tickvals = rows, ticktext = row_txt,
+                     tickfont = list(size = 12, color = K$ink, family = "Inter")),
+        margin = list(l = 250, r = 20, t = if (length(periods) > 14) 70 else 36, b = 10),
+        annotations   = annots,
+        plot_bgcolor  = "rgba(0,0,0,0)",
+        paper_bgcolor = "rgba(0,0,0,0)",
+        hoverlabel    = list(bgcolor = "#14454F", font = list(color = "white", family = "Inter"))
+      ) %>%
+      plotly::config(toImageButtonOptions = list(format = "png", filename = "IM_cv95_heatmap",
+                                                 height = h, width = 1100, scale = 2)) %>%
+      htmlwidgets::onRender(js, data = list(ncol = length(periods), nrow = length(rows), cells = cells))
+  })
+
+  # classic heatmap (kept for reference, not shown)
+  output$chart_cv95_classic <- renderPlotly({
     tbl <- cv95_tbl(); req(tbl)
     if (!nrow(tbl)) return(NULL)
 
