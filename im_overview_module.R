@@ -324,19 +324,10 @@ im_overview_ui <- function(id) {
 
     # ---- Row 2 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(6, card("Country-Level IM Risk Profile", plt("chart_country_risk", "360px"), "dl_country_risk", icon_name = "globe-europe-africa")),
-      shiny::column(6, card("Operational Failure Profile",   plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools"))
+      shiny::column(7, card("Operational Failure Profile",   plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools")),
+      shiny::column(5, card("QC Flag Distribution", plt("chart_qc_pie", "360px"), "dl_qc_pie", icon_name = "pie-chart-fill"))
     ),
     # ---- Row 3 ------------------------------------------------------------------------
-    shiny::fluidRow(
-      shiny::column(12, card("Top Priority Districts for Advocacy", plt("chart_priority_districts", "640px"), "dl_priority_districts", icon_name = "bullseye"))
-    ),
-    # ---- Row 4 ------------------------------------------------------------------------
-    shiny::fluidRow(
-      shiny::column(7, card("CV Performance by AFRO Block",   plt("chart_block",     "260px"), "dl_block",     icon_name = "map-fill")),
-      shiny::column(5, card("District Risk Classification",   plt("chart_risk_dist", "260px"), "dl_risk_dist", icon_name = "speedometer2"))
-    ),
-    # ---- Row 5 ------------------------------------------------------------------------
     shiny::fluidRow(
       shiny::column(7, card("Social Mobilisation vs Coverage", plt("chart_sm_quadrant", "450px"), "dl_sm_quad", icon_name = "diagram-3-fill",
         legend = shiny::div(class = "im-legend",
@@ -344,23 +335,7 @@ im_overview_ui <- function(id) {
       shiny::column(5, card("Countries / Areas Below 80% CV",
         shiny::div(style = "padding:4px 8px;", shiny::uiOutput(ns("alert_low_cv"))), "dl_alert_cv", icon_name = "exclamation-triangle-fill"))
     ),
-    # ---- Row 6 ------------------------------------------------------------------------
-    shiny::fluidRow(
-      shiny::column(5, card("Root Causes of Missed Children", plt("chart_root_ov", "360px"), "dl_root_ov", icon_name = "search")),
-      shiny::column(7, card(NULL, plt("chart_cv", "360px"), "dl_cv", title_ui = shiny::uiOutput(ns("chart_cv_title"), inline = TRUE),
-        legend = shiny::div(class = "im-legend", sp(C$green, "\u25A0 \u226590%"), sp(C$orange, "\u25A0 80\u201390%"), sp(C$red, "\u25A0 <80%"))))
-    ),
-    # ---- Row 7 ------------------------------------------------------------------------
-    shiny::fluidRow(
-      shiny::column(4, card(NULL, plt("chart_top_bottom", "280px"), "dl_top_bottom", title_ui = shiny::uiOutput(ns("chart_topbot_title"), inline = TRUE))),
-      shiny::column(8, card("Records & Coverage Trend Over Time", plt("chart_trend", "280px"), "dl_trend", icon_name = "graph-up"))
-    ),
-    # ---- Row 8 ------------------------------------------------------------------------
-    shiny::fluidRow(
-      shiny::column(8, card("CV Heatmap \u2014 Area \u00D7 Campaign Round", plt("chart_heatmap", "340px"), "dl_heatmap", icon_name = "fire")),
-      shiny::column(4, card("QC Flag Distribution", plt("chart_qc_pie", "340px"), "dl_qc_pie", icon_name = "pie-chart-fill"))
-    ),
-    # ---- Row 9 ------------------------------------------------------------------------
+    # ---- Row 4 ------------------------------------------------------------------------
     shiny::fluidRow(
       shiny::column(12, card("% Districts \u226595% CV \u2014 Country \u00D7 Vaccine Type \u00D7 Month", plt("chart_cv95", "520px"), "dl_cv95", icon_name = "bar-chart-line-fill"))
     )
