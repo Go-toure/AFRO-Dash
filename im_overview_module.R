@@ -198,6 +198,23 @@ function imCaptureExec(id){
     }).catch(function(e){btns.forEach(function(b){b.style.visibility='';}); imToast('Image export failed', true);});
   });
 }
+// PNG of any card (title, cards, chart and banner together)
+function imCaptureCard(id, name){
+  var el=document.getElementById(id);
+  if(!el){imToast('Could not find the section to export.', true); return;}
+  imToast('Generating image...', false);
+  imLoadH2C(function(ok){
+    if(!ok){imToast('Image export library could not load - use the CSV button instead.', true); return;}
+    var btns=el.querySelectorAll('.btn, button, .im-btn, .btn-dl, .modebar');
+    btns.forEach(function(b){b.style.visibility='hidden';});
+    html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true}).then(function(c){
+      btns.forEach(function(b){b.style.visibility='';});
+      var a=document.createElement('a');
+      a.download=name+'_'+new Date().toISOString().slice(0,10)+'.png';
+      a.href=c.toDataURL('image/png'); a.click(); imToast('Image downloaded', false);
+    }).catch(function(e){btns.forEach(function(b){b.style.visibility='';}); imToast('Image export failed', true);});
+  });
+}
 // plotly charts on a tab that was hidden at first render need a resize once visible
 $(document).on('shown.bs.tab', function(){ setTimeout(function(){window.dispatchEvent(new Event('resize'));}, 80); });
 $(document).on('click', 'a[data-toggle=\"tab\"], .sidebar-menu a', function(){
@@ -285,28 +302,77 @@ im_cv95_prep <- function(tbl) {
 
 im_cv95_height <- function(tbl) max(300, 30 * length(unique(tbl$row_lbl)) + 100)
 
+# ---- "Countries by month" boxes for the IM coverage view (same design as the Admin view) ----
+# One column per campaign month, one named box per country, coloured by the share of its
+# monitored districts at 95% coverage (CV) or more; best at the bottom. Vaccine types are pooled.
+im_cv95_stack_data <- function(tbl) {
+  K <- IM_CV95_COL
+  d <- tbl
+  d$mdate <- as.Date(paste0(d$period_key, "01"), format = "%Y%m%d")
+  d <- d[!is.na(d$mdate) & !is.na(d$prop_cv95), , drop = FALSE]
+  if (!nrow(d)) return(NULL)
+  months <- seq(min(d$mdate), max(d$mdate), by = "month")
+  d$mlab <- factor(format(d$mdate, "%b %Y"), levels = format(months, "%b %Y"))
+  d$share <- round(100 * d$prop_cv95)
+  d$band <- factor(ifelse(d$share >= 95, "95% or more", ifelse(d$share >= 80, "80 to 94%", "Below 80%")),
+                   levels = c("95% or more", "80 to 94%", "Below 80%"))
+  d$cname <- im_nice_name(d$country)
+  d <- d[order(d$mlab, -d$share, d$cname), , drop = FALSE]
+  d$k <- stats::ave(seq_len(nrow(d)), d$mlab, FUN = seq_along)
+  d$name <- paste0(vapply(d$cname, function(x) paste(strwrap(x, 12), collapse = "\n"), character(1)),
+                   "\n", d$share, "%")
+  d$tip <- paste0(d$cname, " | ", format(d$mdate, "%B %Y"), "\n", d$share,
+                  "% of districts at 95% coverage or more\n(", d$n_cv95, " of ", d$n_dist, " districts)")
+  d
+}
+
+im_cv95_stack_gg <- function(tbl) {
+  K <- IM_CV95_COL
+  d <- im_cv95_stack_data(tbl); if (is.null(d)) return(NULL)
+  cnt <- as.data.frame(table(mlab = d$mlab), stringsAsFactors = FALSE)
+  cnt$mlab <- factor(cnt$mlab, levels = levels(d$mlab)); cnt$nc <- cnt$Freq
+  fills <- c("95% or more" = K$green, "80 to 94%" = K$gold, "Below 80%" = K$red)
+  ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = band, text = tip)) +
+    ggplot2::geom_tile(width = 0.94, height = 0.92) +
+    ggplot2::geom_text(ggplot2::aes(label = name, colour = band == "80 to 94%"), size = 2.35,
+                       lineheight = 0.88, fontface = "bold", show.legend = FALSE) +
+    ggplot2::geom_text(data = cnt, ggplot2::aes(mlab, nc + 0.9, label = paste0(nc, ifelse(nc == 1, " country", " countries"))),
+                       inherit.aes = FALSE, size = 3, colour = "#66737A") +
+    ggplot2::scale_colour_manual(values = c("TRUE" = K$ink, "FALSE" = "white"), guide = "none") +
+    ggplot2::scale_fill_manual(values = fills, drop = FALSE, name = NULL) +
+    ggplot2::scale_x_discrete(drop = FALSE) +
+    ggplot2::scale_y_continuous(breaks = NULL, expand = ggplot2::expansion(add = c(0.3, 0.8))) +
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(colour = K$ink, size = 10, face = "bold"),
+      panel.grid = ggplot2::element_blank(), legend.position = "none",
+      plot.margin = ggplot2::margin(10, 14, 8, 10),
+      plot.background = ggplot2::element_rect(fill = "white", colour = NA))
+}
+
+im_cv95_stack_height <- function(tbl) {
+  d <- im_cv95_stack_data(tbl)
+  if (is.null(d)) return(360)
+  round(max(4, 0.52 * max(table(d$mlab)) + 2.2) * 85)
+}
+
 im_cv95_cards_html <- function(tbl) {
   if (is.null(tbl) || !nrow(tbl)) return(NULL)
   K <- IM_CV95_COL
-  v <- tbl$prop_cv95; n <- sum(!is.na(v))
-  n95  <- sum(v >= 0.95, na.rm = TRUE)
-  nmid <- sum(v >= 0.80 & v < 0.95, na.rm = TRUE)
-  nlow <- sum(v < 0.80, na.rm = TRUE)
-  pct  <- function(k) paste0(round(100 * k / max(n, 1)), "% of boxes")
-  lo   <- which.min(v)
-  card <- function(label, value, sub, col)
-    shiny::div(style = paste0("flex:1 1 190px;min-width:170px;padding:10px 16px;border-radius:14px;",
+  v <- round(100 * tbl$prop_cv95); v <- v[!is.na(v)]; n <- length(v)
+  n95  <- sum(v >= 95); nmid <- sum(v >= 80 & v < 95); nlow <- sum(v < 80)
+  pct  <- function(k) paste0(round(100 * k / max(n, 1)), "% of campaigns")
+  card <- function(value, label, sub, col)
+    shiny::div(style = paste0("flex:1 1 200px;min-width:170px;padding:10px 16px;border-radius:14px;",
                               "background:", col, "10;border:1px solid ", col, "30;border-left:5px solid ", col, ";"),
-      shiny::div(style = "font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75;", label),
-      shiny::div(style = paste0("font-size:24px;font-weight:700;line-height:1.25;color:", col, ";"), value),
-      shiny::div(style = "font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
-                 title = sub, sub))
+      shiny::div(style = paste0("font-size:26px;font-weight:700;line-height:1.2;color:", col, ";"), value),
+      shiny::div(style = "font-size:13px;font-weight:600;", label),
+      shiny::div(style = "font-size:12px;opacity:.7;", sub))
   shiny::div(style = "display:flex;gap:12px;flex-wrap:wrap;margin:2px 4px 10px;",
-    card("At 95% or more", paste0(n95, " of ", n), pct(n95), K$green),
-    card("Close to target (80–94.9%)", paste0(nmid, " of ", n), pct(nmid), K$gold),
-    card("Below 80%", paste0(nlow, " of ", n), pct(nlow), K$red),
-    card("Lowest box", paste0(round(100 * v[lo], 1), "%"),
-         paste0(tbl$row_lbl[lo], " · ", tbl$period[lo]), K$blue))
+    card(paste0(n95, " of ", n), "Campaigns at 95%+", paste0("in at least 95% of districts (", pct(n95), ")"), K$green),
+    card(as.character(nmid), "Close to target", paste0("80 to 94% of districts (", pct(nmid), ")"), K$gold),
+    card(as.character(nlow), "Below 80%", paste0("of districts at 95% coverage (", pct(nlow), ")"), K$red))
 }
 
 IM_CV95_LEGEND <- function() {
@@ -316,7 +382,7 @@ IM_CV95_LEGEND <- function() {
       shiny::tags$span(style = paste0("width:12px;height:12px;border-radius:3px;background:", col, ";display:inline-block;")),
       txt)
   shiny::div(style = "display:flex;gap:14px;flex-wrap:wrap;align-items:center;",
-    chip(K$green, "95% or more"), chip(K$gold, "80–94.9%"), chip(K$red, "Below 80%"))
+    chip(K$green, "95% or more"), chip(K$gold, "80 to 94%"), chip(K$red, "Below 80%"))
 }
 
 im_overview_ui <- function(id) {
@@ -335,6 +401,10 @@ im_overview_ui <- function(id) {
       shiny::div(class = "im-card-b", body))
   }
   plt <- function(out, h) plotly::plotlyOutput(ns(out), height = h)
+  png_btn <- function(target, name)
+    shiny::tags$button(type = "button", class = "im-btn", style = "background:transparent;cursor:pointer;",
+      onclick = sprintf("imCaptureCard('%s','%s')", ns(target), name),
+      ico("camera-fill"), "PNG")
   sp  <- function(col, txt) shiny::tags$span(style = paste0("color:", col, ";"), txt)
   H   <- shiny::HTML
 
@@ -389,13 +459,13 @@ im_overview_ui <- function(id) {
     ),
     # ---- Row 3 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(12, shiny::div(class = "im-card",
+      shiny::column(12, shiny::div(class = "im-card", id = ns("sm_capture"),
         shiny::div(class = "im-card-h", style = "align-items:flex-start;",
           shiny::div(
             shiny::div(style = "font-size:17px;font-weight:700;", "Social mobilisation vs coverage"),
             shiny::div(style = "font-size:12.5px;opacity:.7;margin-top:2px;font-style:italic;",
                        shiny::uiOutput(ns("sm_subtitle"), inline = TRUE))),
-          dl("dl_sm_quad")),
+          shiny::div(style = "display:flex;gap:8px;", png_btn("sm_capture", "IM_social_mobilisation_vs_coverage"), dl("dl_sm_quad"))),
         shiny::div(class = "im-card-b",
           shiny::fluidRow(
             shiny::column(8, plt("chart_sm_quadrant", "520px")),
@@ -406,14 +476,14 @@ im_overview_ui <- function(id) {
     ),
     # ---- Row 4 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(12, shiny::div(class = "im-card",
+      shiny::column(12, shiny::div(class = "im-card", id = ns("cv95_capture"),
         shiny::div(class = "im-card-h", style = "align-items:flex-start;",
           shiny::div(
-            shiny::div(style = "font-size:17px;font-weight:700;", "Campaign coverage by country, vaccine and month"),
+            shiny::div(style = "font-size:17px;font-weight:700;", "Campaign coverage by country and month"),
             shiny::div(style = "font-size:12.5px;opacity:.7;margin-top:2px;",
-                       "Share of monitored districts with coverage (CV) of 95% or more \u2014 one box per country, vaccine and month")),
+                       "All countries | share of each country's monitored districts at 95% coverage (CV) or more | green = 95% or more, amber = 80 to 94%, red = below 80%; best at the bottom")),
           shiny::div(style = "display:flex;align-items:center;gap:16px;flex-wrap:wrap;",
-            IM_CV95_LEGEND(), dl("dl_cv95"))),
+            IM_CV95_LEGEND(), png_btn("cv95_capture", "IM_coverage_by_country_and_month"), dl("dl_cv95"))),
         shiny::div(class = "im-card-b",
           shiny::uiOutput(ns("cv95_cards")),
           shiny::uiOutput(ns("cv95_plot_ui")))))
@@ -1323,19 +1393,78 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
       arrange(period_key)
   })
 
+  # same table, one row per country and month (all vaccine types together), for the boxes view
+  cv95_cm_tbl <- reactive({
+    df <- ov_data(); req(df)
+    dc <- date_col_of(df)
+    if (is.na(dc)) return(NULL)
+    if (!all(c("u5_fm","u5_present") %in% names(df))) return(NULL)
+
+    uid_cols <- intersect(c("country","province","district"), names(df))
+    row_grp  <- intersect("country", names(df))   # vaccine types pooled
+    if (!"country" %in% row_grp) return(NULL)
+
+    df2 <- df %>%
+      mutate(
+        cam_date    = as.Date(.data[[dc]]),
+        yr          = lubridate::year(cam_date),
+        mo          = lubridate::month(cam_date),
+        # Always English: "Nov '25" style
+        period      = paste0(month.abb[lubridate::month(cam_date)], " '",
+                             substr(as.character(lubridate::year(cam_date)), 3, 4)),
+        period_key  = paste0(lubridate::year(cam_date),
+                             sprintf("%02d", lubridate::month(cam_date))),
+        district_id = do.call(paste, c(as.list(.[uid_cols]), list(sep="|")))
+      ) %>%
+      filter(!is.na(period), !is.na(district_id))
+
+    df2 %>%
+      group_by(across(all_of(c(row_grp, "yr", "mo", "period", "period_key", "district_id")))) %>%
+      summarise(
+        dist_cv = sum(as.numeric(u5_fm), na.rm=TRUE) /
+                  pmax(sum(as.numeric(u5_present), na.rm=TRUE), 1),
+        .groups = "drop"
+      ) %>%
+      group_by(across(all_of(c(row_grp, "yr", "mo", "period", "period_key")))) %>%
+      summarise(
+        n_dist    = n_distinct(district_id),
+        n_cv95    = sum(dist_cv >= 0.95),
+        prop_cv95 = n_cv95 / n_dist,
+        .groups   = "drop"
+      ) %>%
+      arrange(period_key)
+  })
+
   # ?? Modern view: cards and chart for "% districts at 95%+ CV" ??????????????????
   output$cv95_cards <- shiny::renderUI({
-    tbl <- tryCatch(cv95_tbl(), error = function(e) NULL)
+    tbl <- tryCatch(cv95_cm_tbl(), error = function(e) NULL)
     if (is.null(tbl) || !nrow(tbl)) return(NULL)
-    im_cv95_cards_html(im_cv95_prep(tbl))
+    im_cv95_cards_html(tbl)
   })
   output$cv95_plot_ui <- shiny::renderUI({
-    tbl <- tryCatch(cv95_tbl(), error = function(e) NULL)
-    h <- if (is.null(tbl) || !nrow(tbl)) 300 else im_cv95_height(im_cv95_prep(tbl))
+    tbl <- tryCatch(cv95_cm_tbl(), error = function(e) NULL)
+    h <- if (is.null(tbl) || !nrow(tbl)) 300 else im_cv95_stack_height(tbl)
     plotly::plotlyOutput(session$ns("chart_cv95"), height = paste0(h, "px"))
   })
 
+  # Countries by month: one named box per country and month (hover shows the district counts)
   output$chart_cv95 <- renderPlotly({
+    tbl <- cv95_cm_tbl(); req(tbl)
+    g <- im_cv95_stack_gg(tbl); req(g)
+    h <- im_cv95_stack_height(tbl)
+    suppressWarnings(plotly::ggplotly(g, tooltip = "text")) %>%
+      plotly::layout(showlegend = FALSE,
+                     yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = ""),
+                     xaxis = list(showgrid = FALSE, zeroline = FALSE, title = ""),
+                     hoverlabel = list(bgcolor = "#14454F", font = list(color = "white", family = "Inter"))) %>%
+      plotly::config(displaylogo = FALSE,
+                     modeBarButtonsToRemove = list("lasso2d", "select2d", "autoScale2d"),
+                     toImageButtonOptions = list(format = "png", filename = "IM_cv95_by_month",
+                                                 height = h, width = 1100, scale = 2))
+  })
+
+  # previous rounded-box grid (country and vaccine rows), kept for reference, not shown
+  output$chart_cv95_rounded <- renderPlotly({
     tbl <- cv95_tbl(); req(tbl)
     if (!nrow(tbl)) return(NULL)
     K   <- IM_CV95_COL
@@ -2284,7 +2413,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
   output$dl_cv95 <- downloadHandler(
     filename=function() paste0("IM_cv95_",Sys.Date(),".csv"),
     content =function(f) {
-      tbl <- tryCatch(cv95_tbl(), error=function(e) NULL)
+      tbl <- tryCatch(cv95_cm_tbl(), error=function(e) NULL)
       if (is.null(tbl)) tbl <- data.frame()
       write.csv(tbl,f,row.names=FALSE)
     })
