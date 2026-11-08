@@ -106,19 +106,31 @@ admin_cm_summary <- function(dist_df) {
 }
 
 # list of cards: value, label, sub-label, accent colour
-admin_cm_cards <- function(dist_df) {
+admin_cm_cards <- function(dist_df, metrics = NULL) {
   C <- ADMIN_HM_COL; sm <- admin_cm_summary(dist_df)
   pct <- function(x) paste0(round(100 * x / max(sm$n_all, 1)), "% of campaigns")
-  list(
-    list(value = paste0(sm$n_green, " of ", sm$n_all), label = "Reached 95% coverage",
+  cards <- list()
+  # headline metrics that used to sit at the top of the page
+  if (!is.null(metrics)) {
+    num <- function(x) if (is.null(x) || length(x) == 0 || is.na(x)) NA_real_ else as.numeric(x)
+    avg <- num(metrics$avg_coverage); p95 <- num(metrics$pct_ge95); nc <- num(metrics$n_countries)
+    nc_txt <- if (is.na(nc)) "" else paste0(" across ", nc, " countries")
+    if (!is.na(p95)) cards <- c(cards, list(list(value = paste0(p95, "%"), label = "Districts at 95%+",
+                                                 sub = paste0("coverage of 95% or more, share of results", nc_txt), col = C$navy)))
+    if (!is.na(avg)) cards <- c(cards, list(list(value = paste0(round(avg, 1), "%"), label = "Average coverage",
+                                                 sub = paste0(ifelse(avg >= 90, "High performance", ifelse(avg >= 80, "Moderate", "Low")), nc_txt),
+                                                 col = C$blue)))
+  } else {
+    cards <- c(cards, list(list(value = as.character(sm$n_countries), label = "Countries",
+                                sub = paste0("with campaigns over ", sm$n_months, " months"), col = C$navy)))
+  }
+  c(cards, list(
+    list(value = paste0(sm$n_green, " of ", sm$n_all), label = "Campaigns at 95%+",
          sub = paste0("in at least 95% of districts (", pct(sm$n_green), ")"), col = C$green),
     list(value = as.character(sm$n_amber), label = "Close to target",
          sub = paste0("80 to 94% of districts (", pct(sm$n_amber), ")"), col = C$gold),
     list(value = as.character(sm$n_red), label = "Below 80%",
-         sub = paste0("of districts at 95% coverage (", pct(sm$n_red), ")"), col = C$red),
-    list(value = as.character(sm$n_countries), label = "Countries",
-         sub = paste0("with campaigns over ", sm$n_months, " months"), col = C$navy)
-  )
+         sub = paste0("of districts at 95% coverage (", pct(sm$n_red), ")"), col = C$red)))
 }
 
 admin_cm_legend_items <- function() {
@@ -128,8 +140,8 @@ admin_cm_legend_items <- function() {
 }
 
 # Shiny / HTML version (light cards)
-admin_cm_cards_html <- function(dist_df, block_display = "All Countries", period_text = "") {
-  cards <- admin_cm_cards(dist_df)
+admin_cm_cards_html <- function(dist_df, block_display = "All Countries", period_text = "", metrics = NULL) {
+  cards <- admin_cm_cards(dist_df, metrics)
   legend <- htmltools::div(
     style = "display:flex; gap:14px; align-items:center; white-space:nowrap; font-size:12.5px; color:#22313A;",
     lapply(admin_cm_legend_items(), function(k)
@@ -157,17 +169,17 @@ admin_cm_cards_html <- function(dist_df, block_display = "All Countries", period
 }
 
 # Image version: cards on top of the chart (used for the PNG download)
-admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", period_text = "") {
+admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", period_text = "", metrics = NULL) {
   C <- ADMIN_HM_COL
-  cards <- admin_cm_cards(dist_df)
+  cards <- admin_cm_cards(dist_df, metrics)
   k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, 44),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(170 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8.5)), hjust = 0, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8.5, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = 3.8, fontface = "bold", colour = C$text) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.9, vjust = 0.5) +
@@ -226,28 +238,34 @@ admin_vacc_subtitle <- function(block_display = "All Countries", period_text = "
          "  |  all vaccine types together; darker = more vaccinated; largest campaign at the bottom")
 }
 
-admin_vacc_cards <- function(doses_df) {
+admin_vacc_cards <- function(doses_df, metrics = NULL) {
   C <- ADMIN_HM_COL
   d <- admin_vacc_data(doses_df)
-  tot <- sum(d$m)
+  nice <- function(x) ifelse(x == "DRC", "Democratic Republic of the Congo",
+                        ifelse(x == "CAR", "Central African Republic", tools::toTitleCase(tolower(x))))
   bm <- d |> dplyr::group_by(floor_date) |> dplyr::summarise(m = sum(m), .groups = "drop") |> dplyr::slice_max(m, n = 1, with_ties = FALSE)
   bc <- d |> dplyr::group_by(Country) |> dplyr::summarise(m = sum(m), .groups = "drop") |> dplyr::slice_max(m, n = 1, with_ties = FALSE)
-  nice <- function(x) tools::toTitleCase(tolower(sub("^DRC$", "Democratic Republic of the Congo", x)))
-  list(
-    list(value = paste0(format(round(tot, 1), nsmall = 1, big.mark = ","), " M"), label = "Total vaccinated",
-         sub = paste0("across ", nrow(d), " country campaigns"), col = C$navy),
-    list(value = as.character(dplyr::n_distinct(d$Country)), label = "Countries",
-         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$blue),
+  num <- function(x) if (is.null(x) || length(x) == 0 || is.na(x)) NA_real_ else as.numeric(x)
+  fm <- function(x) paste0(format(round(x, 1), nsmall = 1, big.mark = ","), " M")
+  # headline metrics that used to sit at the top of the page
+  dose <- num(metrics$total_dose_administrated); kids <- num(metrics$total_children_vaccinated); nc <- num(metrics$n_countries)
+  if (is.na(dose)) dose <- sum(d$m)
+  if (is.na(nc)) nc <- dplyr::n_distinct(d$Country)
+  top <- list(
+    list(value = fm(dose), label = "Doses administered", sub = paste0("in the selected period, ", nrow(d), " country campaigns"), col = C$navy))
+  if (!is.na(kids)) top <- c(top, list(list(value = fm(kids), label = "Children vaccinated",
+                                            sub = "largest round per country, added up", col = C$blue)))
+  c(top, list(
+    list(value = as.character(nc), label = "Countries reporting",
+         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$teal),
     list(value = format(bm$floor_date, "%b %Y"), label = "Busiest month",
-         sub = paste0(format(round(bm$m, 1), nsmall = 1), " M vaccinated"), col = C$teal),
-    list(value = ifelse(bc$Country == "DRC", "Democratic Republic of the Congo",
-                 ifelse(bc$Country == "CAR", "Central African Republic", nice(bc$Country))), label = "Largest total",
-         sub = paste0(format(round(bc$m, 1), nsmall = 1), " M vaccinated over the period"), col = C$purple)
-  )
+         sub = paste0(fm(bm$m), " vaccinated"), col = C$purple),
+    list(value = nice(bc$Country), label = "Largest total",
+         sub = paste0(fm(bc$m), " vaccinated over the period"), col = "#8A6D3B")))
 }
 
-admin_vacc_cards_html <- function(doses_df, block_display = "All Countries", period_text = "") {
-  cards <- admin_vacc_cards(doses_df)
+admin_vacc_cards_html <- function(doses_df, block_display = "All Countries", period_text = "", metrics = NULL) {
+  cards <- admin_vacc_cards(doses_df, metrics)
   legend <- htmltools::div(
     style = "display:flex; gap:14px; align-items:center; white-space:nowrap; font-size:12.5px; color:#22313A; flex-wrap:wrap;",
     lapply(ADMIN_VACC_BINS, function(k)
@@ -320,16 +338,16 @@ admin_vacc_height <- function(doses_df) {
 }
 admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + 1.0
 
-admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", period_text = "") {
+admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", period_text = "", metrics = NULL) {
   C <- ADMIN_HM_COL
-  cards <- admin_vacc_cards(doses_df); k <- length(cards)
+  cards <- admin_vacc_cards(doses_df, metrics); k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, 44),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(170 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8)), hjust = 0, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = 3.8, fontface = "bold", colour = C$text) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.9) +

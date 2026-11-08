@@ -5944,19 +5944,23 @@ ui_for_block <- function() dashboardPage(
             solidHeader = TRUE,
             status = "info",
             
-            uiOutput("admin_summary_text"),
-            
-            fluidRow(
-              valueBoxOutput("admin_total_vaccinated", width = 3),
-              valueBoxOutput("admin_children_vaccinated", width = 3),
-              valueBoxOutput("admin_countries_reporting", width = 3),
-              valueBoxOutput("admin_avg_coverage", width = 3)
-            ),
-            
             # Output type: the original flextable or the modern view (cards + country/month boxes)
             radioButtons("admin_output_type", "Output type:",
                          choices = c("Table" = "table", "Modern view" = "modern"),
                          selected = "table", inline = TRUE),
+            
+            # Headline text and boxes: Table mode only (the modern view carries these metrics in its own cards)
+            conditionalPanel(
+              condition = "input.admin_output_type != 'modern'",
+              uiOutput("admin_summary_text"),
+              
+              fluidRow(
+                valueBoxOutput("admin_total_vaccinated", width = 3),
+                valueBoxOutput("admin_children_vaccinated", width = 3),
+                valueBoxOutput("admin_countries_reporting", width = 3),
+                valueBoxOutput("admin_avg_coverage", width = 3)
+              )
+            ),
             
             tabsetPanel(
               tabPanel(
@@ -9122,7 +9126,7 @@ server <- function(input, output, session) {
     } else {
       plotOutput("admin_cm_static", height = paste0(h, "px"))
     }
-    tagList(admin_cm_cards_html(res$dist_df, res$block_display, res$period_text), chart)
+    tagList(admin_cm_cards_html(res$dist_df, res$block_display, res$period_text, res$metrics), chart)
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -9165,7 +9169,7 @@ server <- function(input, output, session) {
     } else {
       plotOutput("admin_vm_static", height = paste0(h, "px"))
     }
-    tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text), chart)
+    tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text, res$metrics), chart)
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -9195,7 +9199,7 @@ server <- function(input, output, session) {
         req(admin_overview())
         res <- admin_overview()$coverage
         ggplot2::ggsave(file,
-                        admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text),
+                        admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text, res$metrics),
                         width = 13, height = admin_country_month_height_cards(res$dist_df),
                         dpi = 200, bg = "white")
         return(invisible(NULL))
@@ -9224,7 +9228,7 @@ server <- function(input, output, session) {
         req(admin_overview())
         res <- admin_overview()$vaccinated
         ggplot2::ggsave(file,
-                        admin_vacc_with_cards_gg(res$doses_df, res$block_display, res$period_text),
+                        admin_vacc_with_cards_gg(res$doses_df, res$block_display, res$period_text, res$metrics),
                         width = 13, height = admin_vacc_height_cards(res$doses_df),
                         dpi = 200, bg = "white")
         return(invisible(NULL))
