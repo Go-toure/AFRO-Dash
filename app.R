@@ -9126,7 +9126,8 @@ server <- function(input, output, session) {
     } else {
       plotOutput("admin_cm_static", height = paste0(h, "px"))
     }
-    tagList(admin_cm_cards_html(res$dist_df, res$block_display, res$period_text, res$metrics), chart)
+    tagList(admin_cm_cards_html(res$dist_df, res$block_display, res$period_text, res$metrics), chart, tags$p(style = "color:#66737A; font-size:12px; margin-top:6px;",
+                       "Use the download button below to save the chart together with the cards."))
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -9135,7 +9136,8 @@ server <- function(input, output, session) {
       plotly::config(
         plotly::layout(plotly::ggplotly(admin_cm_plot(), tooltip = "text"),
                        legend = list(orientation = "h", y = 1.04)),
-        displaylogo = FALSE
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = list("toImage")  # the chart alone has no cards; use the Download button below
       )
     })
   }
@@ -9169,7 +9171,8 @@ server <- function(input, output, session) {
     } else {
       plotOutput("admin_vm_static", height = paste0(h, "px"))
     }
-    tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text, res$metrics), chart)
+    tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text, res$metrics), chart, tags$p(style = "color:#66737A; font-size:12px; margin-top:6px;",
+                       "Use the download button below to save the chart together with the cards."))
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -9178,7 +9181,8 @@ server <- function(input, output, session) {
       plotly::config(
         plotly::layout(plotly::ggplotly(admin_vm_plot(), tooltip = "text"),
                        legend = list(orientation = "h", y = 1.04)),
-        displaylogo = FALSE
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = list("toImage")  # the chart alone has no cards; use the Download button below
       )
     })
   }
