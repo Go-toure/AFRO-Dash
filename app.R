@@ -6593,22 +6593,10 @@ ui_for_block <- function() dashboardPage(
                     # Visualization Type Selection
                     selectInput("reasons_viz_type", "Visualization Type:",
                                 choices = c(
-                                  "Auto (smart selection)" = "auto",
                                   "Heatmap" = "heatmap",
-                                  "Grouped Bar Chart" = "bar",
-                                  "Stacked Bar Chart" = "stacked_bar",
-                                  "Faceted Bar Chart" = "faceted_bar",
-                                  "Bubble Chart" = "bubble",
-                                  "Pie Chart" = "pie",
-                                  "Donut Chart" = "donut",
-                                  "Treemap" = "treemap",
-                                  "Sunburst Chart" = "sunburst",
-                                  "Radar Chart" = "radar",
-                                  "Lollipop Chart" = "lollipop",
-                                  "Waterfall Chart" = "waterfall",
                                   "Refusals vs standard (modern)" = "refusal_std"
                                 ),
-                                selected = "auto"),
+                                selected = "heatmap"),
               
                     # Combined Overview inclusion
                     radioButtons("reasons_combined_choice", "Include in Combined Overview:",
@@ -11993,7 +11981,7 @@ server <- function(input, output, session) {
       specific_year <- if (input$reasons_time_type == "specific_month") input$reasons_year else NULL
       
       # "Refusals vs standard" is drawn on its own (below); the other views keep their usual plot
-      viz_type <- if (identical(input$reasons_viz_type, "refusal_std")) "auto" else input$reasons_viz_type
+      viz_type <- if (identical(input$reasons_viz_type, "refusal_std")) "heatmap" else input$reasons_viz_type
       
       combined_types <- switch(input$reasons_combined_choice,
                                "all" = c("traditional", "non_compliance", "absence"),
