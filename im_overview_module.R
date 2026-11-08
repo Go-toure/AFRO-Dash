@@ -245,8 +245,6 @@ im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region =
     div(style = "padding:10px 14px;border-radius:12px;background:#F3F6FA;border:1px solid #E4EAF1;display:flex;align-items:baseline;gap:8px;",
       div(style = paste0("font-size:20px;font-weight:800;color:", dark_blue, ";"), val),
       div(style = paste0("font-size:12px;font-weight:600;color:", muted, ";"), label))
-  pill <- function(txt, bg, fg = "#fff")
-    span(style = paste0("display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:600;background:", bg, ";color:", fg, ";"), txt)
   chip <- function(txt, strong = FALSE)
     span(style = paste0("display:inline-block;padding:3px 11px;border-radius:999px;font-size:11.5px;",
                         "background:", if (strong) "#E6F1FA" else "#F1F4F8", ";color:", if (strong) dark_blue else muted,
@@ -282,10 +280,6 @@ im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region =
         stat(fn(v$provinces), "Provinces"),
         stat(fn(v$districts), "Districts")
       ),
-      div(style = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;",
-        span(style = paste0("font-size:12px;font-weight:600;color:", muted, ";"), "Districts by risk"),
-        pill(paste0("High risk  ", fn(v$high)), "#D9534F"),
-        pill(paste0("Moderate risk  ", fn(v$moderate)), "#F0B429", "#3A2F00")),
       div(style = "font-size:11px;color:#8A94A6;",
           "Source: AFRO Independent Monitoring repository | District uniqueness: Country + Province + District")
     )
