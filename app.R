@@ -9096,7 +9096,8 @@ server <- function(input, output, session) {
     req(admin_overview())
     res <- admin_overview()$coverage
     req(!is.null(res$dist_df), nrow(res$dist_df) > 0)
-    admin_coverage_country_month_gg(res$dist_df, res$block_display, res$period_text)
+    # title and cards are drawn in HTML above the chart, so the plot itself has no title
+    admin_coverage_country_month_gg(res$dist_df, res$block_display, res$period_text, show_title = FALSE)
   })
   
   output$admin_cm_ui <- renderUI({
@@ -9110,11 +9111,12 @@ server <- function(input, output, session) {
       return(tags$div(class = "alert alert-warning", "No district coverage data available."))
     }
     h <- round(admin_country_month_height(res$dist_df) * 85)
-    if (requireNamespace("plotly", quietly = TRUE)) {
+    chart <- if (requireNamespace("plotly", quietly = TRUE)) {
       plotly::plotlyOutput("admin_cm_plotly", height = paste0(h, "px"))
     } else {
       plotOutput("admin_cm_static", height = paste0(h, "px"))
     }
+    tagList(admin_cm_cards_html(res$dist_df, res$block_display, res$period_text), chart)
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -9138,8 +9140,11 @@ server <- function(input, output, session) {
     content = function(file) {
       req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
       res <- admin_overview()$coverage
-      ggplot2::ggsave(file, admin_cm_plot(), width = 13,
-                      height = admin_country_month_height(res$dist_df),
+      # PNG carries the headline cards on top of the chart
+      ggplot2::ggsave(file,
+                      admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text),
+                      width = 13,
+                      height = admin_country_month_height_cards(res$dist_df),
                       dpi = 200, bg = "white")
     }
   )
