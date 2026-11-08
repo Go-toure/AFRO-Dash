@@ -225,50 +225,68 @@ $(document).on('click', 'a[data-toggle=\"tab\"], .sidebar-menu a', function(){
 # ---- One combined IM snapshot card (replaces the KPI strip, the context banner and the old snapshot) ----
 im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region = "AFRO") {
   who_blue <- "#0093D5"; dark_blue <- "#003A70"; alert_red <- "#C00000"
-  gold <- "#F2B600"; teal <- "#00908F"; purple <- "#8E44AD"; soft_grey <- "#F5F7FA"
+  gold <- "#E0A800"; teal <- "#00908F"; muted <- "#6C7A8D"
   dash <- "—"
   ok <- function(x) !(is.null(x) || length(x) == 0 || is.na(x))
   fn <- function(x) if (!ok(x)) dash else format(round(x), big.mark = ",", scientific = FALSE, trim = TRUE)
   fp <- function(x) if (!ok(x)) dash else paste0(round(x * 100, 1), "%")
-  box <- function(val, label, col, sub = NULL, bar = NULL) {
-    div(style = paste0("background:#fff;border:2px solid ", col, ";border-radius:10px;padding:14px 10px;text-align:center;min-height:98px;box-sizing:border-box;"),
-      div(style = paste0("font-size:28px;font-weight:800;color:", col, ";line-height:1.1;"), val),
-      div(style = "font-size:11.5px;font-weight:700;color:#3A3A3A;margin-top:4px;text-transform:uppercase;letter-spacing:.03em;", label),
-      if (!is.null(sub)) div(style = "font-size:10.5px;color:#6C7A8D;margin-top:2px;", sub),
+  # headline tile: soft tint, accent bar on the left, optional progress bar
+  hero <- function(val, label, col, sub = NULL, bar = NULL)
+    div(style = paste0("padding:14px 18px;border-radius:14px;background:", col, "10;border:1px solid ", col, "30;",
+                       "border-left:5px solid ", col, ";box-sizing:border-box;"),
+      div(style = "font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#3A4656;opacity:.8;", label),
+      div(style = paste0("font-size:30px;font-weight:800;line-height:1.2;color:", col, ";"), val),
+      if (!is.null(sub)) div(style = paste0("font-size:12px;color:", muted, ";"), sub),
       if (!is.null(bar) && ok(bar))
-        div(style = "height:5px;border-radius:3px;background:rgba(128,140,160,.25);margin:7px 14px 0 14px;overflow:hidden;",
+        div(style = "height:6px;border-radius:3px;background:rgba(128,140,160,.22);margin-top:8px;overflow:hidden;",
             div(style = paste0("height:100%;border-radius:3px;background:", col, ";width:", min(max(bar, 0), 1) * 100, "%;"))))
-  }
+  # scope tile: quiet, one line
+  stat <- function(val, label)
+    div(style = "padding:10px 14px;border-radius:12px;background:#F3F6FA;border:1px solid #E4EAF1;display:flex;align-items:baseline;gap:8px;",
+      div(style = paste0("font-size:20px;font-weight:800;color:", dark_blue, ";"), val),
+      div(style = paste0("font-size:12px;font-weight:600;color:", muted, ";"), label))
+  pill <- function(txt, bg, fg = "#fff")
+    span(style = paste0("display:inline-block;padding:3px 12px;border-radius:999px;font-size:11.5px;font-weight:600;background:", bg, ";color:", fg, ";"), txt)
+  chip <- function(txt, strong = FALSE)
+    span(style = paste0("display:inline-block;padding:3px 11px;border-radius:999px;font-size:11.5px;",
+                        "background:", if (strong) "#E6F1FA" else "#F1F4F8", ";color:", if (strong) dark_blue else muted,
+                        ";font-weight:", if (strong) 700 else 500, ";"), txt)
+
   div(class = "fade-up", style = paste0(
-        "border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(16,24,40,.08);",
-        "border-top:4px solid ", dark_blue, ";margin-bottom:16px;background:", soft_grey, ";"),
-    div(style = paste0("background:#fff;padding:14px 20px;color:", dark_blue, ";border-bottom:1px solid rgba(16,24,40,.08);",
-                       "display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;"),
+        "border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(16,24,40,.08);",
+        "border-top:4px solid ", dark_blue, ";margin-bottom:16px;background:#fff;"),
+    div(style = "padding:16px 22px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;",
       div(
-        div(style = "font-size:16.8px;font-weight:800;letter-spacing:.02em;",
-            toupper(paste(region, "INDEPENDENT MONITORING INTELLIGENCE"))),
-        div(style = "font-size:12.5px;color:#6C7A8D;margin-top:2px;",
-            paste0("Generated: ", format(Sys.Date(), "%d %b %Y"), "  |  Live filtered snapshot",
-                   if (nzchar(pub_txt)) paste0("  |  Data updated: ", pub_txt) else "")),
-        if (nzchar(ctx)) div(style = "font-size:12.2px;color:#3A3A3A;margin-top:4px;font-weight:600;", ctx)
+        div(style = paste0("font-size:19px;font-weight:800;color:", dark_blue, ";letter-spacing:.01em;"),
+            paste(region, "Independent Monitoring Intelligence")),
+        div(style = "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;",
+          if (nzchar(ctx)) chip(ctx, TRUE),
+          chip("Live filtered snapshot"),
+          if (nzchar(pub_txt)) chip(paste0("Data updated ", pub_txt)),
+          chip(paste0("Generated ", format(Sys.Date(), "%d %b %Y"))))
       ),
       actions
     ),
-    div(style = "padding:18px 20px;",
-      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;margin-bottom:16px;",
-        box(fn(v$hh),        "Households visited", who_blue),
-        box(fn(v$vacc),      "Children found vaccinated", teal,
-            if (ok(v$seen)) paste0("of ", fn(v$seen), " children checked")),
-        box(fn(v$missed),    "Missed children",    alert_red),
-        box(fp(v$aware),     "Caregiver awareness", gold, "target 80%", if (ok(v$aware)) v$aware / 0.8),
-        box(fn(v$rounds),    "Campaign rounds",    dark_blue),
-        box(fn(v$countries), "Countries",          teal),
-        box(fn(v$provinces), "Provinces",          teal),
-        box(fn(v$districts), "Districts",          teal)
+    div(style = "padding:6px 22px 20px;",
+      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px;margin-bottom:14px;",
+        hero(fn(v$hh),     "Households visited",       who_blue),
+        hero(fn(v$vacc),   "Children found vaccinated", teal,
+             if (ok(v$seen)) paste0("of ", fn(v$seen), " children checked"),
+             if (ok(v$vacc) && ok(v$seen) && v$seen > 0) v$vacc / v$seen),
+        hero(fn(v$missed), "Missed children",          alert_red),
+        hero(fp(v$aware),  "Caregiver awareness",      gold, "target 80%", if (ok(v$aware)) v$aware / 0.8)
       ),
-      div(style = "font-size:11.8px;color:#3A3A3A;margin-bottom:10px;",
-          paste0("High-risk districts: ", fn(v$high), "  |  Moderate-risk districts: ", fn(v$moderate))),
-      div(style = "font-size:10.9px;color:#808080;",
+      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;margin-bottom:14px;",
+        stat(fn(v$rounds),    "Campaign rounds"),
+        stat(fn(v$countries), "Countries"),
+        stat(fn(v$provinces), "Provinces"),
+        stat(fn(v$districts), "Districts")
+      ),
+      div(style = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;",
+        span(style = paste0("font-size:12px;font-weight:600;color:", muted, ";"), "Districts by risk"),
+        pill(paste0("High risk  ", fn(v$high)), "#D9534F"),
+        pill(paste0("Moderate risk  ", fn(v$moderate)), "#F0B429", "#3A2F00")),
+      div(style = "font-size:11px;color:#8A94A6;",
           "Source: AFRO Independent Monitoring repository | District uniqueness: Country + Province + District")
     )
   )
