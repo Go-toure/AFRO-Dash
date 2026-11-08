@@ -391,13 +391,16 @@ im_overview_ui <- function(id) {
   ico <- function(n) bs_icon(n)
 
   dl <- function(out) shiny::downloadButton(ns(out), shiny::tagList(ico("download"), "CSV"), class = "btn-dl")
-  card <- function(title = NULL, body, out_dl = NULL, legend = NULL, title_ui = NULL, icon_name = NULL) {
-    shiny::div(class = "im-card",
+  card <- function(title = NULL, body, out_dl = NULL, legend = NULL, title_ui = NULL, icon_name = NULL,
+                   capture = NULL) {
+    shiny::div(class = "im-card", id = if (!is.null(capture)) ns(capture[1]),
       shiny::div(class = "im-card-h",
         shiny::div(style = "display:flex;align-items:center;gap:14px;flex-wrap:wrap;",
           if (!is.null(title_ui)) title_ui else shiny::div(ico(icon_name), title),
           legend),
-        if (!is.null(out_dl)) dl(out_dl)),
+        if (!is.null(out_dl))
+          shiny::div(style = "display:flex;gap:8px;",
+                     if (!is.null(capture)) png_btn(capture[1], capture[2]), dl(out_dl))),
       shiny::div(class = "im-card-b", body))
   }
   plt <- function(out, h) plotly::plotlyOutput(ns(out), height = h)
@@ -455,7 +458,8 @@ im_overview_ui <- function(id) {
 
     # ---- Row 2 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(12, card("Operational Failure Profile",  plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools"))
+      shiny::column(12, card("Operational Failure Profile",  plt("chart_op_failure",   "360px"), "dl_op_failure",   icon_name = "tools",
+                          capture = c("op_capture", "IM_operational_failure_profile")))
     ),
     # ---- Row 3 ------------------------------------------------------------------------
     shiny::fluidRow(
