@@ -9097,7 +9097,7 @@ server <- function(input, output, session) {
     res <- admin_overview()$coverage
     req(!is.null(res$dist_df), nrow(res$dist_df) > 0)
     # title and cards are drawn in HTML above the chart, so the plot itself has no title
-    admin_coverage_country_month_gg(res$dist_df, res$block_display, res$period_text, show_title = FALSE)
+    admin_coverage_country_month_gg(res$dist_df, res$block_display, res$period_text, show_title = FALSE, show_legend = FALSE)
   })
   
   output$admin_cm_ui <- renderUI({

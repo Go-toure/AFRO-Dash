@@ -28,7 +28,7 @@ admin_cm_subtitle <- function(block_display = "All Countries", period_text = "")
 }
 
 admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countries", period_text = "",
-                                            show_title = TRUE) {
+                                            show_title = TRUE, show_legend = TRUE) {
   C <- ADMIN_HM_COL
   d <- admin_coverage_country_month_data(dist_df)
   months <- seq(min(d$floor_date), max(d$floor_date), by = "month")
@@ -68,7 +68,7 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
       plot.title.position = "plot", plot.caption.position = "plot",
       axis.text.x = ggplot2::element_text(colour = C$text, size = 10, face = "bold"),
       panel.grid = ggplot2::element_blank(),
-      legend.position = "top", legend.justification = "left",
+      legend.position = if (show_legend) "top" else "none", legend.justification = "left",
       plot.margin = ggplot2::margin(10, 14, 8, 10),
       plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
@@ -77,7 +77,7 @@ admin_country_month_height <- function(dist_df) {
   d <- admin_coverage_country_month_data(dist_df)
   max(4, 0.52 * max(table(d$floor_date)) + 2.2)
 }
-admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.2
+admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.0
 
 # ------------------------------------------------------------
 # Headline numbers shown as light cards above the chart
@@ -110,12 +110,24 @@ admin_cm_cards <- function(dist_df) {
   )
 }
 
+admin_cm_legend_items <- function() {
+  C <- ADMIN_HM_COL
+  list(list(label = "95% or more", col = C$green), list(label = "80 to 94%", col = C$gold),
+       list(label = "Below 80%", col = C$red))
+}
+
 # Shiny / HTML version (light cards)
 admin_cm_cards_html <- function(dist_df, block_display = "All Countries", period_text = "") {
   cards <- admin_cm_cards(dist_df)
+  legend <- htmltools::div(
+    style = "display:flex; gap:14px; align-items:center; white-space:nowrap; font-size:12.5px; color:#22313A;",
+    lapply(admin_cm_legend_items(), function(k)
+      htmltools::span(htmltools::span(style = paste0("display:inline-block; width:13px; height:13px; border-radius:3px; margin-right:5px; vertical-align:-2px; background:", k$col, ";")), k$label)))
   htmltools::tagList(
-    htmltools::div(style = "font-family:Georgia,serif; font-weight:700; font-size:20px; color:#14454F; margin-bottom:2px;",
-                   admin_cm_title()),
+    htmltools::div(style = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;",
+      htmltools::div(style = "font-family:Georgia,serif; font-weight:700; font-size:20px; color:#14454F;",
+                     admin_cm_title()),
+      legend),
     htmltools::div(style = "font-size:12.5px; color:#66737A; margin-bottom:10px;",
                    admin_cm_subtitle(block_display, period_text)),
   htmltools::div(
@@ -150,12 +162,22 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                                            plot.margin = ggplot2::margin(6, 14, 0, 10))
-  main <- admin_coverage_country_month_gg(dist_df, block_display, period_text, show_title = FALSE)
-  patchwork::wrap_plots(cp, main, ncol = 1, heights = c(1.9, 10)) +
-    patchwork::plot_annotation(
-      title = admin_cm_title(), subtitle = admin_cm_subtitle(block_display, period_text),
-      theme = ggplot2::theme(
-        plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 15, family = "serif"),
-        plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9.5),
-        plot.background = ggplot2::element_rect(fill = "white", colour = NA)))
+  main <- admin_coverage_country_month_gg(dist_df, block_display, period_text, show_title = FALSE, show_legend = FALSE)
+  # header: title on the left, legend on the right of the same row, subtitle underneath
+  li <- admin_cm_legend_items()
+  lg <- data.frame(x = c(8.9, 10.4, 11.8)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
+                   col = vapply(li, `[[`, "", "col"), stringsAsFactors = FALSE)
+  hd <- ggplot2::ggplot() +
+    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_cm_title(), hjust = 0, size = 5.3,
+                      fontface = "bold", family = "serif", colour = C$navy) +
+    ggplot2::annotate("text", x = 0.02, y = 0.18, label = admin_cm_subtitle(block_display, period_text),
+                      hjust = 0, size = 3.3, colour = C$muted) +
+    ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = 3.5, colour = C$text) +
+    ggplot2::scale_fill_identity() +
+    ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
+    ggplot2::theme_void() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
+                   plot.margin = ggplot2::margin(6, 14, 0, 10))
+  patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(0.9, 1.9, 10))
 }
