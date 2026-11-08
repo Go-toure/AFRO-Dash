@@ -335,6 +335,14 @@ if (SLIDES_BUILDER_AVAILABLE) {
   cat("Generate Slides builder files not found (slides_builder.R / im_slides.R)\n")
 }
 
+# Reasons Analysis: "Refusals vs standard" view (one more entry in the Visualization Type list)
+REFUSAL_MODERN_AVAILABLE <- file.exists("reasons_refusal_modern.R")
+if (REFUSAL_MODERN_AVAILABLE) {
+  source("reasons_refusal_modern.R")
+} else {
+  cat("Reasons Analysis refusals view disabled (reasons_refusal_modern.R not found)\n")
+}
+
 # Admin Data Overview: "Countries by Month" view (added next to the flextables, which are unchanged)
 ADMIN_HEATMAP_AVAILABLE <- file.exists("admin_heatmap_modern.R")
 if (ADMIN_HEATMAP_AVAILABLE) {
@@ -6597,7 +6605,8 @@ ui_for_block <- function() dashboardPage(
                                   "Sunburst Chart" = "sunburst",
                                   "Radar Chart" = "radar",
                                   "Lollipop Chart" = "lollipop",
-                                  "Waterfall Chart" = "waterfall"
+                                  "Waterfall Chart" = "waterfall",
+                                  "Refusals vs standard (modern)" = "refusal_std"
                                 ),
                                 selected = "auto"),
               
@@ -6737,12 +6746,26 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("nc_total_cats", width = 2),
                         valueBoxOutput("nc_viz_type", width = 3)
                       ),
-                      box(
-                        title = tags$div(icon("chart-bar"), "Non-Compliance Reasons Visualization"), 
-                        width = 12, solidHeader = TRUE, status = "info",
-                        plotOutput("nc_heatmap", height = "600px"),
-                        div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_nc_plot", "Download NC Visualization", class = "btn-primary-custom")
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        box(
+                          title = tags$div(icon("chart-bar"), "Non-Compliance Reasons Visualization"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          plotOutput("nc_heatmap", height = "600px"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_nc_plot", "Download NC Visualization", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'refusal_std'",
+                        box(
+                          title = tags$div(icon("shield-alt"), "Refusals vs standard"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("nc_refusal_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_nc_refusal", "Download Refusals (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       ),
                       tabsetPanel(
@@ -11942,6 +11965,7 @@ server <- function(input, output, session) {
       viz_type == "radar" ~ "Radar Chart selected",
       viz_type == "lollipop" ~ "Lollipop Chart selected",
       viz_type == "waterfall" ~ "Waterfall Chart selected",
+      viz_type == "refusal_std" ~ "Refusals vs standard selected - shown in the Non-Compliance Reasons tab",
       viz_type == "auto" ~ "Auto mode - will choose best visualization",
       TRUE ~ "Visualization ready"
     )
@@ -11950,6 +11974,7 @@ server <- function(input, output, session) {
   
   # Reactive value to store analysis results
   reasons_analysis <- reactiveVal(NULL)
+  refusal_res <- reactiveVal(NULL)   # data for the "Refusals vs standard" view
   
   # Block Summary Title - FIXED
   output$block_summary_title <- renderText({
@@ -11967,7 +11992,8 @@ server <- function(input, output, session) {
       specific_month <- if (input$reasons_time_type == "specific_month") as.numeric(input$reasons_month) else NULL
       specific_year <- if (input$reasons_time_type == "specific_month") input$reasons_year else NULL
       
-      viz_type <- input$reasons_viz_type
+      # "Refusals vs standard" is drawn on its own (below); the other views keep their usual plot
+      viz_type <- if (identical(input$reasons_viz_type, "refusal_std")) "auto" else input$reasons_viz_type
       
       combined_types <- switch(input$reasons_combined_choice,
                                "all" = c("traditional", "non_compliance", "absence"),
@@ -12001,6 +12027,19 @@ server <- function(input, output, session) {
       )
       
       reasons_analysis(result)
+
+      refusal_res(NULL)
+      if (identical(input$reasons_viz_type, "refusal_std") && REFUSAL_MODERN_AVAILABLE) {
+        filt <- refusal_filter_lqas(
+          dat, x_months = x_months, specific_month = specific_month, specific_year = specific_year,
+          block_selection = if (input$reasons_block != "All") input$reasons_block else NULL,
+          country_selection = if (!is.null(input$reasons_countries) && length(input$reasons_countries) > 0) input$reasons_countries else NULL,
+          province_selection = if (!is.null(input$reasons_provinces) && length(input$reasons_provinces) > 0) input$reasons_provinces else NULL,
+          district_selection = if (!is.null(input$reasons_districts) && length(input$reasons_districts) > 0) input$reasons_districts else NULL,
+          block_definition = if (input$reasons_block_type == "afro") afro_blocks else ist_blocks)
+        refusal_res(refusal_summary(filt, input$reasons_geo_level, attr(filt, "period_label")))
+        updateTabsetPanel(session, "reasons_main_tabs", selected = "nc_reasons")
+      }
     }, "Comprehensive Reasons Analysis")
   })
   
@@ -12828,6 +12867,31 @@ server <- function(input, output, session) {
              width = 33, height = 18, dpi = 300, bg = "white", limitsize = FALSE)
       showNotification("Download successful! Image saved with WHO AFRO specifications (width=33, height=18, dpi=300).", 
                        type = "message", duration = 5)
+    }
+  )
+  
+  # ---- Refusals vs standard (modern view) ----
+  output$nc_refusal_ui <- renderUI({
+    if (!REFUSAL_MODERN_AVAILABLE)
+      return(tags$div(class = "alert alert-warning", "Refusals view not available (reasons_refusal_modern.R not found)."))
+    res <- refusal_res()
+    if (is.null(res))
+      return(tags$div(class = "alert alert-info",
+                      "Choose the filters and press Analyze Reasons. If it stays empty, no sampled children with refusal counts were found for this selection."))
+    plotOutput("nc_refusal_plot", height = paste0(round(refusal_height(res) * 90), "px"))
+  })
+  
+  output$nc_refusal_plot <- renderPlot({
+    req(REFUSAL_MODERN_AVAILABLE, refusal_res())
+    refusal_full_gg(refusal_res())
+  }, res = 90)
+  
+  output$download_nc_refusal <- downloadHandler(
+    filename = function() paste0("Refusals_vs_standard_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      req(REFUSAL_MODERN_AVAILABLE, refusal_res())
+      res <- refusal_res()
+      ggsave(file, refusal_full_gg(res), device = "png", width = 13, height = refusal_height(res), dpi = 200, bg = "white")
     }
   )
   
