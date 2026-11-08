@@ -2065,8 +2065,15 @@ admin_vaccinated_summary <- function(
       Sys.Date()
     ))
   
+  # Data behind the "Vaccinated by Month" view (millions vaccinated per country, vaccine type and month)
+  doses_df <- ft_data |>
+    dplyr::transmute(Country, vaccine.type, floor_date, doses = NVAC)
+  
   list(
     flextable = ft,
+    doses_df = doses_df,
+    block_display = block_type_text,
+    period_text = period_text,
     metrics = list(
       total_dose_administrated = round(total_doses / 1e6, 1),
       total_children_vaccinated = round(total_children_vaccnted$total_children_vaccnted / 1e6, 1),
@@ -5962,6 +5969,14 @@ ui_for_block <- function() dashboardPage(
                     downloadButton("download_admin_cm",
                                    "Download Countries by Month (PNG)",
                                    class = "btn-primary-custom"))
+              ),
+              tabPanel(
+                tags$div(icon("syringe"), "Vaccinated by Month"),
+                uiOutput("admin_vm_ui"),
+                div(style = "margin-top: 12px;",
+                    downloadButton("download_admin_vm",
+                                   "Download Vaccinated by Month (PNG)",
+                                   class = "btn-primary-custom"))
               )
             ),
             
@@ -9145,6 +9160,61 @@ server <- function(input, output, session) {
                       admin_cm_with_cards_gg(res$dist_df, res$block_display, res$period_text),
                       width = 13,
                       height = admin_country_month_height_cards(res$dist_df),
+                      dpi = 200, bg = "white")
+    }
+  )
+  
+  # ---- Vaccinated by Month (one named box per country and campaign month) ----
+  admin_vm_plot <- reactive({
+    req(admin_overview())
+    res <- admin_overview()$vaccinated
+    req(!is.null(res$doses_df), nrow(res$doses_df) > 0)
+    admin_vacc_gg(res$doses_df, res$block_display, res$period_text, show_title = FALSE, show_legend = FALSE)
+  })
+  
+  output$admin_vm_ui <- renderUI({
+    req(admin_overview())
+    if (!ADMIN_HEATMAP_AVAILABLE) {
+      return(tags$div(class = "alert alert-warning",
+                      "Vaccinated by Month not available (admin_heatmap_modern.R not found)."))
+    }
+    res <- admin_overview()$vaccinated
+    if (is.null(res$doses_df) || nrow(res$doses_df) == 0) {
+      return(tags$div(class = "alert alert-warning", "No vaccination data available."))
+    }
+    h <- round(admin_vacc_height(res$doses_df) * 85)
+    chart <- if (requireNamespace("plotly", quietly = TRUE)) {
+      plotly::plotlyOutput("admin_vm_plotly", height = paste0(h, "px"))
+    } else {
+      plotOutput("admin_vm_static", height = paste0(h, "px"))
+    }
+    tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text), chart)
+  })
+  
+  if (requireNamespace("plotly", quietly = TRUE)) {
+    output$admin_vm_plotly <- plotly::renderPlotly({
+      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
+      plotly::config(
+        plotly::layout(plotly::ggplotly(admin_vm_plot(), tooltip = "text"),
+                       legend = list(orientation = "h", y = 1.04)),
+        displaylogo = FALSE
+      )
+    })
+  }
+  
+  output$admin_vm_static <- renderPlot({
+    req(ADMIN_HEATMAP_AVAILABLE)
+    admin_vm_plot()
+  }, res = 96)
+  
+  output$download_admin_vm <- downloadHandler(
+    filename = function() paste0("Admin_Vaccinated_by_Month_", Sys.Date(), ".png"),
+    content = function(file) {
+      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
+      res <- admin_overview()$vaccinated
+      ggplot2::ggsave(file,
+                      admin_vacc_with_cards_gg(res$doses_df, res$block_display, res$period_text),
+                      width = 13, height = admin_vacc_height_cards(res$doses_df),
                       dpi = 200, bg = "white")
     }
   )
