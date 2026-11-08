@@ -109,21 +109,8 @@ admin_cm_summary <- function(dist_df) {
 admin_cm_cards <- function(dist_df, metrics = NULL) {
   C <- ADMIN_HM_COL; sm <- admin_cm_summary(dist_df)
   pct <- function(x) paste0(round(100 * x / max(sm$n_all, 1)), "% of campaigns")
+  # (the district and average coverage metrics were removed from this view on request)
   cards <- list()
-  # headline metrics that used to sit at the top of the page
-  if (!is.null(metrics)) {
-    num <- function(x) if (is.null(x) || length(x) == 0 || is.na(x)) NA_real_ else as.numeric(x)
-    avg <- num(metrics$avg_coverage); p95 <- num(metrics$pct_ge95); nc <- num(metrics$n_countries)
-    nc_txt <- if (is.na(nc)) "" else paste0(" across ", nc, " countries")
-    if (!is.na(p95)) cards <- c(cards, list(list(value = paste0(p95, "%"), label = "Districts at 95%+",
-                                                 sub = paste0("coverage of 95% or more, share of results", nc_txt), col = C$navy)))
-    if (!is.na(avg)) cards <- c(cards, list(list(value = paste0(round(avg, 1), "%"), label = "Average coverage",
-                                                 sub = paste0(ifelse(avg >= 90, "High performance", ifelse(avg >= 80, "Moderate", "Low")), nc_txt),
-                                                 col = C$blue)))
-  } else {
-    cards <- c(cards, list(list(value = as.character(sm$n_countries), label = "Countries",
-                                sub = paste0("with campaigns over ", sm$n_months, " months"), col = C$navy)))
-  }
   c(cards, list(
     list(value = paste0(sm$n_green, " of ", sm$n_all), label = "Campaigns at 95%+",
          sub = paste0("in at least 95% of districts (", pct(sm$n_green), ")"), col = C$green),
