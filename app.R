@@ -335,6 +335,14 @@ if (SLIDES_BUILDER_AVAILABLE) {
   cat("Generate Slides builder files not found (slides_builder.R / im_slides.R)\n")
 }
 
+# Admin Data Overview: "Countries by Month" view (added next to the flextables, which are unchanged)
+ADMIN_HEATMAP_AVAILABLE <- file.exists("admin_heatmap_modern.R")
+if (ADMIN_HEATMAP_AVAILABLE) {
+  source("admin_heatmap_modern.R")
+} else {
+  cat("Admin Countries by Month view disabled (admin_heatmap_modern.R not found)\n")
+}
+
 # Quick Start Guide page + PDF download (self-contained; PDF uses base grid graphics only)
 QSG_AVAILABLE <- file.exists("quick_start_guide.R")
 if (QSG_AVAILABLE) {
@@ -1856,8 +1864,17 @@ admin_coverage_summary <- function(
   cat("   % districts ≥95%:", pct_ge95, "%\n")
   cat("   Date range:", min(prop_data$floor_date), "to", max(prop_data$floor_date), "\n")
   
+  # District-level coverage (one row per district and campaign month) for the Countries by Month view
+  dist_df <- df |>
+    dplyr::mutate(cov = suppressWarnings(as.numeric(CVPolio)) * 100) |>
+    dplyr::filter(!is.na(cov)) |>
+    dplyr::select(Country, District, vaccine.type, floor_date, cov)
+  
   list(
     flextable = ft,
+    dist_df = dist_df,
+    block_display = block_display,
+    period_text = period_text,
     metrics = list(
       avg_coverage = avg_coverage,
       pct_ge95 = pct_ge95,
@@ -5937,6 +5954,14 @@ ui_for_block <- function() dashboardPage(
               tabPanel(
                 tags$div(icon("child"), "Children Vaccinated (Millions)"), 
                 uiOutput("admin_vaccinated_table_ui")
+              ),
+              tabPanel(
+                tags$div(icon("th-large"), "Countries by Month"),
+                uiOutput("admin_cm_ui"),
+                div(style = "margin-top: 12px;",
+                    downloadButton("download_admin_cm",
+                                   "Download Countries by Month (PNG)",
+                                   class = "btn-primary-custom"))
               )
             ),
             
@@ -9065,6 +9090,59 @@ server <- function(input, output, session) {
       tags$div(class = "alert alert-warning", "No vaccination data available.")
     }
   })
+  
+  # ---- Countries by Month (one named box per country and campaign month) ----
+  admin_cm_plot <- reactive({
+    req(admin_overview())
+    res <- admin_overview()$coverage
+    req(!is.null(res$dist_df), nrow(res$dist_df) > 0)
+    admin_coverage_country_month_gg(res$dist_df, res$block_display, res$period_text)
+  })
+  
+  output$admin_cm_ui <- renderUI({
+    req(admin_overview())
+    if (!ADMIN_HEATMAP_AVAILABLE) {
+      return(tags$div(class = "alert alert-warning",
+                      "Countries by Month not available (admin_heatmap_modern.R not found)."))
+    }
+    res <- admin_overview()$coverage
+    if (is.null(res$dist_df) || nrow(res$dist_df) == 0) {
+      return(tags$div(class = "alert alert-warning", "No district coverage data available."))
+    }
+    h <- round(admin_country_month_height(res$dist_df) * 85)
+    if (requireNamespace("plotly", quietly = TRUE)) {
+      plotly::plotlyOutput("admin_cm_plotly", height = paste0(h, "px"))
+    } else {
+      plotOutput("admin_cm_static", height = paste0(h, "px"))
+    }
+  })
+  
+  if (requireNamespace("plotly", quietly = TRUE)) {
+    output$admin_cm_plotly <- plotly::renderPlotly({
+      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
+      plotly::config(
+        plotly::layout(plotly::ggplotly(admin_cm_plot(), tooltip = "text"),
+                       legend = list(orientation = "h", y = 1.04)),
+        displaylogo = FALSE
+      )
+    })
+  }
+  
+  output$admin_cm_static <- renderPlot({
+    req(ADMIN_HEATMAP_AVAILABLE)
+    admin_cm_plot()
+  }, res = 96)
+  
+  output$download_admin_cm <- downloadHandler(
+    filename = function() paste0("Admin_Countries_by_Month_", Sys.Date(), ".png"),
+    content = function(file) {
+      req(ADMIN_HEATMAP_AVAILABLE, admin_overview())
+      res <- admin_overview()$coverage
+      ggplot2::ggsave(file, admin_cm_plot(), width = 13,
+                      height = admin_country_month_height(res$dist_df),
+                      dpi = 200, bg = "white")
+    }
+  )
   
   # ---- Downloads ----
   output$download_admin_coverage <- downloadHandler(
