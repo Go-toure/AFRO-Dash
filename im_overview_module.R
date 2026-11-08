@@ -205,6 +205,59 @@ $(document).on('click', 'a[data-toggle=\"tab\"], .sidebar-menu a', function(){
 });
 "
 
+# ---- One combined IM snapshot card (replaces the KPI strip, the context banner and the old snapshot) ----
+im_snapshot_card <- function(v, ctx = "", pub_txt = "", actions = NULL, region = "AFRO") {
+  who_blue <- "#0093D5"; dark_blue <- "#003A70"; alert_red <- "#C00000"
+  gold <- "#F2B600"; teal <- "#00908F"; purple <- "#8E44AD"; soft_grey <- "#F5F7FA"
+  dash <- "—"
+  ok <- function(x) !(is.null(x) || length(x) == 0 || is.na(x))
+  fn <- function(x) if (!ok(x)) dash else format(round(x), big.mark = ",", scientific = FALSE, trim = TRUE)
+  fp <- function(x) if (!ok(x)) dash else paste0(round(x * 100, 1), "%")
+  box <- function(val, label, col, sub = NULL, bar = NULL) {
+    div(style = paste0("background:#fff;border:2px solid ", col, ";border-radius:10px;padding:14px 10px;text-align:center;min-height:98px;box-sizing:border-box;"),
+      div(style = paste0("font-size:28px;font-weight:800;color:", col, ";line-height:1.1;"), val),
+      div(style = "font-size:11.5px;font-weight:700;color:#3A3A3A;margin-top:4px;text-transform:uppercase;letter-spacing:.03em;", label),
+      if (!is.null(sub)) div(style = "font-size:10.5px;color:#6C7A8D;margin-top:2px;", sub),
+      if (!is.null(bar) && ok(bar))
+        div(style = "height:5px;border-radius:3px;background:rgba(128,140,160,.25);margin:7px 14px 0 14px;overflow:hidden;",
+            div(style = paste0("height:100%;border-radius:3px;background:", col, ";width:", min(max(bar, 0), 1) * 100, "%;"))))
+  }
+  div(class = "fade-up", style = paste0(
+        "border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(16,24,40,.08);",
+        "border-top:4px solid ", dark_blue, ";margin-bottom:16px;background:", soft_grey, ";"),
+    div(style = paste0("background:#fff;padding:14px 20px;color:", dark_blue, ";border-bottom:1px solid rgba(16,24,40,.08);",
+                       "display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;"),
+      div(
+        div(style = "font-size:16.8px;font-weight:800;letter-spacing:.02em;",
+            toupper(paste(region, "INDEPENDENT MONITORING INTELLIGENCE"))),
+        div(style = "font-size:12.5px;color:#6C7A8D;margin-top:2px;",
+            paste0("Generated: ", format(Sys.Date(), "%d %b %Y"), "  |  Live filtered snapshot",
+                   if (nzchar(pub_txt)) paste0("  |  Data updated: ", pub_txt) else "")),
+        if (nzchar(ctx)) div(style = "font-size:12.2px;color:#3A3A3A;margin-top:4px;font-weight:600;", ctx)
+      ),
+      actions
+    ),
+    div(style = "padding:18px 20px;",
+      div(style = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:14px;margin-bottom:16px;",
+        box(fn(v$hh),        "Households visited", who_blue),
+        box(fp(v$cov),       "Regional coverage",  who_blue, "target 90%", if (ok(v$cov)) v$cov / 0.9),
+        box(fn(v$missed),    "Missed children",    alert_red),
+        box(fp(v$aware),     "Caregiver awareness", gold, "target 80%", if (ok(v$aware)) v$aware / 0.8),
+        box(if (ok(v$risk)) round(v$risk, 1) else dash, "Mean risk score", alert_red),
+        box(fn(v$critical),  "Critical districts", purple, "risk score 70 or more"),
+        box(fn(v$rounds),    "Campaign rounds",    dark_blue),
+        box(fn(v$records),   "Records",            dark_blue, "in the current filter"),
+        box(fn(v$countries), "Countries",          teal),
+        box(fn(v$districts), "Districts",          teal)
+      ),
+      div(style = "font-size:11.8px;color:#3A3A3A;margin-bottom:10px;",
+          paste0("High-risk districts: ", fn(v$high), "  |  Moderate-risk districts: ", fn(v$moderate))),
+      div(style = "font-size:10.9px;color:#808080;",
+          "Source: AFRO Independent Monitoring repository | District uniqueness: Country + Province + District")
+    )
+  )
+}
+
 # ---- UI -----------------------------------------------------------------------
 im_overview_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -267,9 +320,7 @@ im_overview_ui <- function(id) {
       )
     ),
 
-    # ---- KPI strip + hero + executive snapshot ------------------------------------
-    shiny::uiOutput(ns("kpi_strip")),
-    shiny::uiOutput(ns("hero_banner")),
+    # ---- One combined snapshot (KPI strip and context banner are merged into it) ------
     shiny::div(id = ns("exec_kpi_capture"), shiny::uiOutput(ns("exec_kpi_card"))),
 
     # ---- Row 2 ------------------------------------------------------------------------
@@ -524,60 +575,31 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
       risk_counts <- list(critical=g("Critical"), high=g("High"), moderate=g("Moderate"))
     }
 
-    fmt_pct <- function(x) if (is.na(x)) "\u2014" else paste0(round(x*100,1), "%")
-    fmt_n   <- function(x) if (is.na(x)) "\u2014" else fmt_num(x)
+    # context line (filters in use) and data publication time, previously in the banner / strip
+    active <- character(0)
+    if (!is.null(input$ov_block)    && input$ov_block    != "All") active <- c(active, input$ov_block)
+    if (!is.null(input$ov_country)  && input$ov_country  != "All") active <- c(active, input$ov_country)
+    if (!is.null(input$ov_vaccine)  && input$ov_vaccine  != "All") active <- c(active, input$ov_vaccine)
+    if (!is.null(input$ov_response) && input$ov_response != "All") active <- c(active, input$ov_response)
+    if (length(input$ov_round) > 0) active <- c(active, paste("Rnd", paste(input$ov_round, collapse=",")))
+    if (!is.null(input$ov_date_type) && input$ov_date_type != "All time") active <- c(active, input$ov_date_type)
+    ctx <- if (length(active) > 0) paste(active, collapse=" · ") else "All countries · All campaigns"
+    pub <- attr(rv$data, "im_published_at")
+    pub_txt <- if (is.null(pub)) "" else format(as.POSIXct(pub), "%d %b %Y %H:%M")
 
-    metric_box <- function(val, label, border_col) {
-      div(style=paste0(
-            "background:#fff;border:2px solid ",border_col,";border-radius:10px;",
-            "padding:14px 10px;text-align:center;flex:1;min-width:150px;"),
-        div(style=paste0("font-size:30.4px;font-weight:800;color:",border_col,";line-height:1.1;"), val),
-        div(style="font-size:11.5px;font-weight:700;color:#3A3A3A;margin-top:4px;text-transform:uppercase;letter-spacing:.03em;",
-            label)
-      )
-    }
-
-    div(class="fade-up", style=paste0(
-          "border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(16,24,40,.08);",
-          "border-top:4px solid ",dark_blue,";margin-bottom:16px;background:",soft_grey,";"),
-      div(style=paste0("background:#fff;padding:14px 20px;color:",dark_blue,";",
-                       "border-bottom:1px solid rgba(16,24,40,.08);",
-                       "display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;"),
-        div(
-          div(style="font-size:16.8px;font-weight:800;letter-spacing:.02em;",
-              toupper(paste(im_region_label(), "INDEPENDENT MONITORING INTELLIGENCE"))),
-          div(style="font-size:12.5px;color:#6C7A8D;margin-top:2px;",
-              paste0("Generated: ", format(Sys.Date(), "%d %b %Y"), "  |  Live filtered snapshot"))
-        ),
-        div(style="display:flex;gap:6px;height:fit-content;",
-          tags$button(type="button", onclick=sprintf("imCaptureExec('%s')", session$ns("exec_kpi_capture")),
-            style=paste0("background:transparent;border:1px solid ",dark_blue,";color:",dark_blue,";font-size:11.2px;padding:2px 10px;border-radius:6px;cursor:pointer;"),
-            bs_icon("camera-fill", class="me-1"), "PNG"),
-          downloadButton(session$ns("dl_exec_snapshot"), tagList(bs_icon("download", class="me-1"), "CSV"),
-            style=paste0("background:transparent;border:1px solid ",dark_blue,";color:",dark_blue,";font-size:11.2px;padding:2px 10px;border-radius:6px;height:fit-content;"))
-        )
-      ),
-      div(style="padding:18px 20px;",
-        div(style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;",
-          metric_box(fmt_n(hh_visited),    "Households visited", who_blue),
-          metric_box(fmt_pct(regional_cv), "Regional coverage",  who_blue),
-          metric_box(fmt_n(total_missed),  "Missed children",    alert_red)
-        ),
-        div(style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;",
-          metric_box(fmt_pct(mean_awareness), "Caregiver awareness", gold),
-          metric_box(if (is.na(mean_risk)) "\u2014" else round(mean_risk,1), "Mean risk score", alert_red),
-          metric_box(if (is.na(n_rounds))  "\u2014" else n_rounds,           "Campaign rounds", dark_blue)
-        ),
-        div(style=paste0("font-size:13.1px;font-weight:700;color:",dark_blue,";margin-bottom:4px;"),
-            paste0("Countries analysed: ", n_country, "  |  Districts analysed: ", n_district)),
-        div(style="font-size:11.8px;color:#3A3A3A;margin-bottom:10px;",
-            paste0("Critical events: ", risk_counts$critical,
-                   "  |  High-risk events: ", risk_counts$high,
-                   "  |  Moderate-risk events: ", risk_counts$moderate)),
-        div(style="font-size:10.9px;color:#808080;",
-            "Source: AFRO Independent Monitoring repository | District uniqueness: Country + Province + District")
-      )
+    actions <- div(style="display:flex;gap:6px;height:fit-content;",
+      tags$button(type="button", onclick=sprintf("imCaptureExec('%s')", session$ns("exec_kpi_capture")),
+        style=paste0("background:transparent;border:1px solid ",dark_blue,";color:",dark_blue,";font-size:11.2px;padding:2px 10px;border-radius:6px;cursor:pointer;"),
+        bs_icon("camera-fill", class="me-1"), "PNG"),
+      downloadButton(session$ns("dl_exec_snapshot"), tagList(bs_icon("download", class="me-1"), "CSV"),
+        style=paste0("background:transparent;border:1px solid ",dark_blue,";color:",dark_blue,";font-size:11.2px;padding:2px 10px;border-radius:6px;height:fit-content;"))
     )
+
+    im_snapshot_card(
+      v = list(hh = hh_visited, cov = regional_cv, missed = total_missed, aware = mean_awareness,
+               risk = mean_risk, critical = risk_counts$critical, rounds = n_rounds, records = nrow(df),
+               countries = n_country, districts = n_district, high = risk_counts$high, moderate = risk_counts$moderate),
+      ctx = ctx, pub_txt = pub_txt, actions = actions, region = im_region_label())
   })
   # ?? Overview filtered data ????????????????????????????????????????????????????
   ov_data <- reactive({
