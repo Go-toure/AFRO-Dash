@@ -9136,8 +9136,7 @@ server <- function(input, output, session) {
       plotly::config(
         plotly::layout(plotly::ggplotly(admin_cm_plot(), tooltip = "text"),
                        legend = list(orientation = "h", y = 1.04)),
-        displaylogo = FALSE,
-        modeBarButtonsToRemove = list("toImage")  # the chart alone has no cards; use the Download button below
+        displaylogo = FALSE
       )
     })
   }
@@ -9181,8 +9180,7 @@ server <- function(input, output, session) {
       plotly::config(
         plotly::layout(plotly::ggplotly(admin_vm_plot(), tooltip = "text"),
                        legend = list(orientation = "h", y = 1.04)),
-        displaylogo = FALSE,
-        modeBarButtonsToRemove = list("toImage")  # the chart alone has no cards; use the Download button below
+        displaylogo = FALSE
       )
     })
   }
