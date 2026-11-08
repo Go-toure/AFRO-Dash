@@ -389,9 +389,20 @@ im_overview_ui <- function(id) {
     ),
     # ---- Row 3 ------------------------------------------------------------------------
     shiny::fluidRow(
-      shiny::column(12, card("Social Mobilisation vs Coverage", plt("chart_sm_quadrant", "450px"), "dl_sm_quad", icon_name = "diagram-3-fill",
-        legend = shiny::div(class = "im-legend",
-          sp(C$red, "\u25CF Low SM+CV"), sp(C$orange, "\u25CF Low SM"), sp(C$purple, "\u25CF Low CV"), sp(C$blue, "\u25CF High SM+CV"))))
+      shiny::column(12, shiny::div(class = "im-card",
+        shiny::div(class = "im-card-h", style = "align-items:flex-start;",
+          shiny::div(
+            shiny::div(style = "font-size:17px;font-weight:700;", "Social mobilisation vs coverage"),
+            shiny::div(style = "font-size:12.5px;opacity:.7;margin-top:2px;font-style:italic;",
+                       shiny::uiOutput(ns("sm_subtitle"), inline = TRUE))),
+          dl("dl_sm_quad")),
+        shiny::div(class = "im-card-b",
+          shiny::fluidRow(
+            shiny::column(8, plt("chart_sm_quadrant", "520px")),
+            shiny::column(4, shiny::div(style = "padding-top:6px;", shiny::uiOutput(ns("sm_side"))))),
+          shiny::div(style = paste0("margin:6px 4px 4px;padding:10px 16px;border-radius:12px;background:#14454F;",
+                                    "color:white;font-weight:600;font-size:14px;"),
+                     "Advocacy: intensify pre-campaign mobilisation where awareness is below 80%."))))
     ),
     # ---- Row 4 ------------------------------------------------------------------------
     shiny::fluidRow(
@@ -1065,7 +1076,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
           list(x=x_n-.5, y=.9,  text="90% target", showarrow=FALSE,
                font=list(color=C_$green,  size=10), xanchor="right"),
           list(x=x_n-.5, y=.8,  text="80% min",    showarrow=FALSE,
-               font=list(color=C_$orange, size=10), xanchor="right")
+               font=list(color="#E08A3C", size=12), xanchor="right")
         )
       )
   })
@@ -1572,20 +1583,12 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
       )
   })
 
-  # ?? SM Quadrant bubble chart (star chart) ?????????????????????????????????????
-  output$chart_sm_quadrant <- renderPlotly({
+  # ?? Awareness vs coverage, one row per district (shared by the chart and the side cards) ??
+  sm_quad_data <- reactive({
     df <- ov_data(); req(df)
     dfr <- tryCatch(with_risk(df), error=function(e) NULL)
-    if (is.null(dfr) || !"awareness_rate" %in% names(dfr)) return(
-      plotly_empty() %>% im_layout() %>%
-        add_annotations(text="\u26A0\uFE0F Awareness data (care_giver_informed_sia) not available in this dataset",
-                        showarrow=FALSE, font=list(size=13, color=C_$muted))
-    )
-    if (all(is.na(dfr$awareness_rate))) return(
-      plotly_empty() %>% im_layout() %>%
-        add_annotations(text="\u26A0\uFE0F Awareness data is all NA \u2014 column exists but has no values",
-                        showarrow=FALSE, font=list(size=13, color=C_$muted))
-    )
+    if (is.null(dfr) || !"awareness_rate" %in% names(dfr)) return(NULL)
+    if (all(is.na(dfr$awareness_rate))) return(NULL)
 
     grp_cols <- intersect(c("country","province","district"), names(dfr))
     s <- dfr %>%
@@ -1606,7 +1609,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
           awareness_rate >= 0.80 & cv_d <  0.90 ~ "High awareness but low coverage",
           TRUE                                   ~ "High awareness + good coverage"
         ),
-        sz  = pmax(pmin(sqrt(missed_child + 1) * 1.5, 28), 5),
+        sz  = pmax(pmin(sqrt(missed_child + 1) * 0.9, 15), 4.5),
         # Advocacy message per district (mirrors priority_districts advocacy_message)
         advocacy = case_when(
           awareness_rate < 0.80 ~
@@ -1622,23 +1625,79 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
           "<br>Missed: ", fmt_num(missed_child),
           "<br><i>", advocacy, "</i>")
       )
+    if (!nrow(s)) NULL else s
+  })
 
-    if (nrow(s) == 0) return(NULL)
-    s <- slice_sample(s, n = min(2000, nrow(s)))
+  # ?? Side cards and subtitle for the SM view ??????????????????????????????????
+  output$sm_subtitle <- shiny::renderUI({
+    s  <- tryCatch(sm_quad_data(), error = function(e) NULL)
+    df <- tryCatch(ov_data(),      error = function(e) NULL)
+    if (is.null(s)) return("Caregiver awareness and monitored coverage by district")
+    span <- ""
+    dc <- if (!is.null(df)) date_col_of(df) else NA_character_
+    if (!is.na(dc)) {
+      d <- suppressWarnings(as.Date(df[[dc]])); d <- d[!is.na(d)]
+      if (length(d)) {
+        a <- format(min(d), "%B %Y"); b <- format(max(d), "%B %Y")
+        span <- paste0(", ", if (a == b) a else paste(a, "–", b))
+      }
+    }
+    paste0("Caregiver awareness and monitored coverage by district", span,
+           " (", format(nrow(s), big.mark = ","), " districts)")
+  })
+
+  output$sm_side <- shiny::renderUI({
+    s <- tryCatch(sm_quad_data(), error = function(e) NULL)
+    if (is.null(s) || !nrow(s)) return(NULL)
+    n  <- nrow(s)
+    q  <- function(x) sum(s$quadrant == x)
+    nq <- c(q("Low awareness + low coverage"), q("Low awareness but acceptable coverage"),
+            q("High awareness but low coverage"), q("High awareness + good coverage"))
+    tile <- function(label, value, sub, col)
+      shiny::div(style = paste0("padding:10px 16px;border-radius:14px;margin-bottom:12px;background:", col,
+                                "10;border:1px solid ", col, "30;border-left:5px solid ", col, ";"),
+        shiny::div(style = "font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75;", label),
+        shiny::div(style = paste0("font-size:28px;font-weight:700;line-height:1.2;color:", col, ";"), value),
+        shiny::div(style = "font-size:12px;opacity:.75;", sub))
+    low  <- s[s$awareness_rate < 0.80, ]
+    top  <- if (nrow(low) && "country" %in% names(low))
+      head(sort(table(im_nice_name(low$country)), decreasing = TRUE), 4) else NULL
+    shiny::tagList(
+      tile("High awareness + good coverage", paste0(round(100 * nq[4] / n), "%"),
+           paste0(format(nq[4], big.mark = ","), " of ", format(n, big.mark = ","), " districts"), "#3D8B6E"),
+      tile("Districts below 80% awareness", format(nq[1] + nq[2], big.mark = ","),
+           paste0(format(nq[1], big.mark = ","), " also below 90% coverage"), "#E08A3C"),
+      tile("High awareness but low coverage", format(nq[3], big.mark = ","),
+           "districts (awareness 80% or more, coverage below 90%): check operations and microplans", "#7A5C99"),
+      if (!is.null(top) && length(top))
+        shiny::div(style = "font-size:13px;margin-top:4px;",
+          shiny::tags$b("Most low-awareness districts: "),
+          paste0(names(top), " (", as.integer(top), ")", collapse = " · ")))
+  })
+
+  # ?? SM Quadrant bubble chart (star chart) ?????????????????????????????????????
+  output$chart_sm_quadrant <- renderPlotly({
+    s_all <- sm_quad_data()
+    if (is.null(s_all)) return(
+      plotly_empty() %>% im_layout() %>%
+        add_annotations(text="Awareness data (care_giver_informed_sia) not available for this selection",
+                        showarrow=FALSE, font=list(size=13, color=C_$muted))
+    )
+    s <- slice_sample(s_all, n = min(2000, nrow(s_all)))
 
     # Quadrant definitions ? labels and colours aligned to report script
     q_defs <- list(
       list(q   = "Low awareness + low coverage",
-           col = C_$red,
+           col = "#B83B5E",
            adv = "Pre-campaign social mobilisation and household awareness should be intensified."),
       list(q   = "Low awareness but acceptable coverage",
-           col = C_$orange,
+           col = "#E08A3C",
            adv = "Pre-campaign social mobilisation and household awareness should be intensified."),
       list(q   = "High awareness but low coverage",
-           col = C_$purple,
+           col = "#7A5C99",
            adv = "Investigate operational barriers; strengthen vaccinator accountability and microplan."),
       list(q   = "High awareness + good coverage",
-           col = C_$blue,
+           col = "#1F7A8C",
            adv = "Continue routine monitoring and rapid corrective action.")
     )
 
@@ -1655,7 +1714,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
         legendgroup = qd$q,
         marker      = list(color   = qd$col,
                            size    = ~sz,
-                           opacity = 0.72,
+                           opacity = 0.75,
                            line    = list(color = "white", width = 0.8)),
         text              = ~lbl,
         hoverinfo         = "text",
@@ -1664,10 +1723,10 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     }
 
     # Count per quadrant for annotation
-    q_counts <- table(s$quadrant)
+    q_counts <- table(s_all$quadrant)
     ann_lbl <- function(q) {
       n <- if (q %in% names(q_counts)) q_counts[[q]] else 0
-      paste0("<b>", q, "</b><br><span style='font-size:9px'>", n, " areas</span>")
+      paste0("<b>", q, "</b><br><span style='font-size:11px'>", n, " areas</span>")
     }
 
     # Advocacy annotation: quadrant with most missed children
@@ -1686,62 +1745,57 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
     }
 
     im_layout(p,
-      .title    = "Social Mobilisation Awareness vs Vaccination Coverage",
+      .title    = NULL,
       .filename = "IM_sm_quadrant",
-      xaxis = list(title = "Caregiver Awareness Rate (%)", tickformat = ".0%",
+      xaxis = list(title = "Caregiver awareness rate (%)", tickformat = ".0%",
                    range = c(-.02, 1.05), showgrid = TRUE,
                    gridcolor = "rgba(0,92,151,.07)", zeroline = FALSE),
-      yaxis = list(title = "Vaccination Coverage \u2014 CV (%)", tickformat = ".0%",
-                   range = c(-.02, 1.08), showgrid = TRUE,
+      yaxis = list(title = "Vaccination coverage, IM (%)", tickformat = ".0%",
+                   range = c(-.02, 1.13), showgrid = TRUE,
                    gridcolor = "rgba(0,92,151,.07)", zeroline = FALSE),
       showlegend = TRUE,
       shapes = list(
-        list(type="line", x0=.8, x1=.8, y0=0, y1=1.08,
+        list(type="line", x0=.8, x1=.8, y0=0, y1=1.13,
              line=list(color=C_$muted, dash="dot", width=1.5)),
         list(type="line", x0=0, x1=1.05, y0=.9, y1=.9,
              line=list(color=C_$muted, dash="dot", width=1.5))
       ),
       annotations = list(
         # Quadrant corner labels with counts (labels match report script)
-        list(x=.39,  y=1.06, text=ann_lbl("Low awareness but acceptable coverage"),
-             showarrow=FALSE, font=list(color=C_$orange, size=10),
-             bgcolor="rgba(255,255,255,.82)", bordercolor=C_$orange,
+        list(x=.39,  y=1.075, text=ann_lbl("Low awareness but acceptable coverage"),
+             showarrow=FALSE, font=list(color="#E08A3C", size=12),
+             bgcolor="rgba(255,255,255,.82)", bordercolor="#E08A3C",
              borderwidth=1, borderpad=4, xanchor="center"),
         list(x=.39,  y=.48,  text=ann_lbl("Low awareness + low coverage"),
-             showarrow=FALSE, font=list(color=C_$red,    size=10),
-             bgcolor="rgba(255,255,255,.82)", bordercolor=C_$red,
+             showarrow=FALSE, font=list(color="#B83B5E", size=12),
+             bgcolor="rgba(255,255,255,.82)", bordercolor="#B83B5E",
              borderwidth=1, borderpad=4, xanchor="center"),
         list(x=.92,  y=.48,  text=ann_lbl("High awareness but low coverage"),
-             showarrow=FALSE, font=list(color=C_$purple, size=10),
-             bgcolor="rgba(255,255,255,.82)", bordercolor=C_$purple,
+             showarrow=FALSE, font=list(color="#7A5C99", size=12),
+             bgcolor="rgba(255,255,255,.82)", bordercolor="#7A5C99",
              borderwidth=1, borderpad=4, xanchor="center"),
-        list(x=.92,  y=1.06, text=ann_lbl("High awareness + good coverage"),
-             showarrow=FALSE, font=list(color=C_$blue,   size=10),
-             bgcolor="rgba(255,255,255,.82)", bordercolor=C_$blue,
+        list(x=.92,  y=1.075, text=ann_lbl("High awareness + good coverage"),
+             showarrow=FALSE, font=list(color="#1F7A8C", size=12),
+             bgcolor="rgba(255,255,255,.82)", bordercolor="#1F7A8C",
              borderwidth=1, borderpad=4, xanchor="center"),
         # Threshold labels
-        list(x=.79, y=1.04, text="Awareness threshold: 80%", showarrow=FALSE,
-             textangle=-90, font=list(color=C_$muted, size=9), xanchor="right"),
-        list(x=0.85, y=0.87, text="CV target: 90%",
-             showarrow=FALSE, font=list(color="grey", size=9)),
-        # Advocacy: sits right after the x-axis title, before the legend row
-        list(x=1.0, y=-0.19, xref="paper", yref="paper",
-             text="Advocacy message: low-awareness districts require intensified pre-campaign mobilisation",
-             showarrow=FALSE, xanchor="right", yanchor="top",
-             font=list(size=8, color="grey50"))
+        list(x=.795, y=.2, text="Awareness threshold: 80%", showarrow=FALSE,
+             textangle=-90, font=list(color=C_$muted, size=11), xanchor="right", xshift=-6),
+        list(x=0.01, y=0.875, text="CV target: 90%", xanchor="left",
+             showarrow=FALSE, font=list(color=C_$muted, size=11))
       ),
       # b=140 keeps y=-0.19 (advocacy) and y=-0.30 (legend) inside the figure
       # for both the 450px browser display and the 640px PNG download
-      margin = list(l=60, r=70, t=50, b=140)
+      margin = list(l=60, r=30, t=20, b=100)
     ) %>%
       # Apply legend AFTER im_layout so it overrides plotly_base()'s legend key
       plotly::layout(legend = list(
         orientation = "h",
-        x = 0.5, y = -0.30,
+        x = 0.5, y = -0.2,
         xanchor = "center", yanchor = "top",
         bgcolor = "rgba(255,255,255,0)",
         borderwidth = 0,
-        font = list(size = 7, color = C_$dark),
+        font = list(size = 11, color = C_$dark),
         tracegroupgap = 2
       )) %>%
       plotly::config(toImageButtonOptions = list(
