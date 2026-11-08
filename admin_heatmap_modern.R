@@ -29,10 +29,12 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
                    levels = c("95% or more", "80 to 94%", "Below 80%"))
   d <- d |> dplyr::arrange(mlab, dplyr::desc(share95), Country) |>
     dplyr::group_by(mlab) |> dplyr::mutate(k = dplyr::row_number()) |> dplyr::ungroup()
-  d$name <- paste0(stringr::str_wrap(tools::toTitleCase(tolower(d$Country)), 12), "\n", d$share95, "%")
+  nm <- ifelse(d$Country == "CAR", "Central African Republic", tools::toTitleCase(tolower(d$Country)))
+  d$name <- paste0(stringr::str_wrap(nm, 12), "\n", d$share95, "%")
   d$tip <- paste0(d$Country, " | ", format(d$floor_date, "%B %Y"), "\n", d$share95,
                   "% of districts at 95% coverage or more\n(", d$n95, " of ", d$n, " district results)")
   cnt <- d |> dplyr::count(mlab, name = "nc")
+  n_all <- nrow(d); n_green <- sum(d$band == "95% or more"); n_red <- sum(d$band == "Below 80%")
   fills <- c("95% or more" = C$green, "80 to 94%" = C$gold, "Below 80%" = C$red)
   ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = band, text = tip)) +
     ggplot2::geom_tile(width = 0.94, height = 0.92) +
@@ -45,15 +47,17 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
     ggplot2::scale_x_discrete(drop = FALSE) +
     ggplot2::scale_y_continuous(breaks = NULL, expand = ggplot2::expansion(add = c(0.3, 0.8))) +
     ggplot2::labs(
-      title = "Which countries had a campaign each month, and how they performed",
+      title = paste0("Vaccination coverage by country and month: ", n_green, " of ", n_all,
+                     " campaigns reached 95% coverage in at least 95% of districts"),
       subtitle = paste0(block_display, if (nzchar(period_text)) paste0("  |  ", period_text) else "",
-                        "  |  green = 95% of districts at 95% coverage or more, amber = 80 to 94%, red = below 80%; best at the bottom"),
+                        "  |  ", n_red, " campaigns stayed below 80% of districts at 95% coverage",
+                        "  |  green = 95% or more, amber = 80 to 94%, red = below 80%; best at the bottom"),
       x = NULL, y = NULL,
       caption = paste0("Each box is one country and month (all vaccine types together); the value is its share of districts at 95% coverage or more. Source: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
                        format(Sys.Date(), "%Y-%m-%d"))) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 15, family = "serif"),
+      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 14, family = "serif"),
       plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9.5),
       plot.caption = ggplot2::element_text(colour = C$muted, size = 8, hjust = 0),
       plot.title.position = "plot", plot.caption.position = "plot",
