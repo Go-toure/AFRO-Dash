@@ -6725,12 +6725,6 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("user-clock"), "Absence Reasons"),
                       value = "absence_reasons",
-                      fluidRow(
-                        valueBoxOutput("absence_n_country", width = 3),
-                        valueBoxOutput("absence_n_province", width = 3),
-                        valueBoxOutput("absence_n_district", width = 3),
-                        valueBoxOutput("absence_top_reason", width = 3)
-                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
@@ -6772,12 +6766,6 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("gavel"), "Non-Compliance Reasons"),
                       value = "nc_reasons",
-                      fluidRow(
-                        valueBoxOutput("nc_n_country", width = 3),
-                        valueBoxOutput("nc_n_province", width = 3),
-                        valueBoxOutput("nc_n_district", width = 3),
-                        valueBoxOutput("nc_top_reason", width = 3)
-                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
@@ -6825,12 +6813,6 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("history"), "Traditional Reasons"),
                       value = "traditional_reasons",
-                      fluidRow(
-                        valueBoxOutput("trad_n_country", width = 3),
-                        valueBoxOutput("trad_n_province", width = 3),
-                        valueBoxOutput("trad_n_district", width = 3),
-                        valueBoxOutput("trad_top_reason", width = 3)
-                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
