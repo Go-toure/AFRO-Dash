@@ -371,10 +371,10 @@ reason_where_gg <- function(p, title_txt) {
 
 reason_full_gg <- function(p) {
   unit1 <- sub("ies$", "y", sub("s$", "", p$unit))
-  noun <- if (p$kind == "absence") "absences" else "reasons for missed children"
+  noun <- switch(p$kind, absence = "absences", nc = "refusals", "reasons for missed children")
   head_txt <- if (is.na(p$B)) paste0(p$A, " is the leading reason: ", sprintf("%.0f%%", p$A_pct), " of recorded ", noun)
               else paste0(reason_join(p$A, p$B), " explain ", sprintf("%.0f%%", p$AB_pct), " of recorded ", noun)
-  sub_txt <- paste0(if (p$kind == "absence") "Why children were absent during LQAS" else "Why children were missed in LQAS",
+  sub_txt <- paste0(switch(p$kind, absence = "Why children were absent during LQAS", nc = "Why families refused vaccination (non-compliance reasons) in LQAS", "Why children were missed in LQAS"),
                     "  |  ", p$period_label, "  |  ", p$n_all, " ", if (p$n_all == 1) unit1 else p$unit)
   hd <- modern_header_gg(head_txt, sub_txt)
   why <- reason_why_gg(p, "WHY: reasons recorded")
@@ -385,7 +385,7 @@ reason_full_gg <- function(p) {
     c(format(p$total, big.mark = ",", trim = TRUE), sprintf("%.0f%%", p$A_pct), sprintf("%.0f%%", p$top3_share)),
     c(paste0("across ", p$n_all, " ", if (p$n_all == 1) unit1 else p$unit), tolower(p$A), paste(strwrap(t3, 28), collapse = "\n")),
     c(REFUSAL_COL$navy, unname(p$colours[p$A]), REFUSAL_COL$blue))
-  act <- paste0("Priority: ", if (is.na(p$B)) reason_lower(p$A) else reason_join(reason_lower(p$A), p$B), ", starting with ", t3, ".")
+  act <- paste0(if (p$kind == "nc") "Priority: tackle " else "Priority: ", if (is.na(p$B)) reason_lower(p$A) else reason_join(reason_lower(p$A), p$B), ", starting with ", t3, ".")
   bn <- modern_banner_gg(act, REFUSAL_COL$navy)
   ft <- modern_foot_gg(paste0("Reasons are counted over all LQAS campaigns in the period. Colours show the leading reason. \"Other\" is shown but never named as the leading reason."))
   mid <- cowplot::plot_grid(why, wh, cd, nrow = 1, rel_widths = c(1.0, 1.9, 0.8))

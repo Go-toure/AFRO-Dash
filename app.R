@@ -6782,6 +6782,14 @@ ui_for_block <- function() dashboardPage(
                           div(style = "text-align: center; margin-top: 15px;",
                               downloadButton("download_nc_refusal", "Download Refusals (PNG)", class = "btn-primary-custom")
                           )
+                        ),
+                        box(
+                          title = tags$div(icon("comments"), "Detailed reasons for non-compliance (modern view)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("nc_modern_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_nc_modern", "Download Non-Compliance Reasons (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       ),
                       tabsetPanel(
@@ -12956,6 +12964,14 @@ server <- function(input, output, session) {
   output$trad_modern_ui <- renderUI(modern_ui_box("trad_modern_plot", function(ctx) { p <- modern_profile("traditional"); if (is.null(p)) NULL else reason_height(p) }))
   output$comb_modern_ui <- renderUI(modern_ui_box("comb_modern_plot", function(ctx) { if (is.null(modern_combined())) NULL else reason_combined_height() }))
   
+  output$nc_modern_ui   <- renderUI(modern_ui_box("nc_modern_plot",   function(ctx) { p <- modern_profile("nc");          if (is.null(p)) NULL else reason_height(p) }))
+  output$nc_modern_plot   <- renderPlot({ p <- modern_profile("nc");          req(p); reason_full_gg(p) }, res = 90)
+  output$download_nc_modern <- downloadHandler(
+    filename = function() paste0("Non_compliance_reasons_modern_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      p <- modern_profile("nc"); req(p)
+      ggsave(file, reason_full_gg(p), device = "png", width = 13, height = reason_height(p), dpi = 200, bg = "white")
+    })
   output$abs_modern_plot  <- renderPlot({ p <- modern_profile("absence");     req(p); reason_full_gg(p) }, res = 90)
   output$trad_modern_plot <- renderPlot({ p <- modern_profile("traditional"); req(p); reason_full_gg(p) }, res = 90)
   output$comb_modern_plot <- renderPlot({ g <- modern_combined(); req(g); g }, res = 90)
