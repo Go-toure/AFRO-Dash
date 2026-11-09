@@ -6683,14 +6683,28 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("reasons_avg_percentage_all", width = 3),
                         valueBoxOutput("reasons_viz_recommendation", width = 3)
                       ),
-                      box(
-                        title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
-                        width = 12, solidHeader = TRUE, status = "info",
-                        plotOutput("reasons_combined_heatmap", height = "1100px"),
-                        div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_reasons_combined_plot", 
-                                           "Download Combined Visualization", 
-                                           class = "btn-primary-custom")
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        box(
+                          title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          plotOutput("reasons_combined_heatmap", height = "1100px"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_reasons_combined_plot", 
+                                             "Download Combined Visualization", 
+                                             class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'refusal_std'",
+                        box(
+                          title = tags$div(icon("shield-alt"), "All reason types (modern view)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("comb_modern_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_comb_modern", "Download Combined (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       )
                     ),
@@ -6706,14 +6720,28 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("absence_total_cats", width = 2),
                         valueBoxOutput("absence_viz_type", width = 3)
                       ),
-                      box(
-                        title = tags$div(icon("chart-bar"), "Absence Reasons Visualization"), 
-                        width = 12, solidHeader = TRUE, status = "info",
-                        plotOutput("absence_heatmap", height = "600px"),
-                        div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_absence_plot", 
-                                           "Download Absence Visualization", 
-                                           class = "btn-primary-custom")
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        box(
+                          title = tags$div(icon("chart-bar"), "Absence Reasons Visualization"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          plotOutput("absence_heatmap", height = "600px"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_absence_plot", 
+                                             "Download Absence Visualization", 
+                                             class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'refusal_std'",
+                        box(
+                          title = tags$div(icon("shield-alt"), "Absence reasons (modern view)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("abs_modern_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_abs_modern", "Download Absence (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       ),
                       tabsetPanel(
@@ -6774,12 +6802,26 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("trad_total_cats", width = 2),
                         valueBoxOutput("trad_viz_type", width = 3)
                       ),
-                      box(
-                        title = tags$div(icon("chart-bar"), "Traditional Reasons Visualization"), 
-                        width = 12, solidHeader = TRUE, status = "info",
-                        plotOutput("traditional_heatmap", height = "600px"),
-                        div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_traditional_plot", "Download Traditional Visualization", class = "btn-primary-custom")
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        box(
+                          title = tags$div(icon("chart-bar"), "Traditional Reasons Visualization"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          plotOutput("traditional_heatmap", height = "600px"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_traditional_plot", "Download Traditional Visualization", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'refusal_std'",
+                        box(
+                          title = tags$div(icon("shield-alt"), "Traditional reasons (modern view)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("trad_modern_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_trad_modern", "Download Traditional (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       ),
                       tabsetPanel(
@@ -11953,7 +11995,7 @@ server <- function(input, output, session) {
       viz_type == "radar" ~ "Radar Chart selected",
       viz_type == "lollipop" ~ "Lollipop Chart selected",
       viz_type == "waterfall" ~ "Waterfall Chart selected",
-      viz_type == "refusal_std" ~ "Refusals vs standard selected - shown in the Non-Compliance Reasons tab",
+      viz_type == "refusal_std" ~ "Modern view selected - shown in the Combined, Absence, Non-Compliance and Traditional tabs",
       viz_type == "auto" ~ "Auto mode - will choose best visualization",
       TRUE ~ "Visualization ready"
     )
@@ -11963,6 +12005,7 @@ server <- function(input, output, session) {
   # Reactive value to store analysis results
   reasons_analysis <- reactiveVal(NULL)
   refusal_res <- reactiveVal(NULL)   # data for the "Refusals vs standard" view
+  modern_ctx <- reactiveVal(NULL)    # filtered LQAS rows + settings for the modern view in the other reasons tabs
   
   # Block Summary Title - FIXED
   output$block_summary_title <- renderText({
@@ -12026,7 +12069,10 @@ server <- function(input, output, session) {
           district_selection = if (!is.null(input$reasons_districts) && length(input$reasons_districts) > 0) input$reasons_districts else NULL,
           block_definition = if (input$reasons_block_type == "afro") afro_blocks else ist_blocks)
         refusal_res(refusal_summary(filt, input$reasons_geo_level, attr(filt, "period_label")))
-        updateTabsetPanel(session, "reasons_main_tabs", selected = "nc_reasons")
+        modern_ctx(list(filt = filt, geo_level = input$reasons_geo_level, period_label = attr(filt, "period_label"),
+                        types = sub("^non_compliance$", "nc", combined_types)))
+      } else {
+        modern_ctx(NULL)
       }
     }, "Comprehensive Reasons Analysis")
   })
@@ -12882,6 +12928,56 @@ server <- function(input, output, session) {
       ggsave(file, refusal_full_gg(res), device = "png", width = 13, height = refusal_height(res), dpi = 200, bg = "white")
     }
   )
+  
+  # ---- Modern view in the Absence / Traditional / Combined tabs ----
+  modern_ui_box <- function(plot_id, height_fn) {
+    if (!REFUSAL_MODERN_AVAILABLE)
+      return(tags$div(class = "alert alert-warning", "Modern view not available (reasons_refusal_modern.R not found)."))
+    ctx <- modern_ctx()
+    if (is.null(ctx))
+      return(tags$div(class = "alert alert-info", "Choose the filters and press Analyze Reasons."))
+    h <- height_fn(ctx)
+    if (is.null(h))
+      return(tags$div(class = "alert alert-warning", "No reasons were recorded for this selection."))
+    plotOutput(plot_id, height = paste0(round(h * 90), "px"))
+  }
+  modern_profile <- function(kind) {
+    ctx <- modern_ctx()
+    if (is.null(ctx) || !REFUSAL_MODERN_AVAILABLE) return(NULL)
+    reason_profile(ctx$filt, kind, ctx$geo_level, ctx$period_label)
+  }
+  modern_combined <- function() {
+    ctx <- modern_ctx()
+    if (is.null(ctx) || !REFUSAL_MODERN_AVAILABLE) return(NULL)
+    reason_combined_gg(ctx$filt, ctx$types, ctx$geo_level, ctx$period_label, refusal_res())
+  }
+  
+  output$abs_modern_ui  <- renderUI(modern_ui_box("abs_modern_plot",  function(ctx) { p <- modern_profile("absence");     if (is.null(p)) NULL else reason_height(p) }))
+  output$trad_modern_ui <- renderUI(modern_ui_box("trad_modern_plot", function(ctx) { p <- modern_profile("traditional"); if (is.null(p)) NULL else reason_height(p) }))
+  output$comb_modern_ui <- renderUI(modern_ui_box("comb_modern_plot", function(ctx) { if (is.null(modern_combined())) NULL else reason_combined_height() }))
+  
+  output$abs_modern_plot  <- renderPlot({ p <- modern_profile("absence");     req(p); reason_full_gg(p) }, res = 90)
+  output$trad_modern_plot <- renderPlot({ p <- modern_profile("traditional"); req(p); reason_full_gg(p) }, res = 90)
+  output$comb_modern_plot <- renderPlot({ g <- modern_combined(); req(g); g }, res = 90)
+  
+  output$download_abs_modern <- downloadHandler(
+    filename = function() paste0("Absence_reasons_modern_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      p <- modern_profile("absence"); req(p)
+      ggsave(file, reason_full_gg(p), device = "png", width = 13, height = reason_height(p), dpi = 200, bg = "white")
+    })
+  output$download_trad_modern <- downloadHandler(
+    filename = function() paste0("Traditional_reasons_modern_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      p <- modern_profile("traditional"); req(p)
+      ggsave(file, reason_full_gg(p), device = "png", width = 13, height = reason_height(p), dpi = 200, bg = "white")
+    })
+  output$download_comb_modern <- downloadHandler(
+    filename = function() paste0("Combined_reasons_modern_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      g <- modern_combined(); req(g)
+      ggsave(file, g, device = "png", width = 13, height = reason_combined_height(), dpi = 200, bg = "white")
+    })
   
   # Download Non-Compliance Plot
   output$download_nc_plot <- downloadHandler(
