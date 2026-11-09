@@ -289,6 +289,31 @@ reason_matrix <- function(filtered, rc) {
   as.matrix(m)
 }
 
+
+# How many countries / provinces / districts have at least one reported reason of this kind
+reason_coverage <- function(filtered, kind) {
+  out <- c(country = 0L, province = 0L, district = 0L)
+  rc <- reason_columns_for(filtered, kind)
+  if (is.null(filtered) || !nrow(filtered) || !length(rc$cols)) return(out)
+  has <- rowSums(reason_matrix(filtered, rc)) > 0
+  if (!any(has)) return(out)
+  nm <- names(filtered); lo <- tolower(nm)
+  cnt <- function(col) {
+    j <- match(col, lo); if (is.na(j)) return(0L)
+    v <- as.character(filtered[[nm[j]]])[has]; length(unique(v[!is.na(v) & nzchar(v)]))
+  }
+  # a province / district name can repeat across countries, so count them within their parents
+  pair <- function(cols) {
+    j <- match(cols, lo); if (anyNA(j)) return(0L)
+    d <- unique(as.data.frame(lapply(nm[j], function(n) as.character(filtered[[n]])[has]), stringsAsFactors = FALSE))
+    d <- d[stats::complete.cases(d), , drop = FALSE]; nrow(d)
+  }
+  out["country"]  <- cnt("country")
+  out["province"] <- pair(c("country", "province"))
+  out["district"] <- pair(c("country", "province", "district"))
+  out
+}
+
 modern_cards_gg <- function(label, value, sub, col) {
   C <- REFUSAL_COL
   n <- length(label)
