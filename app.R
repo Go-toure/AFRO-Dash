@@ -6830,6 +6830,15 @@ ui_for_block <- function() dashboardPage(
                           div(style = "text-align: center; margin-top: 15px;",
                               downloadButton("download_trad_modern", "Download Traditional (PNG)", class = "btn-primary-custom")
                           )
+                        ),
+                        box(
+                          title = tags$div(icon("search"), "Each traditional reason, by country (modern view)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("trad_rate_choice"),
+                          uiOutput("trad_rate_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_trad_rate", "Download this reason (PNG)", class = "btn-primary-custom")
+                          )
                         )
                       ),
                       tabsetPanel(
@@ -12972,6 +12981,40 @@ server <- function(input, output, session) {
       p <- modern_profile("nc"); req(p)
       ggsave(file, reason_full_gg(p), device = "png", width = 13, height = reason_height(p), dpi = 200, bg = "white")
     })
+  # one page per traditional reason (rate by country, latest campaign with LQAS)
+  trad_rate_choices <- reactive({
+    ctx <- modern_ctx()
+    if (is.null(ctx) || !REFUSAL_MODERN_AVAILABLE) return(character(0))
+    reasonrate_choices(ctx$filt)
+  })
+  output$trad_rate_choice <- renderUI({
+    ch <- trad_rate_choices()
+    if (!length(ch)) return(NULL)
+    sel <- isolate(input$trad_rate_reason)
+    if (is.null(sel) || !(sel %in% ch)) sel <- ch[[1]]
+    selectInput("trad_rate_reason", "Traditional reason", choices = ch, selected = sel, width = "320px")
+  })
+  trad_rate_page <- reactive({
+    ctx <- modern_ctx(); ch <- trad_rate_choices()
+    req(ctx, length(ch) > 0, input$trad_rate_reason, input$trad_rate_reason %in% ch)
+    reasonrate_make(ctx$filt, input$trad_rate_reason, names(ch)[match(input$trad_rate_reason, ch)], ctx$geo_level, ctx$period_label)
+  })
+  output$trad_rate_ui <- renderUI({
+    if (!REFUSAL_MODERN_AVAILABLE) return(NULL)
+    if (is.null(modern_ctx())) return(tags$div(class = "alert alert-info", "Choose the filters and press Analyze Reasons."))
+    if (!length(trad_rate_choices())) return(tags$div(class = "alert alert-warning", "No reasons were recorded for this selection."))
+    pg <- trad_rate_page()
+    if (is.null(pg)) return(tags$div(class = "alert alert-warning", "No sampled children were found for this reason and selection."))
+    plotOutput("trad_rate_plot", height = paste0(round(pg$height * 90), "px"))
+  })
+  output$trad_rate_plot <- renderPlot({ pg <- trad_rate_page(); req(pg); pg$plot }, res = 90)
+  output$download_trad_rate <- downloadHandler(
+    filename = function() paste0("Traditional_reason_", gsub("[^A-Za-z0-9]+", "_", input$trad_rate_reason), "_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+    content = function(file) {
+      pg <- trad_rate_page(); req(pg)
+      ggsave(file, pg$plot, device = "png", width = 13, height = pg$height, dpi = 200, bg = "white")
+    })
+  
   output$abs_modern_plot  <- renderPlot({ p <- modern_profile("absence");     req(p); reason_full_gg(p) }, res = 90)
   output$trad_modern_plot <- renderPlot({ p <- modern_profile("traditional"); req(p); reason_full_gg(p) }, res = 90)
   output$comb_modern_plot <- renderPlot({ g <- modern_combined(); req(g); g }, res = 90)
