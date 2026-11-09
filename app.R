@@ -6766,11 +6766,6 @@ ui_for_block <- function() dashboardPage(
                               downloadButton("download_abs_modern", "Download Absence (PNG)", class = "btn-primary-custom")
                           )
                         )
-                      ),
-                      tabsetPanel(
-                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("absence_table_pct")),
-                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("absence_table_raw")),
-                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("absence_top5_plot", height = "400px"))
                       )
                     ),
               
@@ -6825,11 +6820,6 @@ ui_for_block <- function() dashboardPage(
                               downloadButton("download_nc_modern", "Download Non-Compliance Reasons (PNG)", class = "btn-primary-custom")
                           )
                         )
-                      ),
-                      tabsetPanel(
-                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("nc_table_pct")),
-                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("nc_table_raw")),
-                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("nc_top5_plot", height = "400px"))
                       )
                     ),
               
@@ -6893,11 +6883,6 @@ ui_for_block <- function() dashboardPage(
                               downloadButton("download_trad_rate", "Download this reason (PNG)", class = "btn-primary-custom")
                           )
                         )
-                      ),
-                      tabsetPanel(
-                        tabPanel(tags$div(icon("table"), "Percentage Data"), DTOutput("traditional_table_pct")),
-                        tabPanel(tags$div(icon("table"), "Raw Counts"), DTOutput("traditional_table_raw")),
-                        tabPanel(tags$div(icon("chart-line"), "Top 5 Reasons"), plotOutput("traditional_top5_plot", height = "400px"))
                       )
                     ),
               
