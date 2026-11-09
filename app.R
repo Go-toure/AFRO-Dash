@@ -12992,7 +12992,8 @@ server <- function(input, output, session) {
     if (!length(ch)) return(NULL)
     sel <- isolate(input$trad_rate_reason)
     if (is.null(sel) || !(sel %in% ch)) sel <- ch[[1]]
-    selectInput("trad_rate_reason", "Traditional reason", choices = ch, selected = sel, width = "320px")
+    selectizeInput("trad_rate_reason", "Traditional reason", choices = ch, selected = sel, width = "320px",
+                   options = list(dropdownParent = "body"))
   })
   trad_rate_page <- reactive({
     ctx <- modern_ctx(); ch <- trad_rate_choices()
