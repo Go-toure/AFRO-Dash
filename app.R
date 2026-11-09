@@ -6593,9 +6593,9 @@ ui_for_block <- function() dashboardPage(
                     # Visualization Type Selection
                     selectInput("reasons_viz_type", "Visualization Type:",
                                 choices = c(
-                                  "Heatmap" = "heatmap",
-                                  "Heatmap (modern)" = "heatmap_modern",
-                                  "Refusals vs standard (modern)" = "refusal_std"
+                                  "Other Heatmap" = "heatmap",
+                                  "Heatmap" = "heatmap_modern",
+                                  "Graph" = "refusal_std"
                                 ),
                                 selected = "heatmap"),
               
