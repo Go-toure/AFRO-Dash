@@ -715,7 +715,7 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
   hds <- hds[!vapply(hds, is.null, logical(1))]
   if (!length(hds)) return(NULL)
   # rows: biggest volume first (reasons recorded, all types), top max_rows
-  vol <- Reduce(function(a, b) { k <- union(names(a), names(b)); stats::setNames(c(a, b)[0], character(0)); a2 <- a[k]; b2 <- b[k]; a2[is.na(a2)] <- 0; b2[is.na(b2)] <- 0; stats::setNames(a2 + b2, k) }, lapply(hds, function(h) h$tot))
+  vol <- Reduce(function(a, b) { k <- base::union(names(a), names(b)); stats::setNames(c(a, b)[0], character(0)); a2 <- a[k]; b2 <- b[k]; a2[is.na(a2)] <- 0; b2[is.na(b2)] <- 0; stats::setNames(a2 + b2, k) }, lapply(hds, function(h) h$tot))
   geos_all <- names(sort(vol, decreasing = TRUE)); n_all <- length(geos_all)
   geos <- geos_all[seq_len(min(max_rows, n_all))]
   geo_names <- if (geo_col == "country") refusal_nice(geos) else geos
