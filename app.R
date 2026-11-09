@@ -6901,55 +6901,6 @@ ui_for_block <- function() dashboardPage(
                       )
                     ),
               
-                    # Comparative Summary Tab
-                    tabPanel(
-                      title = tags$div(icon("chart-line"), "Comparative Summary"),
-                      value = "comparative_summary",
-                      fluidRow(
-                        valueBoxOutput("summary_absence_cats", width = 3),
-                        valueBoxOutput("summary_nc_cats", width = 3),
-                        valueBoxOutput("summary_trad_cats", width = 3),
-                        valueBoxOutput("summary_total_cats", width = 3)
-                      ),
-                      box(
-                        title = tags$div(icon("table"), "Comparative Metrics by Reason Type"), 
-                        width = 12, solidHeader = TRUE, status = "info",
-                        DTOutput("comparative_summary_table"),
-                        div(style = "text-align: center; margin-top: 15px;",
-                            downloadButton("download_comparative_summary", "Download Comparison", class = "btn-primary-custom")
-                        )
-                      ),
-                      box(
-                        title = tags$div(icon("chart-bar"), "Top Reasons Comparison"), 
-                        width = 12, solidHeader = TRUE, status = "success",
-                        plotOutput("top_reasons_comparison", height = "500px")
-                      )
-                    ),
-              
-                    # Hierarchical View Tab
-                    tabPanel(
-                      title = tags$div(icon("sitemap"), "Hierarchical View"),
-                      value = "hierarchical_view",
-                      box(
-                        title = tags$div(icon("sitemap"), "Country > Province > District Breakdown"), 
-                        width = 12, solidHeader = TRUE, status = "success",
-                        conditionalPanel(
-                          condition = "input.reasons_geo_level == 'country'",
-                          tabsetPanel(
-                            tabPanel(tags$div(icon("user-clock"), "Absence Reasons"), DTOutput("hierarchical_absence_table")),
-                            tabPanel(tags$div(icon("gavel"), "Non-Compliance Reasons"), DTOutput("hierarchical_nc_table")),
-                            tabPanel(tags$div(icon("history"), "Traditional Reasons"), DTOutput("hierarchical_traditional_table"))
-                          )
-                        ),
-                        conditionalPanel(
-                          condition = "input.reasons_geo_level != 'country'",
-                          div(style = "text-align: center; padding: 50px;",
-                              h4("Hierarchical view is available only at Country level"),
-                              p("Please select 'Country Level' in settings to see the hierarchical breakdown"))
-                        )
-                      )
-                    ),
-              
                     # Priority Drill‑down Tab (with bar chart + tables)
                     tabPanel(
                       title = tags$div(icon("sitemap"), "Priority Drill‑down"),
