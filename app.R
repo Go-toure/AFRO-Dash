@@ -11946,7 +11946,7 @@ server <- function(input, output, session) {
     req(reasons_analysis())
     cv <- reason_cov()
     top <- if (!is.null(cv) && !is.null(cv$combined_top)) cv$combined_top else "No data"
-    valueBox(top, "Most Common Reason", icon = icon("chart-bar"), color = "green")
+    valueBox(top, "Major Reason", icon = icon("chart-bar"), color = "green")
   })
   output$trad_n_country  <- cov_box("traditional", "country",  "Countries with Traditional Data",  "flag")
   output$trad_n_province <- cov_box("traditional", "province", "Provinces with Traditional Data",  "map")
@@ -12113,7 +12113,7 @@ server <- function(input, output, session) {
     req(reasons_analysis())
     top <- if (!is.null(reasons_analysis()$absence$metrics)) reasons_analysis()$absence$metrics$most_common else "No data"
     if (length(top) > 1) top <- top[1]
-    valueBox(top, "Most Common Absence Reason", icon = icon("chart-bar"), color = "green")
+    valueBox(top, "Major Reason", icon = icon("chart-bar"), color = "green")
   })
   
   output$absence_avg_pct <- renderValueBox({
@@ -12209,7 +12209,7 @@ server <- function(input, output, session) {
     req(reasons_analysis())
     top <- if (!is.null(reasons_analysis()$non_compliance$metrics)) reasons_analysis()$non_compliance$metrics$most_common else "No data"
     if (length(top) > 1) top <- top[1]
-    valueBox(top, "Most Common NC Reason", icon = icon("chart-bar"), color = "orange")
+    valueBox(top, "Major Reason", icon = icon("chart-bar"), color = "orange")
   })
   
   output$nc_avg_pct <- renderValueBox({
@@ -12305,7 +12305,7 @@ server <- function(input, output, session) {
     req(reasons_analysis())
     top <- if (!is.null(reasons_analysis()$traditional$metrics)) reasons_analysis()$traditional$metrics$most_common else "No data"
     if (length(top) > 1) top <- top[1]
-    valueBox(top, "Most Common Traditional Reason", icon = icon("chart-bar"), color = "teal")
+    valueBox(top, "Major Reason", icon = icon("chart-bar"), color = "teal")
   })
   
   output$trad_avg_pct <- renderValueBox({
