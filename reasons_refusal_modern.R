@@ -100,7 +100,7 @@ refusal_scope_txt <- function(res) if (is.null(res$scope) || !nzchar(res$scope))
 
 refusal_title <- function() "Refusals under control"
 refusal_subtitle <- function(res)
-  paste0("Share of sampled children missed through refusal, ", refusal_when(res), " (standard: at most ",
+  paste0("Share of sampled children missed through refusal, ", refusal_when(res), " (", if (is.null(res$thr_label)) "standard" else "threshold", ": at most ",
          res$std, "%)  |  ", res$period_label, refusal_scope_txt(res))
 refusal_banner_text <- function(res) {
   if (res$n_ok == res$n_all) "Refusals are not a driver of missed children in these campaigns."
@@ -117,7 +117,7 @@ refusal_chart_gg <- function(res) {
     ggplot2::geom_col(width = 0.72) +
     ggplot2::geom_text(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.15, fontface = "bold", colour = C$text, size = 3.4) +
     ggplot2::geom_vline(xintercept = res$std, colour = C$red, linetype = "dashed", linewidth = 0.7) +
-    ggplot2::annotate("text", x = res$std, y = -Inf, label = paste0("standard: ", res$std, "%"), hjust = -0.1, vjust = -0.8,
+    ggplot2::annotate("text", x = res$std, y = -Inf, label = if (!is.null(res$thr_label)) res$thr_label else paste0("standard: ", res$std, "%"), hjust = -0.1, vjust = -0.8,
                       colour = C$red, size = 3.3) +
     ggplot2::scale_fill_manual(values = c(`TRUE` = C$green, `FALSE` = C$red), guide = "none") +
     ggplot2::scale_x_continuous(limits = c(0, xmax), labels = function(x) paste0(x, "%"), expand = c(0, 0)) +
@@ -159,7 +159,8 @@ refusal_cards_gg <- function(res) {
 
 refusal_header_gg <- function(res) {
   C <- REFUSAL_COL
-  lg <- data.frame(x = c(7.6, 10.75), label = c(paste0("Within the standard (", res$std, "% or less)"), "Above the standard"),
+  wrd <- if (is.null(res$thr_label)) "standard" else "threshold"
+  lg <- data.frame(x = c(7.6, 10.75), label = c(paste0("Within the ", wrd, " (", res$std, "% or less)"), paste0("Above the ", wrd)),
                    col = c(C$green, C$red), stringsAsFactors = FALSE)
   ggplot2::ggplot() +
     ggplot2::annotate("text", x = 0.02, y = 0.72, label = refusal_title(), hjust = 0, size = 5.3,
@@ -543,7 +544,7 @@ reasonrate_chart_gg <- function(res) {
     ggplot2::geom_vline(xintercept = res$std, colour = C$navy, linetype = "dashed", linewidth = 0.7) +
     ggplot2::geom_label(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.1, fontface = "bold", colour = C$text, size = 3.4,
                         fill = "white", label.size = 0, label.padding = ggplot2::unit(0.08, "lines")) +
-    ggplot2::annotate("text", x = res$std, y = -Inf, label = sprintf("threshold: %g%%", res$std), hjust = -0.1, vjust = -0.8,
+    ggplot2::annotate("text", x = res$std, y = -Inf, label = sprintf("%s threshold: %g%%", reason_level_word(res$geo_level), res$std), hjust = -0.1, vjust = -0.8,
                       colour = C$navy, size = 3.3) +
     ggplot2::annotate("text", x = res$overall, y = Inf, label = sprintf("overall: %.1f%%", res$overall),
                       hjust = if (res$overall < res$std) 1.1 else -0.1, vjust = -0.7, colour = C$muted, size = 3.3) +
@@ -612,8 +613,9 @@ reasonrate_make <- function(filtered, value_col, label, geo_level = "country", p
   is_nc <- tolower(value_col) == "r_non_compliance"
   focus <- if (by_campaign) NULL else reason_focus(f, value_col, period_label)
   if (is_nc) {
-    res <- refusal_summary(f, geo_level, period_label, by_campaign = by_campaign, scope = scope)
+    res <- refusal_summary(f, geo_level, period_label, std = reason_threshold(geo_level), by_campaign = by_campaign, scope = scope)
     if (is.null(res)) return(NULL)
+    res$thr_label <- paste0(reason_level_word(res$geo_level), " threshold: ", res$std, "%")
     res$focus <- focus
     return(list(plot = refusal_full_gg(res), height = refusal_height(res)))
   }
