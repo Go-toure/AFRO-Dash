@@ -50,7 +50,7 @@ refusal_nice <- function(x) {
 }
 
 # One row per country (or province / district): latest campaign with LQAS and its refusal rate
-refusal_summary <- function(filtered, geo_level = "country", period_label = "All time", std = REFUSAL_STANDARD, max_rows = 30, value_col = "r_non_compliance") {
+refusal_summary <- function(filtered, geo_level = "country", period_label = "All time", std = REFUSAL_STANDARD, max_rows = 30, value_col = "r_non_compliance", by_campaign = FALSE, scope = NULL) {
   geo_col <- switch(geo_level, province = "province", district = "district", "country")
   need <- c(geo_col, "response", "total_sampled", value_col, "date")
   if (!nrow(filtered) || !all(need %in% names(filtered))) return(NULL)
@@ -65,24 +65,39 @@ refusal_summary <- function(filtered, geo_level = "country", period_label = "All
     data.frame(geo = d$geo[i[1]], country = d$country[i[1]], response = d$response[i[1]], rnd = d$rnd[i[1]],
                date = max(d$date[i]), sampled = sum(d$sampled[i]), nc = sum(d$nc[i]), stringsAsFactors = FALSE)))
   camp <- camp[order(camp$geo, camp$date), , drop = FALSE]
-  latest <- camp[!duplicated(camp$geo, fromLast = TRUE), , drop = FALSE]
+  latest <- if (by_campaign) camp else camp[!duplicated(camp$geo, fromLast = TRUE), , drop = FALSE]
   latest$rate <- 100 * latest$nc / latest$sampled
-  latest$name <- if (geo_col == "country") refusal_nice(latest$geo) else as.character(latest$geo)
   rl <- toupper(gsub("[^A-Za-z0-9]", "", latest$rnd))
   latest$round_txt <- ifelse(is.na(latest$rnd) | rl == "", "", paste0("Rnd", sub("^RND?", "", rl)))
-  latest <- latest[order(-latest$rate), , drop = FALSE]
+  if (by_campaign) {
+    # zoomed on one district: one bar per campaign with LQAS, newest first
+    latest$name <- make.unique(paste0(latest$response, if_else_chr(nzchar(latest$round_txt), paste0(" ", latest$round_txt), ""),
+                                      " (", format(latest$date, "%b %Y"), ")"))
+    latest$round_txt <- ""
+    latest <- latest[order(-as.numeric(latest$date)), , drop = FALSE]
+    highest <- latest[latest$name == latest$name[match(max(latest$rate), latest$rate)], , drop = FALSE][1, , drop = FALSE]
+    geo_level <- "campaign"
+  } else {
+    latest$name <- if (geo_col == "country") refusal_nice(latest$geo) else as.character(latest$geo)
+    latest <- latest[order(-latest$rate), , drop = FALSE]
+    highest <- latest[1, , drop = FALSE]
+  }
   n_all <- nrow(latest)
   shown <- if (n_all > max_rows) latest[seq_len(max_rows), , drop = FALSE] else latest
-  list(data = shown, n_all = n_all, n_ok = sum(latest$rate <= std), n_shown = nrow(shown),
-       highest = latest[1, , drop = FALSE], overall = 100 * sum(latest$nc) / sum(latest$sampled), n_above = sum(latest$rate > 100 * sum(latest$nc) / sum(latest$sampled)), std = std, geo_level = geo_level, period_label = period_label)
+  list(data = shown, n_all = n_all, n_ok = sum(latest$rate <= std), n_reach = sum(latest$rate >= std), n_shown = nrow(shown), scope = scope,
+       highest = highest, overall = 100 * sum(latest$nc) / sum(latest$sampled), n_above = sum(latest$rate > 100 * sum(latest$nc) / sum(latest$sampled)), std = std, geo_level = geo_level, period_label = period_label)
 }
 
-refusal_unit_word <- function(res) switch(res$geo_level, province = "provinces", district = "districts", "countries")
+if_else_chr <- function(cond, a, b) ifelse(cond, a, b)
+
+refusal_unit_word <- function(res) switch(res$geo_level, province = "provinces", district = "districts", campaign = "campaigns", "countries")
+refusal_when <- function(res) if (identical(res$geo_level, "campaign")) "each campaign with LQAS" else "latest campaign with LQAS"
+refusal_scope_txt <- function(res) if (is.null(res$scope) || !nzchar(res$scope)) "" else paste0("  |  ", res$scope)
 
 refusal_title <- function() "Refusals under control"
 refusal_subtitle <- function(res)
-  paste0("Share of sampled children missed through refusal, latest campaign with LQAS (standard: at most ",
-         res$std, "%)  |  ", res$period_label)
+  paste0("Share of sampled children missed through refusal, ", refusal_when(res), " (standard: at most ",
+         res$std, "%)  |  ", res$period_label, refusal_scope_txt(res))
 refusal_banner_text <- function(res) {
   if (res$n_ok == res$n_all) "Refusals are not a driver of missed children in these campaigns."
   else paste0("Some ", refusal_unit_word(res), " are above the line: they need a refusal-resolution plan.")
@@ -169,7 +184,7 @@ refusal_banner_gg <- function(res) {
 
 refusal_foot_gg <- function(res) {
   note <- paste0("Refusal = children not vaccinated because of non-compliance in the LQAS sample, as a share of children sampled. ",
-                 "Only the latest campaign with LQAS results is shown per ", sub("ies$", "y", sub("s$", "", refusal_unit_word(res))), ".",
+                 if (identical(res$geo_level, "campaign")) "Each bar is one campaign with LQAS results in the period." else paste0("Only the latest campaign with LQAS results is shown per ", sub("ies$", "y", sub("s$", "", refusal_unit_word(res))), "."),
                  if (res$n_all > res$n_shown) paste0(" The ", res$n_shown, " highest of ", res$n_all, " are shown.") else "",
                  "  Source: LQAS repository ", intToUtf8(169), " WHO AFRO GIS CENTRE, generated on ", format(Sys.Date(), "%Y-%m-%d"))
   note <- paste(strwrap(note, 175), collapse = "\n")
@@ -183,8 +198,32 @@ refusal_foot_gg <- function(res) {
 # height in inches for the whole image
 refusal_height <- function(res) max(4.8, 0.27 * res$n_shown + 3.3)
 
+# districts to focus on: latest campaign at or above the threshold (computed on the districts of the zoomed scope)
+reason_focus <- function(filtered, value_col, thr, period_label = "All time") {
+  r <- refusal_summary(filtered, "district", period_label, std = thr, max_rows = 3, value_col = value_col)
+  if (is.null(r) || r$n_reach < 1) return(NULL)
+  top <- r$data[r$data$rate >= thr, , drop = FALSE]
+  top <- top[seq_len(min(2, nrow(top))), , drop = FALSE]
+  list(n = r$n_reach, n_all = r$n_all, thr = thr,
+       text = paste(sprintf("%s, %s %.0f%%", top$name, sub("Democratic Republic of the Congo", "DR Congo", sub("United Republic of Tanzania", "Tanzania", refusal_nice(top$country))), top$rate), collapse = " | "))
+}
+
+focus_card_args <- function(focus) list(
+  label = "Districts to focus",
+  value = as.character(focus$n),
+  sub = paste0("of ", format(focus$n_all, big.mark = ",", trim = TRUE), " districts reach ", focus$thr, "%\n", paste(strwrap(paste0("Top: ", focus$text), 46), collapse = "\n")),
+  col = REFUSAL_COL$amber)
+
 refusal_full_gg <- function(res) {
   hd <- refusal_header_gg(res); ch <- refusal_chart_gg(res); cd <- refusal_cards_gg(res)
+  if (!is.null(res$focus)) {
+    hi <- res$highest; all_ok <- res$n_ok == res$n_all; fa <- focus_card_args(res$focus)
+    cd <- modern_cards_gg(c("Within the standard", "Highest refusal rate", fa$label),
+                          c(paste0(res$n_ok, " / ", res$n_all), sprintf("%.1f%%", hi$rate), fa$value),
+                          c(paste0("refusals at most ", res$std, "% of sampled children"),
+                            paste0(hi$name, if (nzchar(hi$round_txt)) paste0(", ", hi$round_txt) else ""), fa$sub),
+                          c(if (all_ok) REFUSAL_COL$green else REFUSAL_COL$amber, if (hi$rate <= res$std) REFUSAL_COL$navy else REFUSAL_COL$red, fa$col))
+  }
   bn <- refusal_banner_gg(res); ft <- refusal_foot_gg(res)
   body_h <- max(2.2, 0.27 * res$n_shown + 0.6)
   # cowplot keeps every block flush with the image edges (patchwork would align them to the chart panel)
@@ -462,10 +501,13 @@ reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal
 # ---------- one page per traditional reason: rate by country, latest campaign with LQAS ----------
 # Rate = children missed for that reason / children sampled. No official standard exists for these reasons,
 # so the reference line is the overall rate across the selected countries.
-reasonrate_summary <- function(filtered, value_col, label, geo_level = "country", period_label = "All time", max_rows = 30) {
-  res <- refusal_summary(filtered, geo_level, period_label, std = 0, max_rows = max_rows, value_col = value_col)
+reasonrate_summary <- function(filtered, value_col, label, geo_level = "country", period_label = "All time", max_rows = 30,
+                               by_campaign = FALSE, scope = NULL) {
+  res <- refusal_summary(filtered, geo_level, period_label, std = REFUSAL_STANDARD, max_rows = max_rows, value_col = value_col,
+                         by_campaign = by_campaign, scope = scope)
   if (is.null(res)) return(NULL)
   res$key <- label
+  res$n_above <- res$n_reach
   res$label <- if (label == "Other") "Other reasons" else label
   res$value_col <- value_col
   res
@@ -481,15 +523,18 @@ reasonrate_chart_gg <- function(res) {
   col <- reasonrate_col(res$key)
   d <- res$data
   d$name <- factor(d$name, levels = rev(unique(d$name)))
-  d$fill <- ifelse(d$rate > res$overall, col, scales::alpha(col, 0.4))
-  xmax <- max(res$overall * 1.3, max(d$rate) * 1.25)
+  d$fill <- ifelse(d$rate >= res$std, col, scales::alpha(col, 0.4))
+  xmax <- max(res$std * 1.6, max(d$rate) * 1.25, res$overall * 1.3)
   ggplot2::ggplot(d, ggplot2::aes(rate, name, fill = fill)) +
     ggplot2::geom_col(width = 0.72) +
-    ggplot2::geom_vline(xintercept = res$overall, colour = C$navy, linetype = "dashed", linewidth = 0.7) +
+    ggplot2::geom_vline(xintercept = res$overall, colour = C$muted, linetype = "dotted", linewidth = 0.9) +
+    ggplot2::geom_vline(xintercept = res$std, colour = C$navy, linetype = "dashed", linewidth = 0.7) +
     ggplot2::geom_label(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.1, fontface = "bold", colour = C$text, size = 3.4,
                         fill = "white", label.size = 0, label.padding = ggplot2::unit(0.08, "lines")) +
-    ggplot2::annotate("text", x = res$overall, y = -Inf, label = sprintf("overall: %.1f%%", res$overall), hjust = -0.1, vjust = -0.8,
+    ggplot2::annotate("text", x = res$std, y = -Inf, label = sprintf("threshold: %g%%", res$std), hjust = -0.1, vjust = -0.8,
                       colour = C$navy, size = 3.3) +
+    ggplot2::annotate("text", x = res$overall, y = -Inf, label = sprintf("overall: %.1f%%", res$overall),
+                      hjust = if (res$overall < res$std) 1.1 else -0.1, vjust = -0.8, colour = C$muted, size = 3.3) +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), labels = function(x) paste0(x, "%"), expand = c(0, 0)) +
     ggplot2::labs(x = NULL, y = NULL) +
@@ -507,19 +552,22 @@ reasonrate_full_gg <- function(res) {
   hi <- res$highest
   unit <- refusal_unit_word(res); unit1 <- sub("ies$", "y", sub("s$", "", unit))
   lab_l <- reason_lower(res$label)
-  hd <- modern_header_gg(paste0(res$label, ": ", sprintf("%.1f%%", res$overall), " of sampled children"),
-                         paste0("Share of sampled children missed because of ", lab_l, ", latest campaign with LQAS  |  ", res$period_label))
+  hd <- modern_header_gg(paste0(res$label, ": ", sprintf("%.1f%%", res$overall), " of sampled children",
+                                if (!is.null(res$scope) && nzchar(res$scope)) paste0(" in ", res$scope) else ""),
+                         paste0("Share of sampled children missed because of ", lab_l, ", ", refusal_when(res), "  |  ", res$period_label))
   ch <- reasonrate_chart_gg(res)
-  cd <- modern_cards_gg(c("Overall rate", "Highest rate"),
-                        c(sprintf("%.1f%%", res$overall), sprintf("%.1f%%", hi$rate)),
-                        c(paste0("all ", res$n_all, " ", unit, ", latest campaigns"),
-                          paste0(hi$name, if (nzchar(hi$round_txt)) paste0(", ", hi$round_txt) else "")),
-                        c(C$navy, reasonrate_col(res$key)))
+  cl <- c("Overall rate", "Highest rate")
+  cv <- c(sprintf("%.1f%%", res$overall), sprintf("%.1f%%", hi$rate))
+  cs <- c(if (identical(res$geo_level, "campaign")) paste0("all ", res$n_all, " campaigns in the period") else paste0("all ", res$n_all, " ", unit, ", latest campaigns"),
+          paste0(hi$name, if (nzchar(hi$round_txt)) paste0(", ", hi$round_txt) else ""))
+  cc <- c(C$navy, reasonrate_col(res$key))
+  if (!is.null(res$focus)) { fa <- focus_card_args(res$focus); cl <- c(cl, fa$label); cv <- c(cv, fa$value); cs <- c(cs, fa$sub); cc <- c(cc, fa$col) }
+  cd <- modern_cards_gg(cl, cv, cs, cc)
   bn <- modern_banner_gg(paste0(res$label, " is highest in ", hi$name, " (", sprintf("%.1f%%", hi$rate), "); ",
-                                res$n_above, " of ", res$n_all, " ", unit, " are above the overall rate."), C$navy)
+                                res$n_above, " of ", res$n_all, " ", unit, " are at or above the ", res$std, "% threshold."), C$navy)
   ft <- modern_foot_gg(paste0("Rate = children missed because of ", lab_l, " in the LQAS sample, as a share of children sampled. ",
-                              "Only the latest campaign with LQAS results is shown per ", unit1, ". There is no official standard for this reason: ",
-                              "the dashed line is the overall rate and darker bars are above it.",
+                              if (identical(res$geo_level, "campaign")) "Each bar is one campaign with LQAS results in the period. " else paste0("Only the latest campaign with LQAS results is shown per ", unit1, ". "),
+                              "Dashed line: ", res$std, "% threshold (darker bars are at or above it). Dotted line: overall rate across all ", unit, ".",
                               if (res$n_all > res$n_shown) paste0(" The ", res$n_shown, " highest of ", res$n_all, " are shown.") else ""))
   body_h <- max(2.2, 0.27 * res$n_shown + 0.6)
   mid <- cowplot::plot_grid(ch, cd, nrow = 1, rel_widths = c(2.15, 1))
@@ -536,14 +584,29 @@ reasonrate_choices <- function(filtered) {
   stats::setNames(rc$cols[ok][o], rc$labels[ok][o])
 }
 
-# page for one traditional reason: non-compliance keeps the refusal standard, the others use the overall rate
-reasonrate_make <- function(filtered, value_col, label, geo_level = "country", period_label = "All time") {
-  if (tolower(value_col) == "r_non_compliance") {
-    res <- refusal_summary(filtered, geo_level, period_label)
+# page for one traditional reason: non-compliance keeps the refusal standard, the others use the overall rate.
+# Zoom: pick a country (bars become its provinces), then a province (bars become its districts),
+# then a district (bars become its campaigns).
+reasonrate_make <- function(filtered, value_col, label, geo_level = "country", period_label = "All time",
+                            zoom_country = NULL, zoom_province = NULL, zoom_district = NULL, focus_threshold = REFUSAL_STANDARD) {
+  has <- function(x) !is.null(x) && length(x) == 1 && !is.na(x) && nzchar(x)
+  f <- filtered; scope_parts <- character(0); by_campaign <- FALSE
+  if (has(zoom_country))  { f <- f[as.character(f$country)  %in% zoom_country,  , drop = FALSE]; scope_parts <- c(refusal_nice(zoom_country), scope_parts); geo_level <- "province" }
+  if (has(zoom_province)) { f <- f[as.character(f$province) %in% zoom_province, , drop = FALSE]; scope_parts <- c(zoom_province, scope_parts); geo_level <- "district" }
+  if (has(zoom_district)) { f <- f[as.character(f$district) %in% zoom_district, , drop = FALSE]; scope_parts <- c(zoom_district, scope_parts); by_campaign <- TRUE; geo_level <- "district" }
+  if (!nrow(f)) return(NULL)
+  scope <- if (length(scope_parts)) paste(scope_parts, collapse = ", ") else NULL
+  is_nc <- tolower(value_col) == "r_non_compliance"
+  thr <- if (is.numeric(focus_threshold) && !is.na(focus_threshold)) focus_threshold else REFUSAL_STANDARD
+  focus <- if (by_campaign) NULL else reason_focus(f, value_col, thr, period_label)
+  if (is_nc) {
+    res <- refusal_summary(f, geo_level, period_label, by_campaign = by_campaign, scope = scope)
     if (is.null(res)) return(NULL)
+    res$focus <- focus
     return(list(plot = refusal_full_gg(res), height = refusal_height(res)))
   }
-  res <- reasonrate_summary(filtered, value_col, label, geo_level, period_label)
+  res <- reasonrate_summary(f, value_col, label, geo_level, period_label, by_campaign = by_campaign, scope = scope)
   if (is.null(res)) return(NULL)
+  res$focus <- focus
   list(plot = reasonrate_full_gg(res), height = refusal_height(res))
 }

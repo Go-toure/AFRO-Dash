@@ -6834,7 +6834,15 @@ ui_for_block <- function() dashboardPage(
                         box(
                           title = tags$div(icon("search"), "Each traditional reason, by country (modern view)"), 
                           width = 12, solidHeader = TRUE, status = "info",
-                          uiOutput("trad_rate_choice"),
+                          fluidRow(
+                            column(3, uiOutput("trad_rate_choice")),
+                            column(3, selectizeInput("trad_zoom_country", "Zoom: country", choices = c("All countries" = ""), width = "100%",
+                                                     options = list(dropdownParent = "body"))),
+                            column(3, selectizeInput("trad_zoom_province", "Zoom: province", choices = c("All provinces" = ""), width = "100%",
+                                                     options = list(dropdownParent = "body"))),
+                            column(3, selectizeInput("trad_zoom_district", "Zoom: district", choices = c("All districts" = ""), width = "100%",
+                                                     options = list(dropdownParent = "body")))
+                          ),
                           uiOutput("trad_rate_ui"),
                           div(style = "text-align: center; margin-top: 15px;",
                               downloadButton("download_trad_rate", "Download this reason (PNG)", class = "btn-primary-custom")
@@ -12992,14 +13000,39 @@ server <- function(input, output, session) {
     if (!length(ch)) return(NULL)
     sel <- isolate(input$trad_rate_reason)
     if (is.null(sel) || !(sel %in% ch)) sel <- ch[[1]]
-    selectizeInput("trad_rate_reason", "Traditional reason", choices = ch, selected = sel, width = "320px",
+    selectizeInput("trad_rate_reason", "Traditional reason", choices = ch, selected = sel, width = "100%",
                    options = list(dropdownParent = "body"))
   })
   trad_rate_page <- reactive({
     ctx <- modern_ctx(); ch <- trad_rate_choices()
     req(ctx, length(ch) > 0, input$trad_rate_reason, input$trad_rate_reason %in% ch)
-    reasonrate_make(ctx$filt, input$trad_rate_reason, names(ch)[match(input$trad_rate_reason, ch)], ctx$geo_level, ctx$period_label)
+    reasonrate_make(ctx$filt, input$trad_rate_reason, names(ch)[match(input$trad_rate_reason, ch)], ctx$geo_level, ctx$period_label,
+                    zoom_country = input$trad_zoom_country, zoom_province = input$trad_zoom_province, zoom_district = input$trad_zoom_district)
   })
+  
+  # zoom lists: country -> province -> district, built from the rows of the current analysis
+  zoom_val <- function(x) if (is.null(x) || length(x) == 0 || is.na(x[1])) "" else as.character(x[1])
+  observeEvent(modern_ctx(), {
+    ctx <- modern_ctx()
+    u <- if (is.null(ctx)) character(0) else sort(unique(as.character(ctx$filt$country)))
+    updateSelectizeInput(session, "trad_zoom_country", choices = c("All countries" = "", stats::setNames(u, if (length(u)) refusal_nice(u) else character(0))), selected = "")
+  }, ignoreNULL = FALSE)
+  observeEvent(list(input$trad_zoom_country, modern_ctx()), {
+    ctx <- modern_ctx(); f <- if (is.null(ctx)) NULL else ctx$filt
+    if (!is.null(f) && nzchar(zoom_val(input$trad_zoom_country))) f <- f[as.character(f$country) %in% input$trad_zoom_country, , drop = FALSE]
+    p <- if (is.null(f)) character(0) else sort(unique(as.character(f$province[!is.na(f$province)])))
+    updateSelectizeInput(session, "trad_zoom_province", choices = c("All provinces" = "", stats::setNames(p, p)), selected = "")
+  }, ignoreNULL = FALSE)
+  observeEvent(list(input$trad_zoom_country, input$trad_zoom_province, modern_ctx()), {
+    ctx <- modern_ctx(); f <- if (is.null(ctx)) NULL else ctx$filt
+    pick <- nzchar(zoom_val(input$trad_zoom_country)) || nzchar(zoom_val(input$trad_zoom_province))
+    if (!is.null(f) && pick) {
+      if (nzchar(zoom_val(input$trad_zoom_country)))  f <- f[as.character(f$country)  %in% input$trad_zoom_country,  , drop = FALSE]
+      if (nzchar(zoom_val(input$trad_zoom_province))) f <- f[as.character(f$province) %in% input$trad_zoom_province, , drop = FALSE]
+      d <- sort(unique(as.character(f$district[!is.na(f$district)])))
+    } else d <- character(0)
+    updateSelectizeInput(session, "trad_zoom_district", choices = c("All districts" = "", stats::setNames(d, d)), selected = "")
+  }, ignoreNULL = FALSE)
   output$trad_rate_ui <- renderUI({
     if (!REFUSAL_MODERN_AVAILABLE) return(NULL)
     if (is.null(modern_ctx())) return(tags$div(class = "alert alert-info", "Choose the filters and press Analyze Reasons."))
