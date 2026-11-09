@@ -6679,10 +6679,10 @@ ui_for_block <- function() dashboardPage(
                       title = tags$div(icon("chart-pie"), "Combined Overview"),
                       value = "combined_overview",
                       fluidRow(
-                        valueBoxOutput("reasons_total_units_all", width = 3),
-                        valueBoxOutput("reasons_total_categories_all", width = 3),
-                        valueBoxOutput("reasons_avg_percentage_all", width = 3),
-                        valueBoxOutput("reasons_viz_recommendation", width = 3)
+                        valueBoxOutput("comb_n_country", width = 3),
+                        valueBoxOutput("comb_n_province", width = 3),
+                        valueBoxOutput("comb_n_district", width = 3),
+                        valueBoxOutput("comb_top_reason", width = 3)
                       ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
@@ -6725,6 +6725,12 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("user-clock"), "Absence Reasons"),
                       value = "absence_reasons",
+                      fluidRow(
+                        valueBoxOutput("absence_n_country", width = 3),
+                        valueBoxOutput("absence_n_province", width = 3),
+                        valueBoxOutput("absence_n_district", width = 3),
+                        valueBoxOutput("absence_top_reason", width = 3)
+                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
@@ -6766,6 +6772,12 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("gavel"), "Non-Compliance Reasons"),
                       value = "nc_reasons",
+                      fluidRow(
+                        valueBoxOutput("nc_n_country", width = 3),
+                        valueBoxOutput("nc_n_province", width = 3),
+                        valueBoxOutput("nc_n_district", width = 3),
+                        valueBoxOutput("nc_top_reason", width = 3)
+                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
@@ -6813,6 +6825,12 @@ ui_for_block <- function() dashboardPage(
                     tabPanel(
                       title = tags$div(icon("history"), "Traditional Reasons"),
                       value = "traditional_reasons",
+                      fluidRow(
+                        valueBoxOutput("trad_n_country", width = 3),
+                        valueBoxOutput("trad_n_province", width = 3),
+                        valueBoxOutput("trad_n_district", width = 3),
+                        valueBoxOutput("trad_top_reason", width = 3)
+                      ),
                       conditionalPanel(
                         condition = "input.reasons_viz_type == 'heatmap_modern'",
                         box(
@@ -11921,6 +11939,15 @@ server <- function(input, output, session) {
   output$nc_n_country  <- cov_box("nc", "country",  "Countries with NC Data",  "flag")
   output$nc_n_province <- cov_box("nc", "province", "Provinces with NC Data",  "map")
   output$nc_n_district <- cov_box("nc", "district", "Districts with NC Data",  "map-marker-alt")
+  output$comb_n_country  <- cov_box("combined", "country",  "Countries with Data",  "flag")
+  output$comb_n_province <- cov_box("combined", "province", "Provinces with Data",  "map")
+  output$comb_n_district <- cov_box("combined", "district", "Districts with Data",  "map-marker-alt")
+  output$comb_top_reason <- renderValueBox({
+    req(reasons_analysis())
+    cv <- reason_cov()
+    top <- if (!is.null(cv) && !is.null(cv$combined_top)) cv$combined_top else "No data"
+    valueBox(top, "Most Common Reason", icon = icon("chart-bar"), color = "green")
+  })
   output$trad_n_country  <- cov_box("traditional", "country",  "Countries with Traditional Data",  "flag")
   output$trad_n_province <- cov_box("traditional", "province", "Provinces with Traditional Data",  "map")
   output$trad_n_district <- cov_box("traditional", "district", "Districts with Traditional Data",  "map-marker-alt")
@@ -11986,9 +12013,14 @@ server <- function(input, output, session) {
           province_selection = if (!is.null(input$reasons_provinces) && length(input$reasons_provinces) > 0) input$reasons_provinces else NULL,
           district_selection = if (!is.null(input$reasons_districts) && length(input$reasons_districts) > 0) input$reasons_districts else NULL,
           block_definition = if (input$reasons_block_type == "afro") afro_blocks else ist_blocks) else NULL
-      if (!is.null(filt)) reason_cov(list(absence = reason_coverage(filt, "absence"),
-                                          nc = reason_coverage(filt, "nc"),
-                                          traditional = reason_coverage(filt, "traditional")))
+      if (!is.null(filt)) {
+        cmb <- sub("^non_compliance$", "nc", combined_types)
+        reason_cov(list(absence = reason_coverage(filt, "absence"),
+                        nc = reason_coverage(filt, "nc"),
+                        traditional = reason_coverage(filt, "traditional"),
+                        combined = reason_coverage(filt, cmb),
+                        combined_top = reason_top_label(filt, cmb)))
+      }
       if (input$reasons_viz_type %in% c("refusal_std", "heatmap_modern") && !is.null(filt)) {
         refusal_res(refusal_summary(filt, input$reasons_geo_level, attr(filt, "period_label")))
         modern_ctx(list(filt = filt, geo_level = input$reasons_geo_level, period_label = attr(filt, "period_label"),

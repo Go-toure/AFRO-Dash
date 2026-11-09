@@ -290,12 +290,14 @@ reason_matrix <- function(filtered, rc) {
 }
 
 
-# How many countries / provinces / districts have at least one reported reason of this kind
+# How many countries / provinces / districts have at least one reported reason (of one or several kinds)
 reason_coverage <- function(filtered, kind) {
   out <- c(country = 0L, province = 0L, district = 0L)
-  rc <- reason_columns_for(filtered, kind)
-  if (is.null(filtered) || !nrow(filtered) || !length(rc$cols)) return(out)
-  has <- rowSums(reason_matrix(filtered, rc)) > 0
+  if (is.null(filtered) || !nrow(filtered)) return(out)
+  has <- Reduce(`|`, lapply(kind, function(k) {
+    rc <- reason_columns_for(filtered, k)
+    if (!length(rc$cols)) rep(FALSE, nrow(filtered)) else rowSums(reason_matrix(filtered, rc)) > 0
+  }))
   if (!any(has)) return(out)
   nm <- names(filtered); lo <- tolower(nm)
   cnt <- function(col) {
@@ -312,6 +314,20 @@ reason_coverage <- function(filtered, kind) {
   out["province"] <- pair(c("country", "province"))
   out["district"] <- pair(c("country", "province", "district"))
   out
+}
+
+# The named reason reported most often (all kinds pooled; "Other" is left out)
+reason_top_label <- function(filtered, kind) {
+  if (is.null(filtered) || !nrow(filtered)) return("No data")
+  tot <- numeric(0)
+  for (k in kind) {
+    rc <- reason_columns_for(filtered, k)
+    if (!length(rc$cols)) next
+    cs <- colSums(reason_matrix(filtered, rc))
+    for (n in names(cs)) tot[n] <- sum(tot[n], cs[[n]], na.rm = TRUE)
+  }
+  tot <- tot[!is.na(tot) & tot > 0 & !grepl("^other", tolower(names(tot)))]
+  if (!length(tot)) "No data" else names(tot)[which.max(tot)]
 }
 
 modern_cards_gg <- function(label, value, sub, col) {
