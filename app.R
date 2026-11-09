@@ -6594,6 +6594,7 @@ ui_for_block <- function() dashboardPage(
                     selectInput("reasons_viz_type", "Visualization Type:",
                                 choices = c(
                                   "Heatmap" = "heatmap",
+                                  "Heatmap (modern)" = "heatmap_modern",
                                   "Refusals vs standard (modern)" = "refusal_std"
                                 ),
                                 selected = "heatmap"),
@@ -6684,7 +6685,18 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("reasons_viz_recommendation", width = 3)
                       ),
                       conditionalPanel(
-                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        condition = "input.reasons_viz_type == 'heatmap_modern'",
+                        box(
+                          title = tags$div(icon("th"), "Reasons heatmap - all reason types (modern)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("hm_comb_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_hm_comb", "Download Heatmap (PNG)", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'heatmap'",
                         box(
                           title = tags$div(icon("chart-bar"), "Combined Analysis - All Reason Types"), 
                           width = 12, solidHeader = TRUE, status = "info",
@@ -6721,7 +6733,18 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("absence_viz_type", width = 3)
                       ),
                       conditionalPanel(
-                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        condition = "input.reasons_viz_type == 'heatmap_modern'",
+                        box(
+                          title = tags$div(icon("th"), "Absence reasons heatmap (modern)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("hm_abs_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_hm_abs", "Download Heatmap (PNG)", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'heatmap'",
                         box(
                           title = tags$div(icon("chart-bar"), "Absence Reasons Visualization"), 
                           width = 12, solidHeader = TRUE, status = "info",
@@ -6763,7 +6786,18 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("nc_viz_type", width = 3)
                       ),
                       conditionalPanel(
-                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        condition = "input.reasons_viz_type == 'heatmap_modern'",
+                        box(
+                          title = tags$div(icon("th"), "Non-compliance reasons heatmap (modern)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("hm_nc_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_hm_nc", "Download Heatmap (PNG)", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'heatmap'",
                         box(
                           title = tags$div(icon("chart-bar"), "Non-Compliance Reasons Visualization"), 
                           width = 12, solidHeader = TRUE, status = "info",
@@ -6811,7 +6845,18 @@ ui_for_block <- function() dashboardPage(
                         valueBoxOutput("trad_viz_type", width = 3)
                       ),
                       conditionalPanel(
-                        condition = "input.reasons_viz_type != 'refusal_std'",
+                        condition = "input.reasons_viz_type == 'heatmap_modern'",
+                        box(
+                          title = tags$div(icon("th"), "Traditional reasons heatmap (modern)"), 
+                          width = 12, solidHeader = TRUE, status = "info",
+                          uiOutput("hm_trad_ui"),
+                          div(style = "text-align: center; margin-top: 15px;",
+                              downloadButton("download_hm_trad", "Download Heatmap (PNG)", class = "btn-primary-custom")
+                          )
+                        )
+                      ),
+                      conditionalPanel(
+                        condition = "input.reasons_viz_type == 'heatmap'",
                         box(
                           title = tags$div(icon("chart-bar"), "Traditional Reasons Visualization"), 
                           width = 12, solidHeader = TRUE, status = "info",
@@ -12020,6 +12065,7 @@ server <- function(input, output, session) {
       viz_type == "radar" ~ "Radar Chart selected",
       viz_type == "lollipop" ~ "Lollipop Chart selected",
       viz_type == "waterfall" ~ "Waterfall Chart selected",
+      viz_type == "heatmap_modern" ~ "Modern heatmap selected - shown in the Combined, Absence, Non-Compliance and Traditional tabs",
       viz_type == "refusal_std" ~ "Modern view selected - shown in the Combined, Absence, Non-Compliance and Traditional tabs",
       viz_type == "auto" ~ "Auto mode - will choose best visualization",
       TRUE ~ "Visualization ready"
@@ -12049,7 +12095,7 @@ server <- function(input, output, session) {
       specific_year <- if (input$reasons_time_type == "specific_month") input$reasons_year else NULL
       
       # "Refusals vs standard" is drawn on its own (below); the other views keep their usual plot
-      viz_type <- if (identical(input$reasons_viz_type, "refusal_std")) "heatmap" else input$reasons_viz_type
+      viz_type <- if (input$reasons_viz_type %in% c("refusal_std", "heatmap_modern")) "heatmap" else input$reasons_viz_type
       
       combined_types <- switch(input$reasons_combined_choice,
                                "all" = c("traditional", "non_compliance", "absence"),
@@ -12085,7 +12131,7 @@ server <- function(input, output, session) {
       reasons_analysis(result)
 
       refusal_res(NULL)
-      if (identical(input$reasons_viz_type, "refusal_std") && REFUSAL_MODERN_AVAILABLE) {
+      if (input$reasons_viz_type %in% c("refusal_std", "heatmap_modern") && REFUSAL_MODERN_AVAILABLE) {
         filt <- refusal_filter_lqas(
           dat, x_months = x_months, specific_month = specific_month, specific_year = specific_year,
           block_selection = if (input$reasons_block != "All") input$reasons_block else NULL,
@@ -13048,6 +13094,35 @@ server <- function(input, output, session) {
       pg <- trad_rate_page(); req(pg)
       ggsave(file, pg$plot, device = "png", width = 13, height = pg$height, dpi = 200, bg = "white")
     })
+  
+  # ---- Modern heatmap (reasons by country / province / district) in the four reasons tabs ----
+  hm_make <- function(types) {
+    ctx <- modern_ctx()
+    if (is.null(ctx) || !REFUSAL_MODERN_AVAILABLE) return(NULL)
+    reason_heat_gg(ctx$filt, types, ctx$geo_level, ctx$period_label)
+  }
+  hm_register <- function(id, types_fn, fname) {
+    local({
+      output[[paste0("hm_", id, "_ui")]] <- renderUI({
+        if (!REFUSAL_MODERN_AVAILABLE) return(tags$div(class = "alert alert-warning", "Modern heatmap not available (reasons_refusal_modern.R not found)."))
+        if (is.null(modern_ctx())) return(tags$div(class = "alert alert-info", "Choose the filters and press Analyze Reasons."))
+        r <- hm_make(types_fn())
+        if (is.null(r)) return(tags$div(class = "alert alert-warning", "No reasons were recorded for this selection."))
+        plotOutput(paste0("hm_", id, "_plot"), height = paste0(round(r$height * 90), "px"))
+      })
+      output[[paste0("hm_", id, "_plot")]] <- renderPlot({ r <- hm_make(types_fn()); req(r); r$plot }, res = 90)
+      output[[paste0("download_hm_", id)]] <- downloadHandler(
+        filename = function() paste0(fname, "_", input$reasons_geo_level, "_", Sys.Date(), ".png"),
+        content = function(file) {
+          r <- hm_make(types_fn()); req(r)
+          ggsave(file, r$plot, device = "png", width = 13, height = r$height, dpi = 200, bg = "white")
+        })
+    })
+  }
+  hm_register("comb", function() modern_ctx()$types, "Reasons_heatmap_combined_modern")
+  hm_register("abs",  function() "absence",          "Absence_heatmap_modern")
+  hm_register("nc",   function() "nc",               "NonCompliance_heatmap_modern")
+  hm_register("trad", function() "traditional",      "Traditional_heatmap_modern")
   
   output$abs_modern_plot  <- renderPlot({ p <- modern_profile("absence");     req(p); reason_full_gg(p) }, res = 90)
   output$trad_modern_plot <- renderPlot({ p <- modern_profile("traditional"); req(p); reason_full_gg(p) }, res = 90)

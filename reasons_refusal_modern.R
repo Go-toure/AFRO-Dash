@@ -624,3 +624,134 @@ reasonrate_make <- function(filtered, value_col, label, geo_level = "country", p
   res$focus <- focus
   list(plot = reasonrate_full_gg(res), height = refusal_height(res))
 }
+
+
+# ============================================================
+# Modern heatmap: reasons by country (province / district), one panel per reason type
+# - rows sorted by volume, columns sorted by frequency, "Other" always last and in grey
+# - colour scale capped (default 50%) so differences are visible
+# - rows with too few reasons (< min_n) are greyed: their percentages are not reliable
+# - the leading named reason of each row is outlined, n = number of reasons recorded
+# ============================================================
+REASON_HEAT_CAP <- 50
+REASON_HEAT_MIN_N <- 30
+
+reason_heat_cols <- function(share, kc, cap = REASON_HEAT_CAP) {
+  t <- pmin(pmax(share / cap, 0), 1)
+  m <- grDevices::colorRamp(c("#F3F7F6", kc))(t)
+  grDevices::rgb(m[, 1], m[, 2], m[, 3], maxColorValue = 255)
+}
+
+reason_heat_data <- function(filtered, kind, geo_col, min_n = REASON_HEAT_MIN_N) {
+  rc <- reason_columns_for(filtered, kind)
+  if (!nrow(filtered) || !length(rc$cols) || !geo_col %in% names(filtered)) return(NULL)
+  m <- reason_matrix(filtered, rc)
+  g <- as.character(filtered[[geo_col]]); keep <- !is.na(g)
+  m <- m[keep, , drop = FALSE]; g <- g[keep]
+  if (!nrow(m)) return(NULL)
+  agg <- rowsum(m, g); tot <- rowSums(agg)
+  agg <- agg[tot > 0, , drop = FALSE]; tot <- tot[tot > 0]
+  if (!nrow(agg)) return(NULL)
+  ov <- colSums(agg); ov <- ov[ov > 0]
+  is_other <- tolower(names(ov)) %in% c("other", "others")
+  ord <- c(names(sort(ov[!is_other], decreasing = TRUE)), names(ov)[is_other])
+  long <- do.call(rbind, lapply(rownames(agg), function(k) {
+    v <- agg[k, ord]
+    data.frame(geo = k, reason = ord, count = as.numeric(v), tot = as.numeric(tot[[k]]),
+               share = 100 * as.numeric(v) / tot[[k]], stringsAsFactors = FALSE)
+  }))
+  long$is_other <- tolower(long$reason) %in% c("other", "others")
+  long$low_n <- long$tot < min_n
+  list(long = long, order = ord, tot = tot, kind = kind)
+}
+
+reason_heat_panel <- function(hd, geos, geo_names, show_y, min_n) {
+  C <- REFUSAL_COL
+  kind <- hd$kind; kc <- REASON_KIND_COL[[kind]]
+  d <- hd$long[hd$long$geo %in% geos & hd$long$count > 0, , drop = FALSE]
+  lv <- c(hd$order, "n")
+  ylv <- rev(geo_names)
+  d$y <- factor(geo_names[match(d$geo, geos)], levels = ylv)
+  d$x <- factor(d$reason, levels = lv)
+  d$fill <- ifelse(d$low_n, "#EEF1F0",
+             ifelse(d$is_other, reason_heat_cols(d$share, "#7E8A90"), reason_heat_cols(d$share, kc)))
+  t <- ifelse(d$low_n, 0, pmin(d$share / REASON_HEAT_CAP, 1))
+  d$txt <- ifelse(d$low_n, C$muted, ifelse(t > 0.62, "white", C$text))
+  d$lab <- ifelse(d$share >= 10, sprintf("%.0f", d$share), "")
+  # leading named reason of each row (only for rows with enough reasons)
+  nm <- d[!d$is_other & !d$low_n, , drop = FALSE]
+  lead <- if (nrow(nm)) do.call(rbind, lapply(split(nm, nm$geo), function(z) z[which.max(z$share), , drop = FALSE])) else nm
+  nrows <- data.frame(geo = geos, stringsAsFactors = FALSE)
+  nrows$y <- factor(geo_names, levels = ylv)
+  nrows$n <- as.numeric(hd$tot[match(geos, names(hd$tot))])
+  nrows <- nrows[!is.na(nrows$n), , drop = FALSE]
+  nrows$x <- factor("n", levels = lv)
+  nrows$lab <- format(nrows$n, big.mark = ",", trim = TRUE)
+  p <- ggplot2::ggplot() +
+    ggplot2::geom_tile(data = d, ggplot2::aes(x, y, fill = fill), colour = "white", linewidth = 0.7) +
+    ggplot2::geom_text(data = d[nzchar(d$lab), , drop = FALSE], ggplot2::aes(x, y, label = lab, colour = txt), size = 3.1, fontface = "bold") +
+    ggplot2::geom_text(data = nrows, ggplot2::aes(x, y, label = lab), size = 2.9, colour = C$muted) +
+    ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
+    ggplot2::scale_x_discrete(position = "top", limits = lv) +
+    ggplot2::scale_y_discrete(limits = ylv, drop = FALSE) +
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(colour = C$text, size = 8.5, angle = 50, hjust = 0, vjust = 0),
+                   axis.text.y = if (show_y) ggplot2::element_text(colour = C$text, size = 9.5) else ggplot2::element_blank(),
+                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = 12),
+                   plot.title.position = "plot", plot.margin = ggplot2::margin(4, 40, 4, 4),
+                   plot.background = ggplot2::element_rect(fill = "white", colour = NA))
+  if (nrow(lead))
+    p <- p + ggplot2::geom_tile(data = transform(lead, y = factor(geo_names[match(geo, geos)], levels = ylv), x = factor(reason, levels = lv)),
+                                ggplot2::aes(x, y), fill = NA, colour = C$navy, linewidth = 0.9)
+  list(plot = p, ncols = length(lv))
+}
+
+# types: any of "traditional", "nc", "absence"; one panel each
+reason_heat_gg <- function(filtered, types, geo_level = "country", period_label = "All time", max_rows = 25, min_n = REASON_HEAT_MIN_N) {
+  geo_col <- switch(geo_level, province = "province", district = "district", "country")
+  hds <- stats::setNames(lapply(types, function(k) reason_heat_data(filtered, k, geo_col, min_n)), types)
+  hds <- hds[!vapply(hds, is.null, logical(1))]
+  if (!length(hds)) return(NULL)
+  # rows: biggest volume first (reasons recorded, all types), top max_rows
+  vol <- Reduce(function(a, b) { k <- union(names(a), names(b)); stats::setNames(c(a, b)[0], character(0)); a2 <- a[k]; b2 <- b[k]; a2[is.na(a2)] <- 0; b2[is.na(b2)] <- 0; stats::setNames(a2 + b2, k) }, lapply(hds, function(h) h$tot))
+  geos_all <- names(sort(vol, decreasing = TRUE)); n_all <- length(geos_all)
+  geos <- geos_all[seq_len(min(max_rows, n_all))]
+  geo_names <- if (geo_col == "country") refusal_nice(geos) else geos
+  panels <- Map(function(h, i) reason_heat_panel(h, geos, geo_names, show_y = i == 1, min_n = min_n), hds, seq_along(hds))
+  ncols <- vapply(panels, function(p) p$ncols, numeric(1))
+  label_w <- 2.6
+  widths <- (ncols + 0.4) / sum(ncols + 0.4) * (13 - label_w)
+  widths[1] <- widths[1] + label_w
+  grid <- cowplot::plot_grid(plotlist = lapply(panels, function(p) p$plot), nrow = 1, rel_widths = widths, align = "h", axis = "tb")
+  tit <- lapply(seq_along(hds), function(i) {
+    k <- names(hds)[i]
+    ggplot2::ggplot() +
+      ggplot2::annotate("text", x = if (i == 1) label_w / widths[1] + 0.01 else 0.01, y = 0.5, label = REASON_KIND_NAME[[k]], hjust = 0,
+                        fontface = "bold", size = 4.3, colour = REASON_KIND_COL[[k]]) +
+      ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + ggplot2::theme_void() +
+      ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(0, 4, 0, 4))
+  })
+  tit_row <- cowplot::plot_grid(plotlist = tit, nrow = 1, rel_widths = widths)
+  grid <- cowplot::plot_grid(tit_row, grid, ncol = 1, rel_heights = c(0.35, 10))
+  # headline from the pooled leading named reason of each type
+  lead_of <- function(k) { h <- hds[[k]]; if (is.null(h)) return(NULL); ov <- tapply(h$long$count, h$long$reason, sum); ov <- ov[!(tolower(names(ov)) %in% c("other", "others"))]; if (!length(ov)) return(NULL); nm <- names(which.max(ov)); list(label = nm, pct = 100 * max(ov) / sum(tapply(h$long$count, h$long$reason, sum))) }
+  tr <- lead_of("traditional"); ab <- lead_of("absence"); nc <- lead_of("nc")
+  parts <- c(if (!is.null(tr)) paste0(reason_lower(tr$label), " leads overall"),
+             if (!is.null(ab)) paste0(reason_lower(ab$label), " drives absence"),
+             if (!is.null(nc)) paste0(reason_lower(nc$label), " drives refusals"))
+  ttl <- if (length(parts)) paste0(toupper(substr(parts[1], 1, 1)), substr(paste(parts, collapse = "; "), 2, 400)) else "Reasons by country"
+  unit <- reason_unit_word(geo_level)
+  hd <- modern_header_gg(ttl, paste0("Share of each reason within its type, by ", sub("ies$", "y", sub("s$", "", unit)),
+                                     " (largest volume first)  |  ", period_label,
+                                     "  |  darker = higher share, scale capped at ", REASON_HEAT_CAP, "%  |  outlined = leading named reason  |  grey = fewer than ", min_n, " reasons"))
+  top3 <- paste(head(geo_names, 3), collapse = ", ")
+  bn <- modern_banner_gg(paste0("Largest volumes of reasons recorded: ", top3, ". Read each row against its n before drawing conclusions."), REFUSAL_COL$navy)
+  ft <- modern_foot_gg(paste0("Each cell is the share of that reason among the reasons recorded in the type for the ", sub("ies$", "y", sub("s$", "", unit)),
+                              " (a row adds up to 100% within a panel). n = reasons recorded. \"Other\" is shown in grey and is never marked as leading.",
+                              if (n_all > length(geos)) paste0(" The ", length(geos), " ", unit, " with the most reasons recorded (of ", n_all, ") are shown.") else ""))
+  h_in <- 0.285 * length(geos) + 2.2
+  g <- cowplot::plot_grid(hd, grid, bn, ft, ncol = 1, rel_heights = c(0.85, h_in, 0.5, 0.45))
+  list(plot = g, height = h_in + 1.8 + 0.2)
+}
