@@ -9,7 +9,7 @@
 
 REFUSAL_STANDARD <- 2
 REFUSAL_COL <- list(green = "#3D8B6E", red = "#B83B5E", amber = "#E3B23C", navy = "#14454F",
-                    text = "#22313A", muted = "#66737A")
+                    blue = "#2F7F9E", text = "#22313A", muted = "#66737A")
 
 # Same filters as the other Reasons Analysis views (block, country, province, district, period)
 refusal_filter_lqas <- function(data, x_months = NULL, specific_month = NULL, specific_year = NULL,
@@ -237,92 +237,18 @@ reason_matrix <- function(filtered, rc) {
   as.matrix(m)
 }
 
-# Reasons per country (province / district): share of each reason among the reasons recorded
-reason_profile <- function(filtered, kind, geo_level = "country", period_label = "All time", max_rows = 25, top_k = 5) {
-  geo_col <- switch(geo_level, province = "province", district = "district", "country")
-  rc <- reason_columns_for(filtered, kind)
-  if (!nrow(filtered) || !length(rc$cols) || !geo_col %in% names(filtered)) return(NULL)
-  m <- reason_matrix(filtered, rc)
-  g <- as.character(filtered[[geo_col]]); keep <- !is.na(g)
-  m <- m[keep, , drop = FALSE]; g <- g[keep]
-  if (!nrow(m)) return(NULL)
-  agg <- rowsum(m, g); tot <- rowSums(agg)
-  agg <- agg[tot > 0, , drop = FALSE]; tot <- tot[tot > 0]
-  if (!nrow(agg)) return(NULL)
-  ov <- colSums(agg); ov <- sort(ov[ov > 0], decreasing = TRUE)
-  top <- names(ov)[seq_len(min(top_k, length(ov)))]
-  rest <- setdiff(names(ov), top)
-  has_other <- length(rest) > 0
-  lead <- (names(ov)[tolower(names(ov)) != "other"])[1]
-  if (is.na(lead)) lead <- names(ov)[1]
-  geo_order <- names(sort(tot, decreasing = TRUE))
-  n_all <- length(geo_order)
-  geo_show <- geo_order[seq_len(min(max_rows, n_all))]
-  pieces <- lapply(geo_show, function(k) {
-    v <- agg[k, ]
-    vals <- c(v[top], if (has_other) sum(v[rest]))
-    data.frame(geo = k, reason = c(top, if (has_other) "All other"), n = as.numeric(vals),
-               pct = 100 * as.numeric(vals) / tot[[k]], stringsAsFactors = FALSE)
-  })
-  long <- do.call(rbind, pieces)
-  nice <- if (geo_col == "country") refusal_nice(geo_show) else geo_show
-  long$name <- nice[match(long$geo, geo_show)]
-  geos <- data.frame(name = nice, total = as.numeric(tot[geo_show]), stringsAsFactors = FALSE)
-  list(long = long, geos = geos, levels = c(top, if (has_other) "All other"), top = top, has_other = has_other,
-       kind = kind, total = sum(tot), n_all = n_all, n_shown = length(geo_show),
-       top_label = lead, top_pct = 100 * ov[[lead]] / sum(ov), geo_level = geo_level, period_label = period_label)
-}
-
-reason_unit_word <- function(geo_level) switch(geo_level, province = "provinces", district = "districts", "countries")
-
-reason_chart_gg <- function(p) {
-  C <- REFUSAL_COL
-  d <- p$long
-  d$reason <- factor(d$reason, levels = p$levels)
-  ys <- rev(p$geos$name)
-  d$yi <- match(d$name, ys)
-  d <- d[order(d$yi, d$reason), , drop = FALSE]
-  d$xmax <- ave(d$pct, d$yi, FUN = cumsum); d$xmin <- d$xmax - d$pct
-  cols <- stats::setNames(c(REASON_PAL[seq_along(p$top)], if (p$has_other) REASON_OTHER_COL), p$levels)
-  d$lab_col <- ifelse(as.character(d$reason) %in% c("All other") | cols[as.character(d$reason)] %in% c("#E3B23C", REASON_OTHER_COL), C$text, "white")
-  tt <- data.frame(yi = seq_along(ys), label = paste0("n = ", format(p$geos$total[match(ys, p$geos$name)], big.mark = ",", trim = TRUE)),
-                   stringsAsFactors = FALSE)
-  ggplot2::ggplot(d) +
-    ggplot2::geom_rect(ggplot2::aes(xmin = xmin, xmax = xmax, ymin = yi - 0.36, ymax = yi + 0.36, fill = reason),
-                       colour = "white", linewidth = 0.4) +
-    ggplot2::geom_text(data = d[d$pct >= 11, , drop = FALSE],
-                       ggplot2::aes((xmin + xmax) / 2, yi, label = sprintf("%.0f%%", pct), colour = lab_col),
-                       size = 3.1, fontface = "bold") +
-    ggplot2::geom_text(data = tt, ggplot2::aes(101.5, yi, label = label), hjust = 0, size = 3, colour = C$muted) +
-    ggplot2::scale_fill_manual(values = cols, name = NULL, drop = FALSE) +
-    ggplot2::scale_colour_identity() +
-    ggplot2::scale_x_continuous(breaks = seq(0, 100, 25), labels = function(x) paste0(x, "%"), expand = c(0, 0)) +
-    ggplot2::scale_y_continuous(breaks = seq_along(ys), labels = ys, expand = c(0, 0.5)) +
-    ggplot2::coord_cartesian(xlim = c(0, 100), clip = "off") +
-    ggplot2::labs(x = NULL, y = NULL) +
-    ggplot2::guides(fill = ggplot2::guide_legend(nrow = if (length(p$levels) > 4) 2 else 1, byrow = TRUE)) +
-    ggplot2::theme_minimal(base_size = 11) +
-    ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                   panel.grid.major.x = ggplot2::element_line(colour = "#E9EEEA"),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10),
-                   axis.text.x = ggplot2::element_text(colour = C$muted),
-                   legend.position = "top", legend.justification = "left", legend.text = ggplot2::element_text(colour = C$text, size = 9),
-                   legend.key.size = grid::unit(0.4, "cm"),
-                   plot.margin = ggplot2::margin(6, 60, 6, 6),
-                   plot.background = ggplot2::element_rect(fill = "white", colour = NA))
-}
-
 modern_cards_gg <- function(label, value, sub, col) {
   C <- REFUSAL_COL
-  cd <- data.frame(y0 = c(1.04, 0.0), y1 = c(2.0, 0.96), label = label, value = value, sub = sub, col = col, stringsAsFactors = FALSE)
+  n <- length(label)
+  cd <- data.frame(y1 = n:1, y0 = (n:1) - 1, label = label, value = value, sub = sub, col = col, stringsAsFactors = FALSE)
   ggplot2::ggplot(cd) +
-    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.03, ymax = y1 - 0.03), fill = "#F7F9F6", colour = "#E3E8E1") +
-    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.04, ymin = y0 + 0.03, ymax = y1 - 0.03, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.26, label = toupper(label)), hjust = 0, size = 3.2, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = 9, fontface = "bold") +
-    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.2, label = sub), hjust = 0, size = 3, colour = C$muted) +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.04, ymax = y1 - 0.04), fill = "#F7F9F6", colour = "#E3E8E1") +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.04, ymin = y0 + 0.04, ymax = y1 - 0.04, fill = col)) +
+    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.2, label = toupper(label)), hjust = 0, size = 3, fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = 8, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.19, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.95) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
-    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 2), expand = FALSE) +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, n), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 6, 6, 4))
 }
@@ -355,60 +281,150 @@ modern_foot_gg <- function(note) {
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(0, 14, 4, 10))
 }
 
-reason_height <- function(p) max(5.0, 0.27 * p$n_shown + 3.9)
 
-# Absence / Traditional tab: one stacked bar per country (province / district)
-reason_full_gg <- function(p) {
-  unit <- reason_unit_word(p$geo_level)
-  ttl <- if (p$kind == "absence") "Why children were absent" else "Why children were missed"
-  what <- if (p$kind == "absence") "Reasons given for absent children" else "Reasons recorded for children not vaccinated"
-  sub <- paste0(what, " in the LQAS sample: share of each reason, by ", sub("ies$", "y", sub("s$", "", unit)), "  |  ", p$period_label)
-  hd <- modern_header_gg(ttl, sub)
-  ch <- reason_chart_gg(p)
-  cd <- modern_cards_gg(c("Reasons recorded", "Leading named reason"),
-                        c(format(p$total, big.mark = ",", trim = TRUE), sprintf("%.0f%%", p$top_pct)),
-                        c(paste0("across ", p$n_all, " ", if (p$n_all == 1) sub("ies$", "y", sub("s$", "", unit)) else unit), p$top_label),
-                        c(REFUSAL_COL$navy, REASON_KIND_COL[[p$kind]]))
-  bn <- modern_banner_gg(paste0("Leading named reason: ", tolower(p$top_label), " (", sprintf("%.0f%%", p$top_pct), " of reasons recorded)."),
-                         REFUSAL_COL$navy)
-  ft <- modern_foot_gg(paste0("Reasons are summed over all LQAS campaigns in the period. Each bar is 100% of the reasons recorded for that ",
-                              sub("ies$", "y", sub("s$", "", unit)), "; n is the number of reasons recorded.",
-                              if (p$n_all > p$n_shown) paste0(" The ", p$n_shown, " with the most reasons recorded (of ", p$n_all, ") are shown.") else ""))
-  body_h <- max(2.6, 0.27 * p$n_shown + 1.2)
-  mid <- cowplot::plot_grid(ch, cd, nrow = 1, rel_widths = c(2.15, 1))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, body_h, 0.5, 0.45))
+# ---------- executive view: WHY (reasons) and WHERE (countries), one message per page ----------
+reason_unit_word <- function(geo_level) switch(geo_level, province = "provinces", district = "districts", "countries")
+
+reason_colours <- function(labels) {
+  named <- labels[tolower(labels) != "other"]
+  cols <- stats::setNames(rep(REASON_OTHER_COL, length(labels)), labels)
+  cols[named] <- REASON_PAL[(seq_along(named) - 1) %% length(REASON_PAL) + 1]
+  cols
 }
 
-# Combined tab: the three reason types side by side, pooled over the selection
-reason_pooled <- function(filtered, kind, top_k = 6) {
+reason_lower <- function(x) gsub("\\bfm\\b", "FM", ifelse(grepl("^[A-Z]{2,}", x), x, tolower(x)))
+reason_join <- function(a, b) paste0(a, " and ", reason_lower(b))
+
+# kind = "absence" or "traditional"
+reason_profile <- function(filtered, kind, geo_level = "country", period_label = "All time", n_reasons = 6, n_geo = 8) {
+  geo_col <- switch(geo_level, province = "province", district = "district", "country")
+  rc <- reason_columns_for(filtered, kind)
+  if (!nrow(filtered) || !length(rc$cols) || !geo_col %in% names(filtered)) return(NULL)
+  m <- reason_matrix(filtered, rc)
+  g <- as.character(filtered[[geo_col]]); keep <- !is.na(g)
+  m <- m[keep, , drop = FALSE]; g <- g[keep]
+  if (!nrow(m)) return(NULL)
+  agg <- rowsum(m, g); tot <- rowSums(agg)
+  agg <- agg[tot > 0, , drop = FALSE]; tot <- tot[tot > 0]
+  if (!nrow(agg)) return(NULL)
+  ov <- colSums(agg); ov <- sort(ov[ov > 0], decreasing = TRUE)
+  total <- sum(ov)
+  why <- data.frame(label = names(ov), n = as.numeric(ov), pct = 100 * as.numeric(ov) / total, stringsAsFactors = FALSE)
+  named <- why[tolower(why$label) != "other", , drop = FALSE]
+  if (!nrow(named)) named <- why
+  why <- why[seq_len(min(n_reasons, nrow(why))), , drop = FALSE]
+  ord <- names(sort(tot, decreasing = TRUE)); n_all <- length(ord)
+  show <- ord[seq_len(min(n_geo, n_all))]
+  lead <- vapply(show, function(k) { v <- agg[k, ]; v2 <- v[tolower(names(v)) != "other"]; if (!length(v2) || max(v2) <= 0) v2 <- v; names(v2)[which.max(v2)] }, character(1))
+  lead_pct <- vapply(seq_along(show), function(i) 100 * agg[show[i], lead[i]] / tot[[show[i]]], numeric(1))
+  nice <- if (geo_col == "country") refusal_nice(show) else show
+  where <- data.frame(name = nice, n = as.numeric(tot[show]), share = 100 * as.numeric(tot[show]) / total,
+                      lead = lead, lead_pct = lead_pct, stringsAsFactors = FALSE)
+  top3 <- where[seq_len(min(3, nrow(where))), , drop = FALSE]
+  list(why = why, where = where, kind = kind, total = total, n_all = n_all, geo_level = geo_level, period_label = period_label,
+       A = named$label[1], A_pct = named$pct[1], B = if (nrow(named) > 1) named$label[2] else NA_character_,
+       AB_pct = sum(named$pct[seq_len(min(2, nrow(named)))]), top3 = top3, top3_share = sum(top3$share),
+       unit = reason_unit_word(geo_level), colours = reason_colours(unique(c(why$label, where$lead))))
+}
+
+reason_height <- function(p = NULL) 6.4
+
+reason_why_gg <- function(p, title_txt) {
+  C <- REFUSAL_COL
+  d <- p$why; d$label <- factor(d$label, levels = rev(d$label)); d$col <- p$colours[as.character(d$label)]
+  xmax <- max(d$pct) * 1.5
+  ggplot2::ggplot(d, ggplot2::aes(pct, label, fill = col)) +
+    ggplot2::geom_col(width = 0.68) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = 4) +
+    ggplot2::scale_fill_identity() +
+    ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
+    ggplot2::labs(title = title_txt, subtitle = paste0(format(p$total, big.mark = ",", trim = TRUE), " reasons recorded"), x = NULL, y = NULL) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10.5),
+                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 12.5),
+                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
+                   plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
+                   plot.background = ggplot2::element_rect(fill = "white", colour = NA))
+}
+
+reason_where_gg <- function(p, title_txt) {
+  C <- REFUSAL_COL
+  d <- p$where; d$name <- factor(d$name, levels = rev(d$name)); d$col <- p$colours[d$lead]
+  xmax <- max(d$n) * 3.5
+  d$lab <- paste0(format(d$n, big.mark = ",", trim = TRUE), " (", sprintf("%.0f%%", d$share), ")")
+  ggplot2::ggplot(d, ggplot2::aes(n, name, fill = col)) +
+    ggplot2::geom_col(width = 0.68) +
+    ggplot2::geom_text(ggplot2::aes(label = lab), hjust = -0.1, fontface = "bold", colour = C$text, size = 3.6) +
+    ggplot2::geom_text(ggplot2::aes(x = max(n) * 1.95, label = paste0(lead, " ", sprintf("%.0f%%", lead_pct))), hjust = 0, colour = C$muted, size = 3.4) +
+    ggplot2::scale_fill_identity() +
+    ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
+    ggplot2::labs(title = title_txt, subtitle = "Reasons recorded (share of all)  |  leading reason", x = NULL, y = NULL) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10.5),
+                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 12.5),
+                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
+                   plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
+                   plot.background = ggplot2::element_rect(fill = "white", colour = NA))
+}
+
+reason_full_gg <- function(p) {
+  unit1 <- sub("ies$", "y", sub("s$", "", p$unit))
+  noun <- if (p$kind == "absence") "absences" else "reasons for missed children"
+  head_txt <- if (is.na(p$B)) paste0(p$A, " is the leading reason: ", sprintf("%.0f%%", p$A_pct), " of recorded ", noun)
+              else paste0(reason_join(p$A, p$B), " explain ", sprintf("%.0f%%", p$AB_pct), " of recorded ", noun)
+  sub_txt <- paste0(if (p$kind == "absence") "Why children were absent during LQAS" else "Why children were missed in LQAS",
+                    "  |  ", p$period_label, "  |  ", p$n_all, " ", if (p$n_all == 1) unit1 else p$unit)
+  hd <- modern_header_gg(head_txt, sub_txt)
+  why <- reason_why_gg(p, "WHY: reasons recorded")
+  wh <- reason_where_gg(p, paste0("WHERE: top ", nrow(p$where), " ", p$unit))
+  t3 <- paste(p$top3$name, collapse = ", ")
+  cd <- modern_cards_gg(
+    c("Reasons recorded", "Leading named reason", paste0("Concentration, top ", nrow(p$top3))),
+    c(format(p$total, big.mark = ",", trim = TRUE), sprintf("%.0f%%", p$A_pct), sprintf("%.0f%%", p$top3_share)),
+    c(paste0("across ", p$n_all, " ", if (p$n_all == 1) unit1 else p$unit), tolower(p$A), paste(strwrap(t3, 28), collapse = "\n")),
+    c(REFUSAL_COL$navy, unname(p$colours[p$A]), REFUSAL_COL$blue))
+  act <- paste0("Priority: ", if (is.na(p$B)) reason_lower(p$A) else reason_join(reason_lower(p$A), p$B), ", starting with ", t3, ".")
+  bn <- modern_banner_gg(act, REFUSAL_COL$navy)
+  ft <- modern_foot_gg(paste0("Reasons are counted over all LQAS campaigns in the period. Colours show the leading reason. \"Other\" is shown but never named as the leading reason."))
+  mid <- cowplot::plot_grid(why, wh, cd, nrow = 1, rel_widths = c(1.0, 1.9, 0.8))
+  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
+}
+
+# Combined tab: one page, three reason types, the leader of each highlighted
+reason_pooled <- function(filtered, kind, top_k = 5) {
   rc <- reason_columns_for(filtered, kind)
   if (!nrow(filtered) || !length(rc$cols)) return(NULL)
   v <- colSums(reason_matrix(filtered, rc)); v <- sort(v[v > 0], decreasing = TRUE)
   if (!length(v)) return(NULL)
   d <- data.frame(label = names(v), n = as.numeric(v), pct = 100 * as.numeric(v) / sum(v), stringsAsFactors = FALSE)
-  list(data = d[seq_len(min(top_k, nrow(d))), , drop = FALSE], total = sum(v), n_kinds = nrow(d))
+  nm <- d[tolower(d$label) != "other", , drop = FALSE]
+  list(data = d[seq_len(min(top_k, nrow(d))), , drop = FALSE], total = sum(v), lead = if (nrow(nm)) nm[1, ] else d[1, ])
 }
 
 reason_panel_gg <- function(pl, kind) {
-  C <- REFUSAL_COL
-  d <- pl$data; d$label <- factor(d$label, levels = rev(d$label))
-  xmax <- max(d$pct) * 1.25
-  ggplot2::ggplot(d, ggplot2::aes(pct, label)) +
-    ggplot2::geom_col(fill = REASON_KIND_COL[[kind]], width = 0.7) +
-    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = 3.3) +
+  C <- REFUSAL_COL; kc <- REASON_KIND_COL[[kind]]
+  d <- pl$data; d$is_lead <- d$label == pl$lead$label
+  d$label <- factor(d$label, levels = rev(d$label))
+  d$col <- ifelse(d$is_lead, kc, scales::alpha(kc, 0.4))
+  xmax <- max(d$pct) * 1.5
+  ggplot2::ggplot(d, ggplot2::aes(pct, label, fill = col)) +
+    ggplot2::geom_col(width = 0.68) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = 3.8) +
+    ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
     ggplot2::labs(title = REASON_KIND_NAME[[kind]], subtitle = paste0(format(pl$total, big.mark = ",", trim = TRUE), " reasons recorded"), x = NULL, y = NULL) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 9.5),
-                   plot.title = ggplot2::element_text(face = "bold", colour = REASON_KIND_COL[[kind]], size = 12),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10),
+                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = 12.5),
                    plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
-                   plot.title.position = "plot",
-                   plot.margin = ggplot2::margin(6, 10, 6, 6),
+                   plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
 
-reason_combined_height <- function(types = c("traditional", "nc", "absence")) 6.2
+reason_combined_height <- function(types = NULL) 6.4
 
 reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal = NULL) {
   pools <- stats::setNames(lapply(types, function(k) reason_pooled(filtered, k)), types)
@@ -416,25 +432,28 @@ reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal
   if (!length(pools)) return(NULL)
   panels <- lapply(names(pools), function(k) reason_panel_gg(pools[[k]], k))
   grid <- cowplot::plot_grid(plotlist = panels, nrow = 1)
-  main <- if (!is.null(pools$traditional)) "traditional" else names(pools)[1]
-  pd <- pools[[main]]$data
-  top <- pd[tolower(pd$label) != "other", , drop = FALSE]
-  top <- if (nrow(top)) top[1, ] else pd[1, ]
-  tot_missed <- pools[[main]]$total
   ok <- is.null(refusal) || refusal$n_ok == refusal$n_all
   unit <- if (is.null(refusal)) reason_unit_word(geo_level) else refusal_unit_word(refusal)
-  cd <- modern_cards_gg(
-    c("Refusal within the standard", "Reasons recorded"),
-    c(if (is.null(refusal)) "n/a" else paste0(refusal$n_ok, " / ", refusal$n_all), format(tot_missed, big.mark = ",", trim = TRUE)),
-    c(if (is.null(refusal)) "no LQAS refusal data" else paste0(unit, " at most ", REFUSAL_STANDARD, "% refusals"),
-      "traditional, whole period"),
-    c(if (ok) REFUSAL_COL$green else REFUSAL_COL$amber, REFUSAL_COL$navy))
-  msg <- paste0(if (is.null(refusal)) "" else if (ok) "Refusals are within the standard. " else paste0("Some ", unit, " are above the refusal standard. "),
-                "Leading named reason: ", tolower(top$label), " (", sprintf("%.0f%%", top$pct), ").")
-  hd <- modern_header_gg("Why children were missed: all reason types",
-                         paste0("Share of each reason within its reason type, LQAS sample  |  ", period_label))
-  bn <- modern_banner_gg(msg, if (ok) REFUSAL_COL$green else REFUSAL_COL$amber)
-  ft <- modern_foot_gg("Each panel shows the six most frequent reasons of one reason type as a share of the reasons recorded in that type, summed over all LQAS campaigns in the period.")
-  mid <- cowplot::plot_grid(grid, cd, nrow = 1, rel_widths = c(3.4, 1))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 3.9, 0.5, 0.45))
+  ld <- function(k) if (is.null(pools[[k]])) NULL else pools[[k]]$lead
+  tr <- ld("traditional"); ab <- ld("absence"); nc <- ld("nc")
+  cards_l <- c("Refusals within standard"); cards_v <- if (is.null(refusal)) "n/a" else paste0(refusal$n_ok, " / ", refusal$n_all)
+  cards_s <- if (is.null(refusal)) "no LQAS refusal data" else paste0(unit, " at most ", REFUSAL_STANDARD, "%")
+  cards_c <- if (ok) REFUSAL_COL$green else REFUSAL_COL$amber
+  main <- if (!is.null(tr)) "traditional" else names(pools)[1]
+  cards_l <- c(cards_l, "Reasons recorded"); cards_v <- c(cards_v, format(pools[[main]]$total, big.mark = ",", trim = TRUE))
+  cards_s <- c(cards_s, "missed children, all reasons"); cards_c <- c(cards_c, REFUSAL_COL$navy)
+  lead_main <- pools[[main]]$lead
+  cards_l <- c(cards_l, "Leading named reason"); cards_v <- c(cards_v, sprintf("%.0f%%", lead_main$pct))
+  cards_s <- c(cards_s, tolower(lead_main$label)); cards_c <- c(cards_c, REASON_KIND_COL[[main]])
+  cd <- modern_cards_gg(cards_l, cards_v, cards_s, cards_c)
+  head_txt <- paste0(if (is.null(refusal)) "" else if (ok) "Refusals are under control; " else "Refusals need attention; ",
+                     if (!is.null(ab)) paste0(reason_lower(ab$label), " is the main reason children are absent") else paste0(reason_lower(lead_main$label), " leads the reasons for missed children"))
+  hd <- modern_header_gg(head_txt, paste0("Why children were missed: all reason types, LQAS  |  ", period_label))
+  parts <- c(if (!is.null(tr)) paste0("overall ", reason_lower(tr$label), " (", sprintf("%.0f%%", tr$pct), ")"),
+             if (!is.null(ab)) paste0("absence ", reason_lower(ab$label), " (", sprintf("%.0f%%", ab$pct), ")"),
+             if (!is.null(nc)) paste0("refusal ", reason_lower(nc$label), " (", sprintf("%.0f%%", nc$pct), ")"))
+  bn <- modern_banner_gg(paste0("Leading reasons: ", paste(parts, collapse = "; "), "."), if (ok) REFUSAL_COL$green else REFUSAL_COL$amber)
+  ft <- modern_foot_gg("Top five reasons of each reason type, as a share of the reasons recorded in that type, over all LQAS campaigns in the period. The leading named reason is highlighted.")
+  mid <- cowplot::plot_grid(grid, cd, nrow = 1, rel_widths = c(3.3, 1))
+  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
 }
