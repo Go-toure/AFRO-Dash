@@ -790,7 +790,7 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
   ttl <- paste0(if (length(ks) >= 3 || !length(ks)) "Reasons children are missed" else paste0(paste(c(nice[ks[1]], tolower(nice[ks[-1]])), collapse = " and "), " reasons"),
                 ", by ", unit1)
   hd <- modern_header_gg(ttl, paste0(period_label,
-                                     "  |  darker = more common reason (colour stops at ", REASON_HEAT_CAP, "%)  |  outlined = most common reason  |  grey = fewer than ", min_n, " reasons"))
+                                     "  |  darker = more common reason  |  outlined = most common reason  |  grey = too few answers"))
   top3 <- paste(head(geo_names, 3), collapse = ", ")
   bn_txt <- if (length(parts)) paste0(toupper(substr(parts[1], 1, 1)), substr(paste(parts, collapse = "; "), 2, 400), ".")
             else "Read each row against its n before drawing conclusions."
