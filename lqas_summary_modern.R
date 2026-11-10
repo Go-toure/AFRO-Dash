@@ -122,13 +122,13 @@ lq_map_panel <- function(res) {
     lq_soften_map(res$map) +
       ggplot2::scale_fill_manual(values = LQ_BAND_COL, breaks = LQ_BANDS, labels = unname(LQ_BAND_LAB[LQ_BANDS]),
                                  name = "Rounds rated high", drop = FALSE,
-                                 guide = ggplot2::guide_legend(nrow = 1, title.position = "left")) +
+                                 guide = ggplot2::guide_legend(ncol = 1, title.position = "top")) +
       ggplot2::labs(title = "Each district, by how often it was rated high") +
       ggplot2::theme_void() +
       ggplot2::theme(
         plot.background = ggplot2::element_rect(fill = "white", colour = NA),
         plot.title = ggplot2::element_text(size = 10.2, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
-        legend.position = "bottom", legend.title = ggplot2::element_text(size = 8, colour = C$text),
+        plot.title.position = "plot", legend.position = "left", legend.justification = "center", legend.title = ggplot2::element_text(size = 8, colour = C$text),
         legend.text = ggplot2::element_text(size = 7.8, colour = C$text), legend.key.size = grid::unit(0.38, "cm"),
         plot.margin = ggplot2::margin(6, 6, 2, 8))
   )
@@ -223,7 +223,7 @@ lqas_exec_gg <- function(res) {
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
     c("#A8C0C6", "#8CC9A0", "#E3A2A2", "#E3A2A2"))
-  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), nrow = 1, rel_widths = c(1, 1.15))
+  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), nrow = 1, rel_widths = c(1.2, 1.1))
   bn <- lq_banner_gg(lq_banner_text(s), C$navy)
   cowplot::plot_grid(hd, cd, mid, bn, ncol = 1, rel_heights = c(0.85, 0.95, 5.1, 0.5))
 }
