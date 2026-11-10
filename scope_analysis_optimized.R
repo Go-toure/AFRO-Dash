@@ -243,6 +243,7 @@ generate_scope_plots_app <- function(scope_data,
   if ("WORLD_CONTINENTS" %in% names(all_countries)) {
     Africa <- all_countries[all_countries$WORLD_CONTINENTS == "AFRICA", ]
   }
+  AFRO_bg <- if ("WHO_REGION" %in% names(all_countries)) all_countries[all_countries$WHO_REGION == "AFRO", ] else NULL
 
   # ---- 4) Monthly maps ----
   unique_dates <- sort(unique(filtered_data$yearmonth))
@@ -283,7 +284,9 @@ generate_scope_plots_app <- function(scope_data,
     # Create plot
     p <- ggplot2::ggplot() +
       {if (isTRUE(show_africa_bg) && !is.null(Africa))
-        ggplot2::geom_sf(data = Africa, linewidth = 0.3, color = "grey60", fill = "grey95")} +
+        ggplot2::geom_sf(data = Africa, linewidth = 0.3, color = "grey60", fill = "grey")} +
+      {if (isTRUE(show_africa_bg) && !is.null(AFRO_bg) && nrow(AFRO_bg) > 0)
+        ggplot2::geom_sf(data = AFRO_bg, linewidth = 0.3, color = "grey60", fill = "grey95")} +
       {if (isTRUE(show_africa_bg) && !is.null(province_layer))
         ggplot2::geom_sf(data = province_layer, color = "white", fill = NA)} +
       {if ("vaccine.type" %in% names(joined_data))
@@ -693,6 +696,7 @@ generate_scope_summary_map <- function(scope_data,
   if ("WORLD_CONTINENTS" %in% names(all_countries)) {
     Africa <- all_countries[all_countries$WORLD_CONTINENTS == "AFRICA", ]
   }
+  AFRO_bg <- if ("WHO_REGION" %in% names(all_countries)) all_countries[all_countries$WHO_REGION == "AFRO", ] else NULL
 
   # ---- 6) District-level aggregation across the WHOLE period ----
   district_summary <- filtered_data |>
@@ -738,7 +742,9 @@ generate_scope_summary_map <- function(scope_data,
 
   p <- ggplot2::ggplot() +
     {if (isTRUE(show_africa_bg) && !is.null(Africa))
-      ggplot2::geom_sf(data = Africa, linewidth = 0.3, color = "grey60", fill = "grey95")} +
+      ggplot2::geom_sf(data = Africa, linewidth = 0.3, color = "grey60", fill = "grey")} +
+    {if (isTRUE(show_africa_bg) && !is.null(AFRO_bg) && nrow(AFRO_bg) > 0)
+      ggplot2::geom_sf(data = AFRO_bg, linewidth = 0.3, color = "grey60", fill = "grey95")} +
     {if (isTRUE(show_africa_bg) && !is.null(province_layer))
       ggplot2::geom_sf(data = province_layer, color = "white", fill = NA)} +
     ggplot2::geom_sf(data = joined_data, ggplot2::aes(fill = fill_category), color = NA) +
