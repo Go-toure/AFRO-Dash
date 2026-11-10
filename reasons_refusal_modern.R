@@ -100,7 +100,7 @@ refusal_scope_txt <- function(res) if (is.null(res$scope) || !nzchar(res$scope))
 
 refusal_title <- function() "Refusals under control"
 refusal_subtitle <- function(res)
-  paste0("Share of sampled children missed through refusal, ", refusal_when(res), " (", if (is.null(res$thr_label)) "standard" else "threshold", ": at most ",
+  paste0("Percentage of sampled children missed through refusal, ", refusal_when(res), " (", if (is.null(res$thr_label)) "standard" else "threshold", ": at most ",
          res$std, "%)  |  ", res$period_label, refusal_scope_txt(res))
 refusal_banner_text <- function(res) {
   if (res$n_ok == res$n_all) "Refusals are not a driver of missed children in these campaigns."
@@ -452,7 +452,7 @@ reason_where_gg <- function(p, title_txt) {
     ggplot2::geom_text(ggplot2::aes(x = max(n) * 1.95, label = paste0(lead, " ", sprintf("%.0f%%", lead_pct))), hjust = 0, colour = C$muted, size = 3.4) +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
-    ggplot2::labs(title = title_txt, subtitle = "Reasons recorded (share of all)  |  leading reason", x = NULL, y = NULL) +
+    ggplot2::labs(title = title_txt, subtitle = "Reasons recorded (% of all)  |  most common reason", x = NULL, y = NULL) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_text(colour = C$text, size = 10.5),
@@ -609,7 +609,7 @@ reasonrate_full_gg <- function(res) {
   lab_l <- reason_lower(res$label)
   hd <- modern_header_gg(paste0(res$label, ": ", sprintf("%.1f%%", res$overall), " of sampled children",
                                 if (!is.null(res$scope) && nzchar(res$scope)) paste0(" in ", res$scope) else ""),
-                         paste0("Share of sampled children missed because of ", lab_l, ", ", refusal_when(res), "  |  ", res$period_label))
+                         paste0("Percentage of sampled children missed because of ", lab_l, ", ", refusal_when(res), "  |  ", res$period_label))
   ch <- reasonrate_chart_gg(res)
   cl <- c("Overall rate", "Highest rate")
   cv <- c(sprintf("%.1f%%", res$overall), sprintf("%.1f%%", hi$rate))
@@ -790,7 +790,7 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
   ttl <- paste0(if (length(ks) >= 3 || !length(ks)) "Reasons children are missed" else paste0(paste(c(nice[ks[1]], tolower(nice[ks[-1]])), collapse = " and "), " reasons"),
                 ", by ", unit1)
   hd <- modern_header_gg(ttl, paste0(period_label,
-                                     "  |  darker = higher share, scale capped at ", REASON_HEAT_CAP, "%  |  outlined = leading named reason  |  grey = fewer than ", min_n, " reasons"))
+                                     "  |  darker = more common reason (colour stops at ", REASON_HEAT_CAP, "%)  |  outlined = most common reason  |  grey = fewer than ", min_n, " reasons"))
   top3 <- paste(head(geo_names, 3), collapse = ", ")
   bn_txt <- if (length(parts)) paste0(toupper(substr(parts[1], 1, 1)), substr(paste(parts, collapse = "; "), 2, 400), ".")
             else "Read each row against its n before drawing conclusions."
