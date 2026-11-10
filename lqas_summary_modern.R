@@ -189,7 +189,24 @@ lq_banner_text <- function(s) {
   paste(c(a, b), collapse = "   |   ")
 }
 
-lqas_exec_height <- function(res = NULL) 7.0
+# cards side by side in one row (same light look as the stacked version)
+lq_cards_row_gg <- function(label, value, sub, col) {
+  C <- REFUSAL_COL
+  n <- length(label)
+  cd <- data.frame(x0 = seq_len(n) - 1, x1 = seq_len(n), label = label, value = value, sub = sub, col = col, stringsAsFactors = FALSE)
+  ggplot2::ggplot(cd) +
+    ggplot2::geom_rect(ggplot2::aes(xmin = x0 + 0.02, xmax = x1 - 0.02, ymin = 0.06, ymax = 0.94), fill = "white", colour = "#E3E8E1") +
+    ggplot2::geom_rect(ggplot2::aes(xmin = x0 + 0.02, xmax = x0 + 0.032, ymin = 0.06, ymax = 0.94, fill = col)) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.74, label = toupper(label)), hjust = 0, size = 2.8, fontface = "bold", colour = C$muted) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.36, label = value), hjust = 0, size = 7, fontface = "bold", colour = C$navy) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.40, 0.36, label = sub), hjust = 0, size = 2.7, colour = C$muted, lineheight = 0.95) +
+    ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
+    ggplot2::coord_cartesian(xlim = c(0, n), ylim = c(0, 1), expand = FALSE) +
+    ggplot2::theme_void() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(2, 14, 2, 8))
+}
+
+lqas_exec_height <- function(res = NULL) 7.4
 
 lqas_exec_gg <- function(res) {
   s <- lq_summary(res)
@@ -198,17 +215,17 @@ lqas_exec_gg <- function(res) {
   hd <- lq_header_gg(lq_headline(s),
                          paste0(lq_period_text(res$period_info), "  |  each district is judged by the percentage of its LQAS rounds rated \"high\""))
   cnt <- s$cnt
-  cd <- lq_cards_gg(
+  cd <- lq_cards_row_gg(
     c("Districts analysed", "Mostly high", "Rarely high", "Never rated high"),
     c(format(s$n, big.mark = ","), format(as.integer(cnt[["80-100%"]]), big.mark = ","), format(as.integer(cnt[["0-25%"]]), big.mark = ","), format(s$never, big.mark = ",")),
     c(paste0("in ", s$k, if (s$k == 1) " country" else " countries",
              if (!is.na(s$n_map) && s$n_map < s$n)
-               paste0("\n", format(s$n_map, big.mark = ","), " of them can be shown on the map") else ""),
+               paste0("\n", format(s$n_map, big.mark = ","), " shown on the map") else ""),
       paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
     c("#A8C0C6", "#8CC9A0", "#E3A2A2", "#E3A2A2"))
-  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.3, 1.45, 0.8))
+  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), nrow = 1, rel_widths = c(1, 1.15))
   bn <- lq_banner_gg(lq_banner_text(s), C$navy)
-  cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 5.65, 0.5))
+  cowplot::plot_grid(hd, cd, mid, bn, ncol = 1, rel_heights = c(0.85, 0.95, 5.1, 0.5))
 }
