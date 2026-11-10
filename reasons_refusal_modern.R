@@ -201,7 +201,7 @@ refusal_foot_gg <- function(res) {
 }
 
 # height in inches for the whole image
-refusal_height <- function(res) max(4.8, 0.27 * res$n_shown + 3.3)
+refusal_height <- function(res) max(4.35, 0.27 * res$n_shown + 2.85)
 
 # districts under control (at most 2%) and districts to focus on (above 2%): latest campaign per district, in the zoomed scope
 reason_focus <- function(filtered, value_col, period_label = "All time", thr = REASON_THRESHOLD[["district"]]) {
@@ -241,7 +241,7 @@ refusal_full_gg <- function(res) {
   body_h <- max(2.2, 0.27 * res$n_shown + 0.6)
   # cowplot keeps every block flush with the image edges (patchwork would align them to the chart panel)
   mid <- cowplot::plot_grid(ch, cd, nrow = 1, rel_widths = c(2.15, 1))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, body_h, 0.5, 0.45))
+  cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, body_h, 0.5))
 }
 
 # ============================================================
@@ -420,7 +420,7 @@ reason_profile <- function(filtered, kind, geo_level = "country", period_label =
        unit = reason_unit_word(geo_level), colours = reason_colours(unique(c(why$label, where$lead))))
 }
 
-reason_height <- function(p = NULL) 6.4
+reason_height <- function(p = NULL) 5.95
 
 reason_why_gg <- function(p, title_txt) {
   C <- REFUSAL_COL
@@ -482,7 +482,7 @@ reason_full_gg <- function(p) {
   bn <- modern_banner_gg(act, REFUSAL_COL$navy)
   ft <- modern_foot_gg(paste0("Reasons are counted across all LQAS campaigns in the period. Colours show the most common reason. \"Other\" is shown but never named as the main reason."))
   mid <- cowplot::plot_grid(why, wh, cd, nrow = 1, rel_widths = c(1.0, 1.9, 0.8))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
+  cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 4.4, 0.5))
 }
 
 # Combined tab: one page, three reason types, the leader of each highlighted
@@ -517,7 +517,7 @@ reason_panel_gg <- function(pl, kind) {
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
 
-reason_combined_height <- function(types = NULL) 6.4
+reason_combined_height <- function(types = NULL) 5.95
 
 reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal = NULL) {
   pools <- stats::setNames(lapply(types, function(k) reason_pooled(filtered, k)), types)
@@ -548,7 +548,7 @@ reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal
   bn <- modern_banner_gg(paste0("Leading reasons: ", paste(parts, collapse = "; "), "."), if (ok) REFUSAL_COL$green else REFUSAL_COL$amber)
   ft <- modern_foot_gg("The five most common reasons in each group, as a percentage of all reasons given in that group, across all LQAS campaigns in the period. The most common named reason is highlighted.")
   mid <- cowplot::plot_grid(grid, cd, nrow = 1, rel_widths = c(3.3, 1))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
+  cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 4.4, 0.5))
 }
 
 
@@ -626,7 +626,7 @@ reasonrate_full_gg <- function(res) {
                               if (res$n_all > res$n_shown) paste0(" The ", res$n_shown, " highest of ", res$n_all, " are shown.") else ""))
   body_h <- max(2.2, 0.27 * res$n_shown + 0.6)
   mid <- cowplot::plot_grid(ch, cd, nrow = 1, rel_widths = c(2.15, 1))
-  cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, body_h, 0.5, 0.45))
+  cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, body_h, 0.5))
 }
 
 # reasons that have data in the selection, most frequent first: named vector label -> column
@@ -800,6 +800,6 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
                               "\"Other\" is never counted as the main reason. ",
                               if (n_all > length(geos)) paste0("Showing the ", length(geos), " of ", n_all, " ", unit, " with the most answers: ", top3, ", and others.") else paste0("Most answers: ", top3, ".")))
   h_in <- 0.285 * length(geos) + 2.2
-  g <- cowplot::plot_grid(hd, grid, bn, ft, ncol = 1, rel_heights = c(0.85, h_in, 0.5, 0.6))
-  list(plot = g, height = h_in + 1.8 + 0.2)
+  g <- cowplot::plot_grid(hd, grid, bn, ncol = 1, rel_heights = c(0.85, h_in, 0.5))
+  list(plot = g, height = h_in + 1.35 + 0.2)
 }
