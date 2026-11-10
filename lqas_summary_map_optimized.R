@@ -154,6 +154,18 @@ generate_lqas_summary_map_optimized <- function(data,
     )
   }
   
+  # Strict rule (same as the District Performance tab): a month counts as "high" only when
+  # EVERY LQAS result of that district in that month was high.
+  choose_month_perf_strict <- function(perf_vec) {
+    pv <- perf_vec[!is.na(perf_vec)]
+    if (length(pv) == 0) return(NA_character_)
+    if (all(pv == "high")) return("high")
+    if (any(pv == "moderate")) return("moderate")
+    if (any(pv == "poor")) return("poor")
+    if (any(pv == "very poor")) return("very poor")
+    NA_character_
+  }
+
   choose_month_perf_any_high <- function(perf_vec) {
     pv <- perf_vec[!is.na(perf_vec)]
     if (length(pv) == 0) return(NA_character_)
@@ -755,13 +767,13 @@ generate_lqas_summary_map_optimized <- function(data,
   if (nrow(filtered_data) == 0) stop("No data available after time filtering.")
   
   # ============================================================
-  # MONTH LEVEL: ONE performance per district-month (ANY-HIGH wins)
+  # MONTH LEVEL: ONE performance per district-month (STRICT: all results must be high)
   # ============================================================
   month_level <- filtered_data |>
     dplyr::group_by(.data$country, .data$province, .data$district, .data$AFRO_block, .data$yearmonth) |>
     dplyr::summarise(
       round_start_date = min(.data$round_start_date, na.rm = TRUE),
-      performance      = choose_month_perf_any_high(.data$performance),
+      performance      = choose_month_perf_strict(.data$performance),
       n_raw_rows       = dplyr::n(),
       .groups = "drop"
     ) |>
@@ -772,10 +784,16 @@ generate_lqas_summary_map_optimized <- function(data,
   # -----------------------------
   # KPI metrics
   # -----------------------------
-  kpi_by_district <- month_level |>
-    dplyr::group_by(.data$country, .data$district) |>
+  # Counted exactly like the District Performance tab: every LQAS result counts on its own,
+  # and spelling variants of the same district name are treated as one district.
+  kpi_by_district <- filtered_data |>
+    dplyr::filter(!is.na(.data$performance)) |>
+    dplyr::mutate(country_key = norm_text(.data$country), district_key = norm_text(.data$district)) |>
+    dplyr::filter(!is.na(.data$country_key), !is.na(.data$district_key)) |>
+    dplyr::group_by(.data$country_key, .data$district_key) |>
     dplyr::summarise(
-      total_months = dplyr::n(),
+      country      = dplyr::first(.data$country),
+      district     = dplyr::first(.data$district),
       ever_high    = any(.data$performance == "high", na.rm = TRUE),
       always_high  = all(.data$performance == "high", na.rm = TRUE),
       .groups = "drop"
@@ -783,10 +801,29 @@ generate_lqas_summary_map_optimized <- function(data,
     dplyr::mutate(never_high = !.data$ever_high)
   
   summary_metrics <- list(
-    total_districts = dplyr::n_distinct(paste(kpi_by_district$country, kpi_by_district$district, sep = "||")),
+    total_districts = nrow(kpi_by_district),
     always_high     = sum(kpi_by_district$always_high, na.rm = TRUE),
     never_high      = sum(kpi_by_district$never_high, na.rm = TRUE)
   )
+
+  # one row per district for the Executive Summary page (same districts as the cards)
+  exec_districts <- month_level |>
+    dplyr::mutate(country_key = norm_text(.data$country), district_key = norm_text(.data$district)) |>
+    dplyr::group_by(.data$country_key, .data$district_key) |>
+    dplyr::summarise(total_months = dplyr::n(), high_months = sum(.data$performance == "high", na.rm = TRUE), .groups = "drop") |>
+    dplyr::right_join(kpi_by_district, by = c("country_key", "district_key")) |>
+    dplyr::mutate(
+      high_performance_percentage = dplyr::if_else(!is.na(.data$total_months) & .data$total_months > 0,
+                                                   100 * .data$high_months / .data$total_months,
+                                                   dplyr::if_else(.data$always_high, 100, 0)),
+      High.perf.summary = dplyr::case_when(
+        .data$high_performance_percentage < 25 ~ "0-25%",
+        .data$high_performance_percentage < 50 ~ "25-50%",
+        .data$high_performance_percentage < 80 ~ "50-80%",
+        TRUE ~ "80-100%"
+      )
+    ) |>
+    dplyr::select("country", "district", "high_performance_percentage", "High.perf.summary", "always_high", "ever_high")
   
   # -----------------------------
   # District summary over MONTHS (High%)
@@ -1120,6 +1157,7 @@ generate_lqas_summary_map_optimized <- function(data,
     map_district_set = map_district_set,
     map_province_set = map_province_set,
     summary_metrics = summary_metrics,
+    exec_districts = exec_districts,
     period_info = paste(
       "Data period:",
       min(month_level$round_start_date, na.rm = TRUE),

@@ -24,27 +24,17 @@ lq_period_text <- function(info) {
 }
 
 lq_summary <- function(res) {
-  # Every district with LQAS results (not only the ones drawn on the map), counted the same way
-  # as the cards above the maps: one district = country + district name, judged over all its rounds.
-  fd <- res$filtered_data
+  # Every district with LQAS results (not only the ones drawn on the map). res$exec_districts holds one
+  # row per district, counted exactly like the cards above the maps and the District Performance tab.
   n_map <- if (!is.null(res$map_district_set)) nrow(res$map_district_set) else NA_integer_
-  if (!is.null(fd) && nrow(fd) && all(c("country", "district", "performance") %in% names(fd))) {
-    fd <- as.data.frame(fd)
-    fd <- fd[!is.na(fd$performance), , drop = FALSE]
-    key <- paste(fd$country, fd$district, sep = "||")
-    tot <- tapply(rep(1L, length(key)), key, sum)
-    hi  <- tapply(fd$performance == "high", key, sum)
-    d <- data.frame(country = sub("\\|\\|.*$", "", names(tot)), district = sub("^.*?\\|\\|", "", names(tot)),
-                    total_LQAS = as.integer(tot), high_performance = as.integer(hi[names(tot)]), stringsAsFactors = FALSE)
-    d$high_performance_percentage <- 100 * d$high_performance / d$total_LQAS
-    d$High.perf.summary <- ifelse(d$high_performance_percentage < 25, "0-25%",
-                           ifelse(d$high_performance_percentage < 50, "25-50%",
-                           ifelse(d$high_performance_percentage < 80, "50-80%", "80-100%")))
-  } else {
+  d <- res$exec_districts
+  if (is.null(d) || !nrow(d)) {
     d <- res$map_district_set
     if (is.null(d) || !nrow(d)) return(NULL)
-    d <- as.data.frame(d)
+    d$always_high <- d$high_performance_percentage >= 100
+    d$ever_high   <- d$high_performance_percentage > 0
   }
+  d <- as.data.frame(d)
   d$band <- factor(as.character(d$High.perf.summary), levels = LQ_BANDS)
   d <- d[!is.na(d$band), , drop = FALSE]
   if (!nrow(d)) return(NULL)
@@ -54,8 +44,8 @@ lq_summary <- function(res) {
   by$country <- rownames(by); by$n <- rowSums(by[, LQ_BANDS, drop = FALSE])
   for (b in LQ_BANDS) by[[paste0("p_", b)]] <- 100 * by[[b]] / by$n
   list(d = d, n = n, n_map = n_map, k = length(unique(d$country)), cnt = cnt, by = by,
-       always = sum(d$high_performance_percentage >= 100, na.rm = TRUE),
-       never  = sum(d$high_performance_percentage <= 0, na.rm = TRUE))
+       always = sum(d$always_high, na.rm = TRUE),
+       never  = sum(!d$ever_high, na.rm = TRUE))
 }
 
 lq_nice <- function(x) {
