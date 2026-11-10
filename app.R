@@ -5845,9 +5845,9 @@ ui_for_block <- function() dashboardPage(
               tabsetPanel(
                 id = "scope_tabs",
                 tabPanel(tags$div(icon("globe"), "Scope Map"), value = "scope_map",
-                         div(style = "text-align:center; min-height:420px;",
+                         div(style = "text-align:center;",
                              shinycssloaders::withSpinner(
-                               plotOutput("scope_map_plot", height = "auto", width = "100%"),
+                               plotOutput("scope_map_plot", height = "700px", width = "100%"),
                                type = 8, color = "#0072BC", size = 1.2)),
                          div(style = "text-align:center; margin-top:15px;",
                              downloadButton("download_scope_map", "Download Map",
@@ -5858,9 +5858,9 @@ ui_for_block <- function() dashboardPage(
                              tags$b("Definition: "),
                              "One map aggregated over the whole selected period -- a district is shown as in scope if it appeared in ANY round. ",
                              "Districts covered with more than one vaccine type across the period's rounds are shown as \"Mixed (varies by round)\" rather than defaulting to a single round's value."),
-                         div(style = "text-align:center; min-height:420px;",
+                         div(style = "text-align:center;",
                              shinycssloaders::withSpinner(
-                               plotOutput("scope_summary_map_plot", height = "auto", width = "100%"),
+                               plotOutput("scope_summary_map_plot", height = "700px", width = "100%"),
                                type = 8, color = "#0072BC", size = 1.2)),
                          uiOutput("scope_summary_footnote"),
                          div(style = "text-align:center; margin-top:15px;",
@@ -8725,11 +8725,7 @@ server <- function(input, output, session) {
     } else {
       result$plot
     }
-  }, height = function() {
-    max_h <- 800; min_h <- 400
-    calc_h <- session$clientData$output_scope_map_plot_width * 0.7
-    pmin(pmax(calc_h, min_h), max_h)
-  }, width = "auto")
+  }, height = 700, width = "auto")
   
   # ---- Downloads ----
   output$download_scope_map <- downloadHandler(
@@ -8763,11 +8759,7 @@ server <- function(input, output, session) {
     } else {
       result$map
     }
-  }, height = function() {
-    max_h <- 800; min_h <- 400
-    calc_h <- session$clientData$output_scope_summary_map_plot_width * 0.7
-    pmin(pmax(calc_h, min_h), max_h)
-  }, width = "auto")
+  }, height = 700, width = "auto")
 
   output$scope_summary_footnote <- renderUI({
     req(scope_summary_analysis())
