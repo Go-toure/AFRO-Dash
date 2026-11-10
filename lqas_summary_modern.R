@@ -212,7 +212,7 @@ lqas_exec_gg <- function(res) {
   s <- lq_summary(res)
   if (is.null(s)) return(NULL)
   C <- REFUSAL_COL
-  hd <- lq_header_gg(lq_headline(s),
+  hd <- lq_header_gg("LQAS district performance summary",
                          paste0(lq_period_text(res$period_info), "  |  each district is judged by the percentage of its LQAS rounds rated \"high\""))
   cnt <- s$cnt
   cd <- lq_cards_row_gg(
