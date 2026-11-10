@@ -8711,7 +8711,7 @@ server <- function(input, output, session) {
     } else {
       0
     }
-    valueBox(n, "Vaccine Types", icon = icon("syringe"), color = "purple")
+    valueBox(n, "Intervention (type of antigen used)", icon = icon("syringe"), color = "purple")
   })
   
   # ---- Map ----
