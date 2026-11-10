@@ -343,6 +343,14 @@ if (REFUSAL_MODERN_AVAILABLE) {
   cat("Reasons Analysis refusals view disabled (reasons_refusal_modern.R not found)\n")
 }
 
+# LQAS Summary Maps: executive page (uses the helpers of the Reasons module above)
+LQAS_MODERN_AVAILABLE <- REFUSAL_MODERN_AVAILABLE && file.exists("lqas_summary_modern.R")
+if (LQAS_MODERN_AVAILABLE) {
+  source("lqas_summary_modern.R")
+} else {
+  cat("LQAS executive summary disabled (lqas_summary_modern.R not found)\n")
+}
+
 # Admin Data Overview: "Countries by Month" view (added next to the flextables, which are unchanged)
 ADMIN_HEATMAP_AVAILABLE <- file.exists("admin_heatmap_modern.R")
 if (ADMIN_HEATMAP_AVAILABLE) {
@@ -6455,6 +6463,15 @@ ui_for_block <- function() dashboardPage(
               
                     tabsetPanel(
                       tabPanel(
+                        title = tags$div(icon("chart-bar"), "Executive Summary"),
+                        uiOutput("lqas_exec_ui"),
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton("download_lqas_exec", "Download Executive Summary (PNG)", class = "btn-primary-custom")
+                        )
+                      ),
+                
+                      tabPanel(
                         title = tags$div(icon("map"), "District Summary Map"),
                         plotOutput("lqas_summary_map", height = "600px"),
                         div(
@@ -11155,6 +11172,28 @@ server <- function(input, output, session) {
     lqas_analysis()$map
   })
   
+  # Executive summary: headline, map, countries ranked, cards (one message for the top management)
+  output$lqas_exec_ui <- renderUI({
+    if (!LQAS_MODERN_AVAILABLE)
+      return(tags$div(class = "alert alert-warning", "Executive summary needs lqas_summary_modern.R next to app.R."))
+    req(lqas_analysis())
+    plotOutput("lqas_exec_plot", height = paste0(round(lqas_exec_height(lqas_analysis()) * 90), "px"))
+  })
+  output$lqas_exec_plot <- renderPlot({
+    req(LQAS_MODERN_AVAILABLE, lqas_analysis())
+    g <- lqas_exec_gg(lqas_analysis())
+    validate(need(!is.null(g), "No LQAS data for the selected filters."))
+    g
+  })
+  output$download_lqas_exec <- downloadHandler(
+    filename = function() paste0("LQAS_Executive_Summary_", Sys.Date(), ".png"),
+    content = function(file) {
+      req(LQAS_MODERN_AVAILABLE, lqas_analysis())
+      ggplot2::ggsave(file, lqas_exec_gg(lqas_analysis()), device = "png", width = 13,
+                      height = lqas_exec_height(lqas_analysis()), dpi = 200, bg = "white")
+    }
+  )
+
   output$lqas_province_summary_map <- renderPlot({
     req(lqas_analysis())
     if (is.null(lqas_analysis()$province_map)) {
@@ -11529,7 +11568,7 @@ server <- function(input, output, session) {
     content = function(file) {
       req(lqas_analysis())
       if (is.null(lqas_analysis()$province_map)) stop("No province map available for the selected filters.")
-      ggplot2::ggsave(file, plot = lqas_analysis()$province_map, width = 16, height = 12, dpi = 300)
+      ggplot2::ggsave(file, plot = lqas_analysis()$province_map, width = 16, height = 12, dpi = 300, bg = "white")
     }
   )
   
@@ -11539,7 +11578,7 @@ server <- function(input, output, session) {
       withProgress(message = "Generating LQAS district map...", detail = "Rendering high-quality image...", value = 0.3, {
         req(lqas_analysis())
         incProgress(0.6, detail = "Saving image...")
-        ggplot2::ggsave(file, plot = lqas_analysis()$map, width = 16, height = 12, dpi = 300)
+        ggplot2::ggsave(file, plot = lqas_analysis()$map, width = 16, height = 12, dpi = 300, bg = "white")
         incProgress(1, detail = "Download ready!")
       })
     }
