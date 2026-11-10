@@ -121,7 +121,7 @@ lq_country_panel <- function(s, max_rows = 26) {
   rect$txt <- ifelse(rect$band %in% c("50-80%", "25-50%"), C$text, "white")
   nm <- lq_nice(by$country)
   ggplot2::ggplot() +
-    ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = "grey55", linewidth = 0.25) +
+    ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = NA) +
     ggplot2::geom_segment(ggplot2::aes(x = LQ_THRESHOLD, xend = LQ_THRESHOLD, y = min(by$row) - 0.6, yend = max(by$row) + 1.15),
                           colour = C$navy, linetype = "dashed", linewidth = 0.55) +
     ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = 3.1, fontface = "bold") +
