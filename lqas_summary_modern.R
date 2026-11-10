@@ -84,6 +84,25 @@ lq_banner_gg <- function(text, col) {
 
 lq_pct <- function(x, n) if (n > 0) sprintf("%.0f%%", 100 * x / n) else "0%"
 
+# lighter country borders, and Western Sahara (disputed area) in dark grey
+lq_soften_map <- function(p) {
+  ws <- NULL
+  for (i in seq_along(p$layers)) {
+    d <- p$layers[[i]]$data
+    if (is.null(ws) && inherits(d, "sf") && "ADM0_NAME" %in% names(d) && any(toupper(d$ADM0_NAME) == "WESTERN SAHARA"))
+      ws <- d[toupper(d$ADM0_NAME) == "WESTERN SAHARA", , drop = FALSE]
+    ap <- p$layers[[i]]$aes_params
+    if (identical(ap$colour, "black")) {
+      p$layers[[i]] <- ggplot2::geom_sf(data = d, fill = ap$fill, colour = "grey35", linewidth = 0.2,
+                                        inherit.aes = FALSE, show.legend = FALSE)[[1]]
+    }
+  }
+  if (!is.null(ws) && nrow(ws) > 0)
+    p <- p + ggplot2::geom_sf(data = ws, fill = "grey30", colour = "grey35", linewidth = 0.2,
+                              inherit.aes = FALSE, show.legend = FALSE)
+  p
+}
+
 lq_map_panel <- function(res) {
   C <- REFUSAL_COL
   if (is.null(res$map)) {
@@ -91,7 +110,7 @@ lq_map_panel <- function(res) {
              ggplot2::theme_void())
   }
   suppressMessages(
-    res$map +
+    lq_soften_map(res$map) +
       ggplot2::scale_fill_manual(values = LQ_BAND_COL, breaks = LQ_BANDS, labels = unname(LQ_BAND_LAB[LQ_BANDS]),
                                  name = "Rounds rated high", drop = FALSE,
                                  guide = ggplot2::guide_legend(nrow = 1, title.position = "left")) +
