@@ -218,9 +218,7 @@ lqas_exec_gg <- function(res) {
   cd <- lq_cards_row_gg(
     c("Districts analysed", "Mostly high", "Rarely high", "Never rated high"),
     c(format(s$n, big.mark = ","), format(as.integer(cnt[["80-100%"]]), big.mark = ","), format(as.integer(cnt[["0-25%"]]), big.mark = ","), format(s$never, big.mark = ",")),
-    c(paste0("in ", s$k, if (s$k == 1) " country" else " countries",
-             if (!is.na(s$n_map) && s$n_map < s$n)
-               paste0("\n", format(s$n_map, big.mark = ","), " shown on the map") else ""),
+    c(paste0("in ", s$k, if (s$k == 1) " country" else " countries"),
       paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
