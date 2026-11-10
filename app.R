@@ -5845,9 +5845,9 @@ ui_for_block <- function() dashboardPage(
               tabsetPanel(
                 id = "scope_tabs",
                 tabPanel(tags$div(icon("globe"), "Scope Map"), value = "scope_map",
-                         div(style = "text-align:center;",
+                         div(style = "text-align:center; min-height:420px;",
                              shinycssloaders::withSpinner(
-                               plotOutput("scope_map_plot", height = "650px", width = "100%"),
+                               plotOutput("scope_map_plot", height = "auto", width = "100%"),
                                type = 8, color = "#0072BC", size = 1.2)),
                          div(style = "text-align:center; margin-top:15px;",
                              downloadButton("download_scope_map", "Download Map",
@@ -5858,9 +5858,9 @@ ui_for_block <- function() dashboardPage(
                              tags$b("Definition: "),
                              "One map aggregated over the whole selected period -- a district is shown as in scope if it appeared in ANY round. ",
                              "Districts covered with more than one vaccine type across the period's rounds are shown as \"Mixed (varies by round)\" rather than defaulting to a single round's value."),
-                         div(style = "text-align:center;",
+                         div(style = "text-align:center; min-height:420px;",
                              shinycssloaders::withSpinner(
-                               plotOutput("scope_summary_map_plot", height = "650px", width = "100%"),
+                               plotOutput("scope_summary_map_plot", height = "auto", width = "100%"),
                                type = 8, color = "#0072BC", size = 1.2)),
                          uiOutput("scope_summary_footnote"),
                          div(style = "text-align:center; margin-top:15px;",
