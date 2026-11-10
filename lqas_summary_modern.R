@@ -24,8 +24,11 @@ lq_period_text <- function(info) {
 }
 
 lq_summary <- function(res) {
-  d <- res$map_district_set
+  # every district that has LQAS results (not only the ones that can be drawn on the map)
+  d <- res$performance_data
+  if (is.null(d) || !nrow(d) || !all(c("country", "High.perf.summary", "high_performance_percentage") %in% names(d))) d <- res$map_district_set
   if (is.null(d) || !nrow(d)) return(NULL)
+  n_map <- if (!is.null(res$map_district_set)) nrow(res$map_district_set) else NA_integer_
   d <- as.data.frame(d)
   d$band <- factor(as.character(d$High.perf.summary), levels = LQ_BANDS)
   d <- d[!is.na(d$band), , drop = FALSE]
@@ -35,7 +38,7 @@ lq_summary <- function(res) {
   by <- as.data.frame.matrix(table(d$country, d$band))
   by$country <- rownames(by); by$n <- rowSums(by[, LQ_BANDS, drop = FALSE])
   for (b in LQ_BANDS) by[[paste0("p_", b)]] <- 100 * by[[b]] / by$n
-  list(d = d, n = n, k = length(unique(d$country)), cnt = cnt, by = by,
+  list(d = d, n = n, n_map = n_map, k = length(unique(d$country)), cnt = cnt, by = by,
        always = sum(d$high_performance_percentage >= 100, na.rm = TRUE),
        never  = sum(d$high_performance_percentage <= 0, na.rm = TRUE))
 }
@@ -193,8 +196,8 @@ lqas_exec_gg <- function(res) {
     c("Districts analysed", "Mostly high", "Rarely high", "Never rated high"),
     c(format(s$n, big.mark = ","), format(as.integer(cnt[["80-100%"]]), big.mark = ","), format(as.integer(cnt[["0-25%"]]), big.mark = ","), format(s$never, big.mark = ",")),
     c(paste0("in ", s$k, if (s$k == 1) " country" else " countries",
-             if (!is.null(res$summary_metrics$total_districts) && res$summary_metrics$total_districts > s$n)
-               paste0("\nmatched to the map (of ", format(res$summary_metrics$total_districts, big.mark = ","), ")") else ""),
+             if (!is.na(s$n_map) && s$n_map < s$n)
+               paste0("\n", format(s$n_map, big.mark = ","), " of them can be shown on the map") else ""),
       paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
