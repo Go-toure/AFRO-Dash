@@ -69,14 +69,15 @@ lq_cards_gg <- function(label, value, sub, col) {
   C <- REFUSAL_COL
   n <- length(label)
   cd <- data.frame(y1 = n:1, y0 = (n:1) - 1, label = label, value = value, sub = sub, col = col, stringsAsFactors = FALSE)
+  # compact cards, light look: white card, thin soft-coloured stripe, one dark colour for all the numbers
   ggplot2::ggplot(cd) +
-    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.04, ymax = y1 - 0.04), fill = "#F7F9F6", colour = "#E3E8E1") +
-    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.045, ymin = y0 + 0.04, ymax = y1 - 0.04, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.17, label = toupper(label)), hjust = 0, size = 3.1, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 + 0.02, label = value, colour = col), hjust = 0, size = 8, fontface = "bold") +
-    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.2, label = sub), hjust = 0, size = 2.8, colour = C$text, lineheight = 0.95) +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.05, ymax = y1 - 0.05), fill = "white", colour = "#E3E8E1") +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.035, ymin = y0 + 0.05, ymax = y1 - 0.05, fill = col)) +
+    ggplot2::geom_text(ggplot2::aes(0.08, y1 - 0.22, label = toupper(label)), hjust = 0, size = 2.8, fontface = "bold", colour = C$muted) +
+    ggplot2::geom_text(ggplot2::aes(0.08, (y0 + y1) / 2 + 0.0, label = value), hjust = 0, size = 6.5, fontface = "bold", colour = C$navy) +
+    ggplot2::geom_text(ggplot2::aes(0.08, y0 + 0.21, label = sub), hjust = 0, size = 2.6, colour = C$muted, lineheight = 0.95) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
-    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, n), expand = FALSE) +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(-0.3 * n, n), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 6, 6, 4))
 }
@@ -206,7 +207,7 @@ lqas_exec_gg <- function(res) {
       paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
-    c(C$navy, unname(LQ_BAND_COL[["80-100%"]]), unname(LQ_BAND_COL[["0-25%"]]), unname(LQ_BAND_COL[["0-25%"]])))
+    c("#A8C0C6", "#8CC9A0", "#E3A2A2", "#E3A2A2"))
   mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.3, 1.45, 0.8))
   bn <- lq_banner_gg(lq_banner_text(s), C$navy)
   cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 5.65, 0.5))
