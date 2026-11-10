@@ -46,6 +46,42 @@ lq_nice <- function(x) {
   x
 }
 
+# header, cards and banner of this page: same look as the other modern pages, with larger text
+lq_header_gg <- function(title, subtitle) {
+  C <- REFUSAL_COL
+  ggplot2::ggplot() +
+    ggplot2::annotate("text", x = 0.02, y = 0.70, label = title, hjust = 0, size = 5.9, fontface = "bold", family = "serif", colour = C$navy) +
+    ggplot2::annotate("text", x = 0.02, y = 0.18, label = subtitle, hjust = 0, size = 3.6, colour = C$muted) +
+    ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
+    ggplot2::theme_void() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 14, 0, 10))
+}
+
+lq_cards_gg <- function(label, value, sub, col) {
+  C <- REFUSAL_COL
+  n <- length(label)
+  cd <- data.frame(y1 = n:1, y0 = (n:1) - 1, label = label, value = value, sub = sub, col = col, stringsAsFactors = FALSE)
+  ggplot2::ggplot(cd) +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.04, ymax = y1 - 0.04), fill = "#F7F9F6", colour = "#E3E8E1") +
+    ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.045, ymin = y0 + 0.04, ymax = y1 - 0.04, fill = col)) +
+    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.17, label = toupper(label)), hjust = 0, size = 3.4, fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 + 0.02, label = value, colour = col), hjust = 0, size = 9, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.2, label = sub), hjust = 0, size = 3.1, colour = C$text, lineheight = 0.95) +
+    ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, n), expand = FALSE) +
+    ggplot2::theme_void() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 6, 6, 4))
+}
+
+lq_banner_gg <- function(text, col) {
+  ggplot2::ggplot() +
+    ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col) +
+    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = 4.2) +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
+    ggplot2::theme_void() +
+    ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(2, 14, 4, 10))
+}
+
 lq_pct <- function(x, n) if (n > 0) sprintf("%.0f%%", 100 * x / n) else "0%"
 
 lq_map_panel <- function(res) {
@@ -63,9 +99,9 @@ lq_map_panel <- function(res) {
       ggplot2::theme_void() +
       ggplot2::theme(
         plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-        plot.title = ggplot2::element_text(size = 10.5, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
-        legend.position = "bottom", legend.title = ggplot2::element_text(size = 8.5, colour = C$text),
-        legend.text = ggplot2::element_text(size = 8, colour = C$text), legend.key.size = grid::unit(0.38, "cm"),
+        plot.title = ggplot2::element_text(size = 11.5, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
+        legend.position = "bottom", legend.title = ggplot2::element_text(size = 9, colour = C$text),
+        legend.text = ggplot2::element_text(size = 8.8, colour = C$text), legend.key.size = grid::unit(0.42, "cm"),
         plot.margin = ggplot2::margin(6, 6, 2, 8))
   )
 }
@@ -85,22 +121,22 @@ lq_country_panel <- function(s, max_rows = 26) {
   rect$txt <- ifelse(rect$band %in% c("50-80%", "25-50%"), C$text, "white")
   nm <- lq_nice(by$country)
   ggplot2::ggplot() +
-    ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = "white", linewidth = 0.25) +
-    ggplot2::geom_segment(ggplot2::aes(x = LQ_THRESHOLD, xend = LQ_THRESHOLD, y = min(by$row) - 0.6, yend = max(by$row) + 0.62),
+    ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = "grey55", linewidth = 0.25) +
+    ggplot2::geom_segment(ggplot2::aes(x = LQ_THRESHOLD, xend = LQ_THRESHOLD, y = min(by$row) - 0.6, yend = max(by$row) + 1.15),
                           colour = C$navy, linetype = "dashed", linewidth = 0.55) +
-    ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = 2.7) +
-    ggplot2::geom_text(data = by, ggplot2::aes(x = 101.5, y = row, label = format(n, big.mark = ",")), hjust = 0, size = 2.7, colour = C$muted) +
-    ggplot2::annotate("text", x = 101.5, y = max(by$row) + 0.95, label = "districts", hjust = 0, size = 2.6, colour = C$muted) +
-    ggplot2::annotate("text", x = LQ_THRESHOLD, y = max(by$row) + 0.95, label = paste0(LQ_THRESHOLD, "% threshold"), size = 2.7,
+    ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = 3.1, fontface = "bold") +
+    ggplot2::geom_text(data = by, ggplot2::aes(x = 101.5, y = row, label = format(n, big.mark = ",")), hjust = 0, size = 3.0, colour = C$text) +
+    ggplot2::annotate("text", x = 101.5, y = max(by$row) + 0.75, label = "districts", hjust = 0, size = 2.9, colour = C$text) +
+    ggplot2::annotate("text", x = LQ_THRESHOLD, y = max(by$row) + 1.55, label = paste0(LQ_THRESHOLD, "% threshold"), size = 3.1,
                       colour = C$navy, fontface = "bold") +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
-    ggplot2::scale_y_continuous(breaks = by$row, labels = nm, expand = ggplot2::expansion(add = c(0.6, 1.1))) +
-    ggplot2::scale_x_continuous(limits = c(0, 126), breaks = NULL, expand = c(0, 0)) +
-    ggplot2::labs(title = "Districts in each country (%)", x = NULL, y = NULL) +
+    ggplot2::scale_y_continuous(breaks = by$row, labels = nm, expand = ggplot2::expansion(add = c(0.6, 1.9))) +
+    ggplot2::scale_x_continuous(limits = c(0, 124), breaks = NULL, expand = c(0, 0)) +
+    ggplot2::labs(title = "Districts per country (%)", x = NULL, y = NULL) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-                   plot.title = ggplot2::element_text(size = 10.5, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
-                   axis.text.y = ggplot2::element_text(size = 8, colour = C$text, hjust = 1, margin = ggplot2::margin(r = 4)),
+                   plot.title = ggplot2::element_text(size = 11.5, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
+                   axis.text.y = ggplot2::element_text(size = 9.2, colour = C$text, hjust = 1, margin = ggplot2::margin(r = 4)),
                    plot.margin = ggplot2::margin(6, 4, 2, 4))
 }
 
@@ -131,10 +167,10 @@ lqas_exec_gg <- function(res) {
   s <- lq_summary(res)
   if (is.null(s)) return(NULL)
   C <- REFUSAL_COL
-  hd <- modern_header_gg(lq_headline(s),
+  hd <- lq_header_gg(lq_headline(s),
                          paste0(lq_period_text(res$period_info), "  |  each district is judged by the percentage of its LQAS rounds rated \"high\""))
   cnt <- s$cnt
-  cd <- modern_cards_gg(
+  cd <- lq_cards_gg(
     c("Districts analysed", "Mostly high", "Rarely high", "Never rated high"),
     c(format(s$n, big.mark = ","), format(as.integer(cnt[["80-100%"]]), big.mark = ","), format(as.integer(cnt[["0-25%"]]), big.mark = ","), format(s$never, big.mark = ",")),
     c(paste0("in ", s$k, if (s$k == 1) " country" else " countries",
@@ -144,7 +180,7 @@ lqas_exec_gg <- function(res) {
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
     c(C$navy, unname(LQ_BAND_COL[["80-100%"]]), unname(LQ_BAND_COL[["0-25%"]]), unname(LQ_BAND_COL[["0-25%"]])))
-  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.6, 1.25, 0.75))
-  bn <- modern_banner_gg(lq_banner_text(s), C$navy)
+  mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.3, 1.45, 0.8))
+  bn <- lq_banner_gg(lq_banner_text(s), C$navy)
   cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 5.65, 0.5))
 }
