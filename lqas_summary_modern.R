@@ -1,7 +1,7 @@
 # ============================================================
 # lqas_summary_modern.R
 # Executive page for the LQAS Summary Maps: one message, plain words.
-#   - headline: how many districts were rated "high" in most of their months
+#   - headline: how many districts were rated "high" in most of their rounds
 #   - the district map (same data as "District Summary Map") with a plain legend
 #   - countries ranked by the percentage of their districts in each band
 #   - cards: districts analysed, mostly high, rarely high, never high
@@ -11,6 +11,7 @@
 
 LQ_BANDS    <- c("80-100%", "50-80%", "25-50%", "0-25%")      # best first
 LQ_BAND_COL <- c("80-100%" = "#3D8B6E", "50-80%" = "#E3B23C", "25-50%" = "#E08A3C", "0-25%" = "#B83B5E")
+LQ_THRESHOLD <- 80   # a country reaches the threshold when at least 80% of its districts are mostly high
 LQ_BAND_LAB <- c("80-100%" = "80% or more", "50-80%" = "50 to 80%", "25-50%" = "25 to 50%", "0-25%" = "Under 25%")
 
 lq_period_text <- function(info) {
@@ -55,7 +56,7 @@ lq_map_panel <- function(res) {
   suppressMessages(
     res$map +
       ggplot2::scale_fill_manual(values = LQ_BAND_COL, breaks = LQ_BANDS, labels = unname(LQ_BAND_LAB[LQ_BANDS]),
-                                 name = "Months rated high", drop = FALSE,
+                                 name = "Rounds rated high", drop = FALSE,
                                  guide = ggplot2::guide_legend(nrow = 1, title.position = "left")) +
       ggplot2::labs(title = "Each district, by how often it was rated high") +
       ggplot2::theme_void() +
@@ -84,9 +85,13 @@ lq_country_panel <- function(s, max_rows = 26) {
   nm <- lq_nice(by$country)
   ggplot2::ggplot() +
     ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = "white", linewidth = 0.25) +
+    ggplot2::geom_segment(ggplot2::aes(x = LQ_THRESHOLD, xend = LQ_THRESHOLD, y = min(by$row) - 0.6, yend = max(by$row) + 0.62),
+                          colour = C$navy, linetype = "dashed", linewidth = 0.55) +
     ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = 2.7) +
     ggplot2::geom_text(data = by, ggplot2::aes(x = 101.5, y = row, label = format(n, big.mark = ",")), hjust = 0, size = 2.7, colour = C$muted) +
     ggplot2::annotate("text", x = 101.5, y = max(by$row) + 0.95, label = "districts", hjust = 0, size = 2.6, colour = C$muted) +
+    ggplot2::annotate("text", x = LQ_THRESHOLD, y = max(by$row) + 0.95, label = paste0(LQ_THRESHOLD, "% threshold"), size = 2.7,
+                      colour = C$navy, fontface = "bold") +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::scale_y_continuous(breaks = by$row, labels = nm, expand = ggplot2::expansion(add = c(0.6, 1.1))) +
     ggplot2::scale_x_continuous(limits = c(0, 126), breaks = NULL, expand = c(0, 0)) +
@@ -101,7 +106,7 @@ lq_country_panel <- function(s, max_rows = 26) {
 lq_headline <- function(s) {
   n80 <- as.integer(s$cnt[["80-100%"]])
   paste0(round(100 * n80 / s$n), "% of districts (", format(n80, big.mark = ","), " of ", format(s$n, big.mark = ","),
-         ") were rated high in at least 4 out of 5 months")
+         ") were rated high in at least 4 out of 5 rounds")
 }
 
 lq_banner_text <- function(s) {
@@ -110,7 +115,11 @@ lq_banner_text <- function(s) {
   nice <- lq_nice
   best <- by[order(-by[["p_80-100%"]], -by$n), , drop = FALSE]; best <- head(best[best[["p_80-100%"]] > 0, , drop = FALSE], 2)
   worst <- by[order(-by[["p_0-25%"]], -by$n), , drop = FALSE]; worst <- head(worst[worst[["p_0-25%"]] > 0, , drop = FALSE], 2)
-  a <- if (nrow(best)) paste0("Strongest: ", paste0(nice(best$country), " ", sprintf("%.0f%%", best[["p_80-100%"]]), collapse = ", "), " of districts mostly high")
+  reach <- s$by[s$by[["p_80-100%"]] >= LQ_THRESHOLD, , drop = FALSE]
+  reach <- reach[order(-reach[["p_80-100%"]]), , drop = FALSE]
+  shown <- head(nice(reach$country), 4)
+  a <- paste0(nrow(reach), " of ", nrow(s$by), " countries reach the ", LQ_THRESHOLD, "% threshold",
+              if (nrow(reach)) paste0(" (", paste(shown, collapse = ", "), if (nrow(reach) > 4) paste0(" +", nrow(reach) - 4, " more"), ")") else "")
   b <- if (nrow(worst)) paste0("Needs attention: ", paste0(nice(worst$country), " ", sprintf("%.0f%%", worst[["p_0-25%"]]), collapse = ", "), " rarely high")
   paste(c(a, b), collapse = "   |   ")
 }
@@ -122,7 +131,7 @@ lqas_exec_gg <- function(res) {
   if (is.null(s)) return(NULL)
   C <- REFUSAL_COL
   hd <- modern_header_gg(lq_headline(s),
-                         paste0(lq_period_text(res$period_info), "  |  each district is judged by the percentage of its LQAS months rated \"high\""))
+                         paste0(lq_period_text(res$period_info), "  |  each district is judged by the percentage of its LQAS rounds rated \"high\""))
   cnt <- s$cnt
   cd <- modern_cards_gg(
     c("Districts analysed", "Mostly high", "Rarely high", "Never rated high"),
@@ -130,8 +139,8 @@ lqas_exec_gg <- function(res) {
     c(paste0("in ", s$k, if (s$k == 1) " country" else " countries",
              if (!is.null(res$summary_metrics$total_districts) && res$summary_metrics$total_districts > s$n)
                paste0("\nmatched to the map (of ", format(res$summary_metrics$total_districts, big.mark = ","), ")") else ""),
-      paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of months"),
-      paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of months"),
+      paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
+      paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
     c(C$navy, C$green, C$red, C$red))
   mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.6, 1.25, 0.75))
