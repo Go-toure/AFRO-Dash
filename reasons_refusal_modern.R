@@ -188,7 +188,7 @@ refusal_banner_gg <- function(res) {
 }
 
 refusal_foot_gg <- function(res) {
-  note <- paste0("Refusal = children not vaccinated because of non-compliance in the LQAS sample, as a share of children sampled. ",
+  note <- paste0("Refusal = children not vaccinated because of non-compliance in the LQAS sample, as a percentage of children checked. ",
                  if (identical(res$geo_level, "campaign")) "Each bar is one campaign with LQAS results in the period." else paste0("Only the latest campaign with LQAS results is shown per ", sub("ies$", "y", sub("s$", "", refusal_unit_word(res))), "."),
                  if (res$n_all > res$n_shown) paste0(" The ", res$n_shown, " highest of ", res$n_all, " are shown.") else "",
                  "  Source: LQAS repository ", intToUtf8(169), " WHO AFRO GIS CENTRE, generated on ", format(Sys.Date(), "%Y-%m-%d"))
@@ -480,7 +480,7 @@ reason_full_gg <- function(p) {
     c(REFUSAL_COL$navy, unname(p$colours[p$A]), REFUSAL_COL$blue))
   act <- paste0(if (p$kind == "nc") "Priority: tackle " else "Priority: ", if (is.na(p$B)) reason_lower(p$A) else reason_join(reason_lower(p$A), p$B), ", starting with ", t3, ".")
   bn <- modern_banner_gg(act, REFUSAL_COL$navy)
-  ft <- modern_foot_gg(paste0("Reasons are counted over all LQAS campaigns in the period. Colours show the leading reason. \"Other\" is shown but never named as the leading reason."))
+  ft <- modern_foot_gg(paste0("Reasons are counted across all LQAS campaigns in the period. Colours show the most common reason. \"Other\" is shown but never named as the main reason."))
   mid <- cowplot::plot_grid(why, wh, cd, nrow = 1, rel_widths = c(1.0, 1.9, 0.8))
   cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
 }
@@ -546,7 +546,7 @@ reason_combined_gg <- function(filtered, types, geo_level, period_label, refusal
              if (!is.null(ab)) paste0("absence ", reason_lower(ab$label), " (", sprintf("%.0f%%", ab$pct), ")"),
              if (!is.null(nc)) paste0("refusal ", reason_lower(nc$label), " (", sprintf("%.0f%%", nc$pct), ")"))
   bn <- modern_banner_gg(paste0("Leading reasons: ", paste(parts, collapse = "; "), "."), if (ok) REFUSAL_COL$green else REFUSAL_COL$amber)
-  ft <- modern_foot_gg("Top five reasons of each reason type, as a share of the reasons recorded in that type, over all LQAS campaigns in the period. The leading named reason is highlighted.")
+  ft <- modern_foot_gg("The five most common reasons in each group, as a percentage of all reasons given in that group, across all LQAS campaigns in the period. The most common named reason is highlighted.")
   mid <- cowplot::plot_grid(grid, cd, nrow = 1, rel_widths = c(3.3, 1))
   cowplot::plot_grid(hd, mid, bn, ft, ncol = 1, rel_heights = c(0.85, 4.4, 0.5, 0.45))
 }
@@ -620,7 +620,7 @@ reasonrate_full_gg <- function(res) {
   cd <- modern_cards_gg(cl, cv, cs, cc)
   bn <- modern_banner_gg(paste0(res$label, " is highest in ", hi$name, " (", sprintf("%.1f%%", hi$rate), "); ",
                                 res$n_above, " of ", res$n_all, " ", unit, " are above the ", res$std, "% ", reason_level_word(res$geo_level), " threshold."), C$navy)
-  ft <- modern_foot_gg(paste0("Rate = children missed because of ", lab_l, " in the LQAS sample, as a share of children sampled. ",
+  ft <- modern_foot_gg(paste0("Rate = children missed because of ", lab_l, " in the LQAS sample, as a percentage of children checked. ",
                               if (identical(res$geo_level, "campaign")) "Each bar is one campaign with LQAS results in the period. " else paste0("Only the latest campaign with LQAS results is shown per ", unit1, ". "),
                               "Dashed line: ", res$std, "% ", reason_level_word(res$geo_level), " threshold (5% national, 3% province, 2% district); darker bars are above it. Dotted line: overall rate across all ", unit, ".",
                               if (res$n_all > res$n_shown) paste0(" The ", res$n_shown, " highest of ", res$n_all, " are shown.") else ""))
@@ -782,17 +782,24 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
   parts <- c(if (!is.null(tr)) paste0(reason_lower(tr$label), " leads overall"),
              if (!is.null(ab)) paste0(reason_lower(ab$label), " drives absence"),
              if (!is.null(nc)) paste0(reason_lower(nc$label), " drives refusals"))
-  ttl <- if (length(parts)) paste0(toupper(substr(parts[1], 1, 1)), substr(paste(parts, collapse = "; "), 2, 400)) else "Reasons by country"
   unit <- reason_unit_word(geo_level)
-  hd <- modern_header_gg(ttl, paste0("Share of each reason within its type, by ", sub("ies$", "y", sub("s$", "", unit)),
-                                     " (largest volume first)  |  ", period_label,
+  unit1 <- if (grepl("ies$", unit)) sub("ies$", "y", unit) else sub("s$", "", unit)
+  # plain chart title (the finding goes in the banner below)
+  ks <- intersect(c("traditional", "nc", "absence"), names(hds)[!vapply(hds, is.null, logical(1))])
+  nice <- c(traditional = "Traditional", nc = "Non-compliance", absence = "Absence")
+  ttl <- paste0(if (length(ks) >= 3 || !length(ks)) "Reasons children are missed" else paste0(paste(c(nice[ks[1]], tolower(nice[ks[-1]])), collapse = " and "), " reasons"),
+                ", by ", unit1)
+  hd <- modern_header_gg(ttl, paste0(period_label,
                                      "  |  darker = higher share, scale capped at ", REASON_HEAT_CAP, "%  |  outlined = leading named reason  |  grey = fewer than ", min_n, " reasons"))
   top3 <- paste(head(geo_names, 3), collapse = ", ")
-  bn <- modern_banner_gg(paste0("Largest volumes of reasons recorded: ", top3, ". Read each row against its n before drawing conclusions."), REFUSAL_COL$navy)
-  ft <- modern_foot_gg(paste0("Each cell is the share of that reason among the reasons recorded in the type for the ", sub("ies$", "y", sub("s$", "", unit)),
-                              " (a row adds up to 100% within a panel). n = reasons recorded. \"Other\" is shown in grey and is never marked as leading.",
-                              if (n_all > length(geos)) paste0(" The ", length(geos), " ", unit, " with the most reasons recorded (of ", n_all, ") are shown.") else ""))
+  bn_txt <- if (length(parts)) paste0(toupper(substr(parts[1], 1, 1)), substr(paste(parts, collapse = "; "), 2, 400), ".")
+            else "Read each row against its n before drawing conclusions."
+  bn <- modern_banner_gg(bn_txt, REFUSAL_COL$navy)
+  ft <- modern_foot_gg(paste0("How to read: each box is the percentage of the reasons given in that ", unit1, " for that group; a row adds up to 100% and darker means more common. ",
+                              "The outlined box is the most common reason. n is the number of reasons given; grey rows have few answers, so read them with care. ",
+                              "\"Other\" is never counted as the main reason. ",
+                              if (n_all > length(geos)) paste0("Showing the ", length(geos), " of ", n_all, " ", unit, " with the most answers: ", top3, ", and others.") else paste0("Most answers: ", top3, ".")))
   h_in <- 0.285 * length(geos) + 2.2
-  g <- cowplot::plot_grid(hd, grid, bn, ft, ncol = 1, rel_heights = c(0.85, h_in, 0.5, 0.45))
+  g <- cowplot::plot_grid(hd, grid, bn, ft, ncol = 1, rel_heights = c(0.85, h_in, 0.5, 0.6))
   list(plot = g, height = h_in + 1.8 + 0.2)
 }
