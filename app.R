@@ -8741,7 +8741,7 @@ server <- function(input, output, session) {
           req(scope_analysis())
           incProgress(0.6, detail = "Saving image...")
           ggsave(file, plot = scope_analysis()$plot,
-                 width = 14, height = 9, dpi = 300, limitsize = FALSE)
+                 width = 14, height = 9, dpi = 300, limitsize = FALSE, bg = "white")
           incProgress(1, detail = "Map saved!")
         }
       )

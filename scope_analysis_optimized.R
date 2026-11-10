@@ -317,7 +317,7 @@ generate_scope_plots_app <- function(scope_data,
       ggplot2::theme_void(base_size = 9) +
       ggplot2::labs(
         fill = "Vaccine Type",
-        title = paste("SIA Scope –", format(sel_date, "%b %Y"))
+        title = format(sel_date, "%b %Y")
       ) +
       ggplot2::theme(
         plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 3)),
@@ -351,8 +351,10 @@ generate_scope_plots_app <- function(scope_data,
   
   multiplot <- patchwork::wrap_plots(plots_list, ncol = ncol_value, nrow = nrow_value) +
     patchwork::plot_annotation(
+      title = "SIA Scope",
       caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date()),
       theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0, margin = ggplot2::margin(b = 4)),
         plot.caption = ggplot2::element_text(size = 9, hjust = 1, face = "italic", margin = ggplot2::margin(t = 8)),
         plot.margin = ggplot2::margin(5, 5, 5, 5)
       )
