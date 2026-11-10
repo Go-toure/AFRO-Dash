@@ -6454,12 +6454,6 @@ ui_for_block <- function() dashboardPage(
                 column(
                   width = 12,
             
-                  fluidRow(
-                    valueBoxOutput("lqas_total_districts", 4),
-                    valueBoxOutput("lqas_high_performance", 4),
-                    valueBoxOutput("lqas_low_performance", 4)
-                  ),
-            
                   box(
                     title = tags$div(icon("globe-africa"), "LQAS Summary Maps"),
                     width = 12,
