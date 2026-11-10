@@ -12,7 +12,31 @@
 DISPUTED_FILL   <- "grey30"
 DISPUTED_BORDER <- "grey35"
 
+# Same thin, light-grey borders as the Executive Summary map: every plain outline
+# layer (Africa background, AFRO countries, country borders) gets the same style.
+# Layers that carry data (coloured by a value) and the white province lines are left alone.
+soften_map_borders <- function(p, border = DISPUTED_BORDER, linewidth = 0.2) {
+  tryCatch({
+    if (!inherits(p, "ggplot")) return(p)
+    for (i in seq_along(p$layers)) {
+      l <- p$layers[[i]]
+      ap <- l$aes_params
+      if (!inherits(l$geom, "GeomSf") || length(l$mapping) > 0) next
+      if (!inherits(l$data, "sf")) next
+      if (!is.character(ap$colour) || is.na(ap$colour) || ap$colour %in% c("white", "grey80")) next
+      new <- if (is.null(ap$fill)) {
+        ggplot2::geom_sf(data = l$data, colour = border, linewidth = linewidth, inherit.aes = FALSE, show.legend = FALSE)
+      } else {
+        ggplot2::geom_sf(data = l$data, fill = ap$fill, colour = border, linewidth = linewidth, inherit.aes = FALSE, show.legend = FALSE)
+      }
+      p$layers[[i]] <- new[[1]]
+    }
+    p
+  }, error = function(e) p)
+}
+
 add_disputed_area <- function(p, fill = DISPUTED_FILL, border = DISPUTED_BORDER, linewidth = 0.2) {
+  p <- soften_map_borders(p, border = border, linewidth = linewidth)
   tryCatch({
     if (!inherits(p, "ggplot")) return(p)
 
