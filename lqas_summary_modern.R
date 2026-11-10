@@ -24,12 +24,27 @@ lq_period_text <- function(info) {
 }
 
 lq_summary <- function(res) {
-  # every district that has LQAS results (not only the ones that can be drawn on the map)
-  d <- res$performance_data
-  if (is.null(d) || !nrow(d) || !all(c("country", "High.perf.summary", "high_performance_percentage") %in% names(d))) d <- res$map_district_set
-  if (is.null(d) || !nrow(d)) return(NULL)
+  # Every district with LQAS results (not only the ones drawn on the map), counted the same way
+  # as the cards above the maps: one district = country + district name, judged over all its rounds.
+  fd <- res$filtered_data
   n_map <- if (!is.null(res$map_district_set)) nrow(res$map_district_set) else NA_integer_
-  d <- as.data.frame(d)
+  if (!is.null(fd) && nrow(fd) && all(c("country", "district", "performance") %in% names(fd))) {
+    fd <- as.data.frame(fd)
+    fd <- fd[!is.na(fd$performance), , drop = FALSE]
+    key <- paste(fd$country, fd$district, sep = "||")
+    tot <- tapply(rep(1L, length(key)), key, sum)
+    hi  <- tapply(fd$performance == "high", key, sum)
+    d <- data.frame(country = sub("\\|\\|.*$", "", names(tot)), district = sub("^.*?\\|\\|", "", names(tot)),
+                    total_LQAS = as.integer(tot), high_performance = as.integer(hi[names(tot)]), stringsAsFactors = FALSE)
+    d$high_performance_percentage <- 100 * d$high_performance / d$total_LQAS
+    d$High.perf.summary <- ifelse(d$high_performance_percentage < 25, "0-25%",
+                           ifelse(d$high_performance_percentage < 50, "25-50%",
+                           ifelse(d$high_performance_percentage < 80, "50-80%", "80-100%")))
+  } else {
+    d <- res$map_district_set
+    if (is.null(d) || !nrow(d)) return(NULL)
+    d <- as.data.frame(d)
+  }
   d$band <- factor(as.character(d$High.perf.summary), levels = LQ_BANDS)
   d <- d[!is.na(d$band), , drop = FALSE]
   if (!nrow(d)) return(NULL)
