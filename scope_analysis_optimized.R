@@ -327,7 +327,7 @@ generate_scope_plots_app <- function(scope_data,
         legend.box.margin = ggplot2::margin(0, 0, 0, -3)
       )
     
-    plots_list[[length(plots_list) + 1]] <- p
+    plots_list[[length(plots_list) + 1]] <- add_disputed_area(p)
   }
   
   if (length(plots_list) == 0) {
@@ -769,6 +769,7 @@ generate_scope_summary_map <- function(scope_data,
       legend.title = ggplot2::element_text(size = 10, face = "bold"),
       legend.text = ggplot2::element_text(size = 9)
     )
+  p <- add_disputed_area(p)
 
   # ---- 7) Combined map + footnote CARD, for downloads ----
   # The on-screen tab shows the footnote as a styled amber card below the

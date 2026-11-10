@@ -855,7 +855,7 @@ district_lqas_performance <- function(data,
         legend.key.width = ggplot2::unit(0.15, "cm")
       )
     
-    plots_list[[length(plots_list) + 1]] <- p
+    plots_list[[length(plots_list) + 1]] <- add_disputed_area(p)
   }
   
   if (length(plots_list) == 0) {

@@ -282,6 +282,11 @@ safe_package_load(required_packages)
 # source("scope_analysis.R", local = TRUE)
 
 # With this:
+if (file.exists("map_disputed_area.R")) {
+  source("map_disputed_area.R")
+} else {
+  add_disputed_area <- function(p, ...) p   # helper file missing: maps stay as they were
+}
 source("district_performance_optimized.R")
 source("scope_analysis_optimized.R")
 source("lqas_summary_map_optimized.R")

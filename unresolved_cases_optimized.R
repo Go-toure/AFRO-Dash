@@ -455,7 +455,7 @@ generate_unresolved_NC_plots_DS_optimized <- function(data,
       })
       
       if (!is.null(p)) {
-        month_plots[[length(month_plots) + 1]] <- p
+        month_plots[[length(month_plots) + 1]] <- add_disputed_area(p)
       }
     }
     

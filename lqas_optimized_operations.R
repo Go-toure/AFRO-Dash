@@ -264,7 +264,7 @@ generate_optimized_lqas_map <- function(filtered_performance,
     )
   
   cat("  Map generation completed\n")
-  return(map_plot)
+  return(add_disputed_area(map_plot))
 }
 
 # ============================================================

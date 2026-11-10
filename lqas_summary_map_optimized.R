@@ -961,6 +961,7 @@ generate_lqas_summary_map_optimized <- function(data,
     add_district_labels_if_single_country(summary_map, joined, show_district_labels, district_selection),
     error = function(e) summary_map
   )
+  summary_map <- add_disputed_area(summary_map)
   
   # -----------------------------
   # Table
@@ -1062,6 +1063,8 @@ generate_lqas_summary_map_optimized <- function(data,
         )
     }
     
+    p0 <- add_disputed_area(p0)
+
     tryCatch(
       add_province_labels_to_map(
         p = p0,
