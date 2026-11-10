@@ -316,7 +316,7 @@ generate_scope_plots_app <- function(scope_data,
     p <- p +
       ggplot2::theme_void(base_size = 9) +
       ggplot2::labs(
-        fill = "Vaccine Type",
+        fill = "Antigen(s)",
         title = format(sel_date, "%b %Y")
       ) +
       ggplot2::theme(
@@ -758,7 +758,7 @@ generate_scope_summary_map <- function(scope_data,
       labels = legend_labels,
       na.translate = FALSE,
       drop = FALSE,
-      name = "Vaccine Type"
+      name = "Antigen(s)"
     ) +
     ggplot2::theme_void(base_size = 11) +
     ggplot2::labs(
