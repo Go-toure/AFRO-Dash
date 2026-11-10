@@ -10,7 +10,8 @@
 # ============================================================
 
 LQ_BANDS    <- c("80-100%", "50-80%", "25-50%", "0-25%")      # best first
-LQ_BAND_COL <- c("80-100%" = "#3D8B6E", "50-80%" = "#E3B23C", "25-50%" = "#E08A3C", "0-25%" = "#B83B5E")
+# the standard LQAS colours (same as the District Summary Map): green4, yellow, tomato, red4
+LQ_BAND_COL <- c("80-100%" = "green4", "50-80%" = "yellow", "25-50%" = "tomato", "0-25%" = "red4")
 LQ_THRESHOLD <- 80   # a country reaches the threshold when at least 80% of its districts are mostly high
 LQ_BAND_LAB <- c("80-100%" = "80% or more", "50-80%" = "50 to 80%", "25-50%" = "25 to 50%", "0-25%" = "Under 25%")
 
@@ -81,7 +82,7 @@ lq_country_panel <- function(s, max_rows = 26) {
   }))
   rect$col <- LQ_BAND_COL[rect$band]
   rect$lab <- ifelse(rect$p >= 9, sprintf("%.0f", rect$p), "")
-  rect$txt <- ifelse(rect$band == "50-80%", C$text, "white")
+  rect$txt <- ifelse(rect$band %in% c("50-80%", "25-50%"), C$text, "white")
   nm <- lq_nice(by$country)
   ggplot2::ggplot() +
     ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = "white", linewidth = 0.25) +
@@ -142,7 +143,7 @@ lqas_exec_gg <- function(res) {
       paste0(lq_pct(cnt[["80-100%"]], s$n), " of districts\nhigh in 80% or more of rounds"),
       paste0(lq_pct(cnt[["0-25%"]], s$n), " of districts\nhigh in under 25% of rounds"),
       paste0("always rated high: ", format(s$always, big.mark = ","))),
-    c(C$navy, C$green, C$red, C$red))
+    c(C$navy, unname(LQ_BAND_COL[["80-100%"]]), unname(LQ_BAND_COL[["0-25%"]]), unname(LQ_BAND_COL[["0-25%"]])))
   mid <- cowplot::plot_grid(lq_map_panel(res), lq_country_panel(s), cd, nrow = 1, rel_widths = c(1.6, 1.25, 0.75))
   bn <- modern_banner_gg(lq_banner_text(s), C$navy)
   cowplot::plot_grid(hd, mid, bn, ncol = 1, rel_heights = c(0.85, 5.65, 0.5))
