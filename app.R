@@ -1371,6 +1371,20 @@ shapefiles <- lapply(shapefiles, function(l) {
   if (!is.null(l) && "ADM0_NAME" %in% names(l)) l$ADM0_NAME <- afrogdb_country_to_data(l$ADM0_NAME)
   l
 })
+# The pipelines now output the geodatabase spelling (COTE D'IVOIRE, GUINEA BISSAU) and geo_code. Bring the
+# data to the spelling used by the shapes above, whichever spelling the data file has, so both work.
+afrogdb_fix_country_col <- function(df) {
+  if (is.null(df) || !is.data.frame(df)) return(df)
+  for (cn in intersect(c("country", "Country", "COUNTRY"), names(df))) {
+    v <- df[[cn]]
+    if (is.factor(v)) df[[cn]] <- factor(afrogdb_country_to_data(as.character(v)), levels = unique(afrogdb_country_to_data(levels(v))))
+    else if (is.character(v)) df[[cn]] <- afrogdb_country_to_data(v)
+  }
+  df
+}
+if (exists("dat", inherits = FALSE)) dat <- afrogdb_fix_country_col(dat)
+if (exists("scope", inherits = FALSE)) scope <- afrogdb_fix_country_col(scope)
+if (exists("admin_data", inherits = FALSE)) admin_data <- afrogdb_fix_country_col(admin_data)
 all_countries <- shapefiles$countries
 all_provinces <- shapefiles$provinces
 all_districts <- shapefiles$districts

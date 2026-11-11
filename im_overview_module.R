@@ -57,6 +57,7 @@ im_load_data <- function(path = IM_DATA_FILE) {
   published <- attr(df, "im_published_at")
   df <- as.data.frame(df)
   names(df) <- tolower(names(df))
+  if (exists("afrogdb_fix_country_col", mode = "function")) df <- afrogdb_fix_country_col(df)   # geodatabase spelling -> app spelling
   if ("region" %in% names(df) && !"province" %in% names(df)) names(df)[names(df) == "region"] <- "province"
   if ("vaccine.type" %in% names(df) && !"vaccine_type" %in% names(df)) names(df)[names(df) == "vaccine.type"] <- "vaccine_type"
   if (!"cv" %in% names(df) && all(c("u5_fm", "u5_present") %in% names(df)))

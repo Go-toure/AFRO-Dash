@@ -252,6 +252,7 @@ ims_load <- function(path = file.path("input", "AFRO_IM_data.rds")) {
   if (is.null(.ims_cache$data) || !identical(.ims_cache$mtime, mt)) {
     d <- tryCatch(readRDS(path), error = function(e) NULL)
     .ims_cache$data <- if (is.null(d)) NULL else as.data.frame(d, stringsAsFactors = FALSE)
+    if (!is.null(.ims_cache$data) && exists("afrogdb_fix_country_col", mode = "function")) .ims_cache$data <- afrogdb_fix_country_col(.ims_cache$data)
     .ims_cache$mtime <- mt
   }
   d <- .ims_cache$data   # unfiltered, shared; narrowed down to the visitor's block
