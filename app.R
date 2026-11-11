@@ -1351,6 +1351,26 @@ load_shapefiles_safely <- function() {
 }
 
 shapefiles <- load_shapefiles_safely()
+
+# ---- Bridge: AFROGDB country spelling -> the spelling the data files use ----
+# The shapes now come from the AFRO geodatabase (AFRO-Geo-Reference repo), which spells two countries
+# differently from the LQAS / IM / SIA / admin data (COTE D'IVOIRE, GUINEA BISSAU). Until the pipelines
+# output the AFROGDB names (and geo codes), the shapes are renamed to the data spelling here, so every
+# join, block list and country table in the app keeps working unchanged.
+# Remove this block when the pipelines are aligned with the geodatabase.
+AFROGDB_TO_DATA_COUNTRY <- c("COTE D'IVOIRE" = "COTE D IVOIRE", "GUINEA BISSAU" = "GUINEA-BISSAU")
+afrogdb_country_to_data <- function(x) {
+  if (is.null(x)) return(x)
+  y <- as.character(x)
+  y <- gsub("[\u2018\u2019\u02bc`]", "'", y)
+  hit <- match(y, names(AFROGDB_TO_DATA_COUNTRY))
+  y[!is.na(hit)] <- unname(AFROGDB_TO_DATA_COUNTRY)[hit[!is.na(hit)]]
+  y
+}
+shapefiles <- lapply(shapefiles, function(l) {
+  if (!is.null(l) && "ADM0_NAME" %in% names(l)) l$ADM0_NAME <- afrogdb_country_to_data(l$ADM0_NAME)
+  l
+})
 all_countries <- shapefiles$countries
 all_provinces <- shapefiles$provinces
 all_districts <- shapefiles$districts
@@ -1398,6 +1418,8 @@ AMBIGUOUS_DISTRICT_PAIRS <- if (!is.null(ambiguous_pairs_path)) {
       "(run scripts\\prebuild_shapefiles.R to do this offline and speed up cold start)\n")
   compute_ambiguous_district_pairs(all_districts)
 }
+# prebuilt pairs come from the geodatabase spelling (see the bridge above): same country prefix as the data
+AMBIGUOUS_DISTRICT_PAIRS <- sub("^COTE DIVOIRE\\|\\|", "COTE D IVOIRE||", AMBIGUOUS_DISTRICT_PAIRS)
 cat("District disambiguation:", length(AMBIGUOUS_DISTRICT_PAIRS),
     "district name(s) recur in more than one province within their country -- these require a province match to join correctly; all other districts are unaffected.\n")
 
