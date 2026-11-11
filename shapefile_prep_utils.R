@@ -112,7 +112,7 @@ preprocess_shapefile <- function(data, layer_name = NULL, already_simplified = F
   # Keep WORLD_CONTINENTS and WHO_REGION (used to derive the Africa/AFRO
   # background layers in the District Performance and LQAS Summary Map
   # views) alongside the admin-name columns actually used for joins.
-  data <- data %>% dplyr::select(dplyr::any_of(c("ADM0_NAME", "ADM1_NAME", "ADM2_NAME", "WORLD_CONTINENTS", "WHO_REGION", "geometry")))
+  data <- data %>% dplyr::select(dplyr::any_of(c("ADM0_NAME", "ADM1_NAME", "ADM2_NAME", "WORLD_CONTINENTS", "WHO_REGION", "GEO_CODE", "geometry")))
 
   if (already_simplified) {
     cat("   ℹ️", label, "loaded pre-simplified (prebuilt offline) -- skipping runtime ms_simplify()\n")
