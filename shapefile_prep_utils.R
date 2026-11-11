@@ -104,7 +104,7 @@ build_district_match_key <- function(country, district, province, ambiguous_pair
 # an already-simplified layer. The column-select is still applied either
 # way; it's cheap (no geometry work) and guards against a shapefile that
 # was regenerated upstream with extra columns.
-preprocess_shapefile <- function(data, layer_name = NULL, already_simplified = FALSE) {
+preprocess_shapefile <- function(data, layer_name = NULL, already_simplified = FALSE, keep = 0.15) {
   if (is.null(data)) return(NULL)
   label <- layer_name %||% "shapefile"
   if (!inherits(data, "sf")) return(data)
@@ -148,7 +148,7 @@ preprocess_shapefile <- function(data, layer_name = NULL, already_simplified = F
     n_empty_before <- sum(sf::st_is_empty(data))
 
     simplified <- tryCatch(
-      rmapshaper::ms_simplify(data, keep = 0.15, keep_shapes = TRUE, sys = FALSE),
+      rmapshaper::ms_simplify(data, keep = keep, keep_shapes = TRUE, sys = FALSE),
       error = function(e) {
         cat("   ⚠️ Simplification of", label, "failed (", e$message, ") -- keeping full resolution\n")
         NULL
