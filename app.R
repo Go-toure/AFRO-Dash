@@ -927,6 +927,23 @@ preprocess_scope_data <- function(data) {
 
 # preprocess_shapefile() now lives in shapefile_prep_utils.R (sourced above).
 
+# Official polio coverage = TotalNbrVaccPolio / PopPolio (PopPolio as adjusted by the admin engine; see
+# Admin_data_coadministration/KNOWLEDGE.md). The stored CVPolio is the country's own value and can differ by
+# more than the portal's 2-point tolerance, so the dashboard uses the official figure. The stored value is kept
+# as CVPolio_reported and is used only where the official one cannot be computed (no target or no vaccinated count).
+official_polio_coverage <- function(d) {
+  if (is.null(d) || !all(c("PopPolio", "TotalNbrVaccPolio", "CVPolio") %in% names(d))) return(d)
+  pop <- suppressWarnings(as.numeric(d$PopPolio))
+  vac <- suppressWarnings(as.numeric(d$TotalNbrVaccPolio))
+  cv  <- suppressWarnings(as.numeric(d$CVPolio))
+  off <- ifelse(!is.na(pop) & pop > 0 & !is.na(vac), vac / pop, NA_real_)
+  d$CVPolio_reported <- cv
+  d$CVPolio <- ifelse(is.na(off), cv, off)
+  n_diff <- sum(!is.na(off) & !is.na(cv) & abs(off - cv) > 0.02)
+  cat("   Official coverage (vaccinated / PopPolio) applied; the stored CVPolio differed by more than 2 points in", n_diff, "rows\n")
+  d
+}
+
 preprocess_admin_data <- function(data) {
   if (is.null(data)) return(NULL)
   
@@ -973,6 +990,9 @@ preprocess_admin_data <- function(data) {
   if ("CVPolio" %in% names(result) && is.character(result$CVPolio)) {
     result$CVPolio <- as.numeric(result$CVPolio)
   }
+  
+  # --- Official coverage: vaccinated / PopPolio (not the stored CVPolio)
+  result <- official_polio_coverage(result)
   
   # --- Keep remaining optimizations but be careful with date columns
   # Don't let optimize_data_types convert our already-converted dates

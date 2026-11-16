@@ -142,13 +142,19 @@ snap_load_all <- function(files = SNAP_FILES) {
   }
   num <- function(x) suppressWarnings(as.numeric(as.character(x)))
   chr <- function(x) as.character(x)
+  # official polio coverage = vaccinated / PopPolio; the stored CVPolio only where that cannot be computed
+  snap_official_cv <- function(d) {
+    pop <- if ("PopPolio" %in% names(d)) num(d$PopPolio) else rep(NA_real_, nrow(d))
+    vac <- num(d$TotalNbrVaccPolio); cv <- num(d$CVPolio)
+    ifelse(!is.na(pop) & pop > 0 & !is.na(vac), vac / pop, cv)
+  }
 
   lq <- rd(files$lqas, c("country", "province", "district", "response", "roundNumber", "round_start_date",
                          "total_sampled", "total_vaccinated", "number_clusters"))
   im <- rd(files$im, c("country", "province", "district", "response", "roundnumber", "round_start_date",
                        "number_of_hh_visited", "u5_present", "u5_fm"))
   ad <- rd(files$admin, c("Country", "Province", "District", "Response", "Round_Add", "Vaccine_type", "SIA_date",
-                          "TotalNbrVaccPolio", "CVPolio"))
+                          "TotalNbrVaccPolio", "CVPolio", "PopPolio"))
   im_pub <- tryCatch(attr(readRDS(files$im), "im_published_at"), error = function(e) NULL)
 
   # reference country names = the repository spelling
@@ -186,7 +192,7 @@ snap_load_all <- function(files = SNAP_FILES) {
       country = snap_canon_country(ad$Country, ref), province = chr(ad$Province), district = chr(ad$District),
       response = trimws(chr(ad$Response)), round = toupper(chr(ad$Round_Add)),
       fam = snap_vfam(ad$Vaccine_type), date = suppressWarnings(as.Date(ad$SIA_date)),
-      doses = num(ad$TotalNbrVaccPolio), cv = num(ad$CVPolio), stringsAsFactors = FALSE)
+      doses = num(ad$TotalNbrVaccPolio), cv = snap_official_cv(ad), stringsAsFactors = FALSE)
     a$year <- yr(a$date)
     a$month <- format(a$date, "%Y-%m")
     a$ckey <- snap_keyp(a$country, a$response)
