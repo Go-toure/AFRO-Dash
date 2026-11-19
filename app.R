@@ -303,7 +303,7 @@ if (IMSET_AVAILABLE) {
 
 # preprocess_shapefile() / normalize_key_text() / compute_ambiguous_district_pairs()
 # / build_district_match_key() now live in shapefile_prep_utils.R, shared with
-# scripts/prebuild_shapefiles.R in the GPEI scope pipeline (REPOSITORIES\input\scope)
+# scripts/prebuild_shapefiles.R in the GPEI scope pipeline (Gith_repositories\scope)
 # so the offline prebuild step and this app can never silently drift apart. See that
 # file for why this split exists -- short version: none of that logic depends on the
 # survey data below, only on the shapefiles themselves, so it's safe (and much
