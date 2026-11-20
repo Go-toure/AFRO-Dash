@@ -290,17 +290,20 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
     dplyr::group_by(mlab) |> dplyr::mutate(k = dplyr::row_number()) |> dplyr::ungroup()
   nm <- ifelse(d$Country == "DRC", "Democratic Republic of the Congo",
         ifelse(d$Country == "CAR", "Central African Republic", tools::toTitleCase(tolower(d$Country))))
-  d$name <- paste0(stringr::str_wrap(nm, 12), "\n", format(round(d$m, 1), nsmall = 1), " M")
+  # short names inside the boxes so the text can be large (the full name is in the tooltip)
+  short <- ifelse(d$Country == "DRC", "DRC", ifelse(d$Country == "CAR", "CAR",
+           ifelse(grepl("TANZANIA", toupper(d$Country)), "Tanzania", nm)))
+  d$name <- paste0(stringr::str_wrap(short, 13), "\n", format(round(d$m, 1), nsmall = 1), " M")
   d$tip <- paste0(nm, " | ", format(d$floor_date, "%B %Y"), "\n", format(round(d$m, 2), nsmall = 2), " M vaccinated\n", d$vacc)
   d$txt <- ifelse(d$bin %in% c("Under 1 M", "1 to 5 M"), "dark", "light")
   cnt <- d |> dplyr::group_by(mlab) |> dplyr::summarise(nc = dplyr::n(), tot = sum(m), .groups = "drop")
   fills <- setNames(vapply(ADMIN_VACC_BINS, `[[`, "", "col"), vapply(ADMIN_VACC_BINS, `[[`, "", "label"))
   ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = bin, text = tip)) +
     ggplot2::geom_tile(width = 0.94, height = 0.92) +
-    ggplot2::geom_text(ggplot2::aes(label = name, colour = txt), size = 2.35, lineheight = 0.88,
+    ggplot2::geom_text(ggplot2::aes(label = name, colour = txt), size = 3.6, lineheight = 0.9,
                        fontface = "bold", show.legend = FALSE) +
     ggplot2::geom_text(data = cnt, ggplot2::aes(mlab, nc + 0.9, label = paste0(format(round(tot, 1), nsmall = 1), " M")),
-                       inherit.aes = FALSE, size = 3.1, fontface = "bold", colour = C$navy) +
+                       inherit.aes = FALSE, size = 4.4, fontface = "bold", colour = C$navy) +
     ggplot2::scale_colour_manual(values = c(dark = C$text, light = "white"), guide = "none") +
     ggplot2::scale_fill_manual(values = fills, drop = FALSE, name = NULL) +
     ggplot2::scale_x_discrete(drop = FALSE) +
@@ -317,7 +320,7 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
       plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9.5),
       plot.caption = ggplot2::element_text(colour = C$muted, size = 8, hjust = 0),
       plot.title.position = "plot", plot.caption.position = "plot",
-      axis.text.x = ggplot2::element_text(colour = C$text, size = 10, face = "bold"),
+      axis.text.x = ggplot2::element_text(colour = C$text, size = 12, face = "bold"),
       panel.grid = ggplot2::element_blank(),
       legend.position = if (show_legend) "top" else "none", legend.justification = "left",
       plot.margin = ggplot2::margin(10, 14, 8, 10),
@@ -326,7 +329,7 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
 
 admin_vacc_height <- function(doses_df) {
   d <- admin_vacc_data(doses_df)
-  max(4, 0.52 * max(table(d$floor_date)) + 2.2)
+  max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
 admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + 1.0
 
