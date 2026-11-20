@@ -1820,7 +1820,7 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
       tile("High awareness + good coverage", paste0(round(100 * nq[4] / n), "%"),
            paste0(format(nq[4], big.mark = ","), " of ", format(n, big.mark = ","), " districts"), "#3D8B6E"),
       tile("Low awareness and low coverage", format(nq[1], big.mark = ","),
-           "districts (awareness below 80%, coverage below 90%): priority for social mobilisation", "#E08A3C"),
+           "districts (awareness below 80%, coverage below 90%): priority for social mobilisation", "#B83B5E"),
       tile("High awareness but low coverage", format(nq[3], big.mark = ","),
            "districts (awareness 80% or more, coverage below 90%): check operations and microplans", "#7A5C99"),
       if (!is.null(top) && length(top))
