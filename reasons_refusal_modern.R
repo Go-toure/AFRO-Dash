@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # Reasons Analysis -- "Refusals vs standard" view (modern)
 # Share of sampled children missed through refusal (non-compliance), latest campaign with LQAS
@@ -115,17 +118,17 @@ refusal_chart_gg <- function(res) {
   xmax <- max(res$std * 1.6, max(d$rate) * 1.25)
   ggplot2::ggplot(d, ggplot2::aes(rate, name, fill = ok)) +
     ggplot2::geom_col(width = 0.72) +
-    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.15, fontface = "bold", colour = C$text, size = 3.4) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.15, fontface = "bold", colour = C$text, size = tsz(3.4)) +
     ggplot2::geom_vline(xintercept = res$std, colour = C$red, linetype = "dashed", linewidth = 0.7) +
     ggplot2::annotate("text", x = res$std, y = -Inf, label = if (!is.null(res$thr_label)) res$thr_label else paste0("standard: ", res$std, "%"), hjust = -0.1, vjust = -0.8,
-                      colour = C$red, size = 3.3) +
+                      colour = C$red, size = tsz(3.3)) +
     ggplot2::scale_fill_manual(values = c(`TRUE` = C$green, `FALSE` = C$red), guide = "none") +
     ggplot2::scale_x_continuous(limits = c(0, xmax), labels = function(x) paste0(x, "%"), expand = c(0, 0)) +
     ggplot2::labs(x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(panel.grid.major.y = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(),
                    panel.grid.major.x = ggplot2::element_line(colour = "#E9EEEA"),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10)),
                    axis.text.x = ggplot2::element_text(colour = C$muted),
                    plot.margin = ggplot2::margin(6, 14, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
@@ -147,9 +150,9 @@ refusal_cards_gg <- function(res) {
   ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.03, ymax = y1 - 0.03), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.04, ymin = y0 + 0.03, ymax = y1 - 0.03, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.26, label = toupper(label)), hjust = 0, size = 3.2, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = 9, fontface = "bold") +
-    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.2, label = sub), hjust = 0, size = 3, colour = C$muted) +
+    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.26, label = toupper(label)), hjust = 0, size = tsz(3.2), fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = tsz(9), fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.2, label = sub), hjust = 0, size = tsz(3), colour = C$muted) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 2), expand = FALSE) +
     ggplot2::theme_void() +
@@ -163,11 +166,11 @@ refusal_header_gg <- function(res) {
   lg <- data.frame(x = c(7.6, 10.75), label = c(paste0("Within the ", wrd, " (", res$std, "% or less)"), paste0("Above the ", wrd)),
                    col = c(C$green, C$red), stringsAsFactors = FALSE)
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = refusal_title(), hjust = 0, size = 5.3,
+    ggplot2::annotate("text", x = 0.02, y = 0.72, label = refusal_title(), hjust = 0, size = tsz(5.3),
                       fontface = "bold", family = "serif", colour = C$navy) +
-    ggplot2::annotate("text", x = 0.02, y = 0.2, label = refusal_subtitle(res), hjust = 0, size = 3.2, colour = C$muted) +
+    ggplot2::annotate("text", x = 0.02, y = 0.2, label = refusal_subtitle(res), hjust = 0, size = tsz(3.2), colour = C$muted) +
     ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
-    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = 3.2, colour = C$text) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = tsz(3.2), colour = C$text) +
     ggplot2::scale_fill_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
@@ -180,7 +183,7 @@ refusal_banner_gg <- function(res) {
   col <- if (res$n_ok == res$n_all) C$green else C$amber
   ggplot2::ggplot() +
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col) +
-    ggplot2::annotate("text", x = 0.5, y = 0.5, label = refusal_banner_text(res), colour = "white", fontface = "bold", size = 4.4) +
+    ggplot2::annotate("text", x = 0.5, y = 0.5, label = refusal_banner_text(res), colour = "white", fontface = "bold", size = tsz(4.4)) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -194,7 +197,7 @@ refusal_foot_gg <- function(res) {
                  "  Source: LQAS repository ", intToUtf8(169), " WHO AFRO GIS CENTRE, generated on ", format(Sys.Date(), "%Y-%m-%d"))
   note <- paste(strwrap(note, 175), collapse = "\n")
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.005, y = 0.5, label = note, hjust = 0, size = 2.7, colour = REFUSAL_COL$muted) +
+    ggplot2::annotate("text", x = 0.005, y = 0.5, label = note, hjust = 0, size = tsz(2.7), colour = REFUSAL_COL$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(0, 14, 4, 10))
@@ -337,9 +340,9 @@ modern_cards_gg <- function(label, value, sub, col) {
   ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.04, ymax = y1 - 0.04), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.04, ymin = y0 + 0.04, ymax = y1 - 0.04, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.2, label = toupper(label)), hjust = 0, size = 3, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = 8, fontface = "bold") +
-    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.19, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.95) +
+    ggplot2::geom_text(ggplot2::aes(0.09, y1 - 0.2, label = toupper(label)), hjust = 0, size = tsz(3), fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(0.09, (y0 + y1) / 2 - 0.02, label = value, colour = col), hjust = 0, size = tsz(8), fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(0.09, y0 + 0.19, label = sub), hjust = 0, size = tsz(2.9), colour = C$muted, lineheight = 0.95) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, n), expand = FALSE) +
     ggplot2::theme_void() +
@@ -349,8 +352,8 @@ modern_cards_gg <- function(label, value, sub, col) {
 modern_header_gg <- function(title, subtitle) {
   C <- REFUSAL_COL
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = title, hjust = 0, size = 5.3, fontface = "bold", family = "serif", colour = C$navy) +
-    ggplot2::annotate("text", x = 0.02, y = 0.2, label = subtitle, hjust = 0, size = 3.2, colour = C$muted) +
+    ggplot2::annotate("text", x = 0.02, y = 0.72, label = title, hjust = 0, size = tsz(5.3), fontface = "bold", family = "serif", colour = C$navy) +
+    ggplot2::annotate("text", x = 0.02, y = 0.2, label = subtitle, hjust = 0, size = tsz(3.2), colour = C$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 14, 0, 10))
@@ -359,7 +362,7 @@ modern_header_gg <- function(title, subtitle) {
 modern_banner_gg <- function(text, col) {
   ggplot2::ggplot() +
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col) +
-    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = 4.2) +
+    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = tsz(4.2)) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(2, 14, 4, 10))
@@ -368,7 +371,7 @@ modern_banner_gg <- function(text, col) {
 modern_foot_gg <- function(note) {
   note <- paste(strwrap(paste0(note, "  Source: LQAS repository ", intToUtf8(169), " WHO AFRO GIS CENTRE, generated on ", format(Sys.Date(), "%Y-%m-%d")), 175), collapse = "\n")
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.005, y = 0.5, label = note, hjust = 0, size = 2.7, colour = REFUSAL_COL$muted) +
+    ggplot2::annotate("text", x = 0.005, y = 0.5, label = note, hjust = 0, size = tsz(2.7), colour = REFUSAL_COL$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(0, 14, 4, 10))
@@ -428,15 +431,15 @@ reason_why_gg <- function(p, title_txt) {
   xmax <- max(d$pct) * 1.5
   ggplot2::ggplot(d, ggplot2::aes(pct, label, fill = col)) +
     ggplot2::geom_col(width = 0.68) +
-    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = 4) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = tsz(4)) +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
     ggplot2::labs(title = title_txt, subtitle = paste0(format(p$total, big.mark = ",", trim = TRUE), " reasons recorded"), x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10.5),
-                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 12.5),
-                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10.5)),
+                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(12.5)),
+                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9)),
                    plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
@@ -448,16 +451,16 @@ reason_where_gg <- function(p, title_txt) {
   d$lab <- paste0(format(d$n, big.mark = ",", trim = TRUE), " (", sprintf("%.0f%%", d$share), ")")
   ggplot2::ggplot(d, ggplot2::aes(n, name, fill = col)) +
     ggplot2::geom_col(width = 0.68) +
-    ggplot2::geom_text(ggplot2::aes(label = lab), hjust = -0.1, fontface = "bold", colour = C$text, size = 3.6) +
-    ggplot2::geom_text(ggplot2::aes(x = max(n) * 1.95, label = paste0(lead, " ", sprintf("%.0f%%", lead_pct))), hjust = 0, colour = C$muted, size = 3.4) +
+    ggplot2::geom_text(ggplot2::aes(label = lab), hjust = -0.1, fontface = "bold", colour = C$text, size = tsz(3.6)) +
+    ggplot2::geom_text(ggplot2::aes(x = max(n) * 1.95, label = paste0(lead, " ", sprintf("%.0f%%", lead_pct))), hjust = 0, colour = C$muted, size = tsz(3.4)) +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
     ggplot2::labs(title = title_txt, subtitle = "Reasons recorded (% of all)  |  most common reason", x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10.5),
-                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 12.5),
-                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10.5)),
+                   plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(12.5)),
+                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9)),
                    plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
@@ -504,15 +507,15 @@ reason_panel_gg <- function(pl, kind) {
   xmax <- max(d$pct) * 1.5
   ggplot2::ggplot(d, ggplot2::aes(pct, label, fill = col)) +
     ggplot2::geom_col(width = 0.68) +
-    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = 3.8) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%", pct)), hjust = -0.15, fontface = "bold", colour = C$text, size = tsz(3.8)) +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), expand = c(0, 0)) +
     ggplot2::labs(title = REASON_KIND_NAME[[kind]], subtitle = paste0(format(pl$total, big.mark = ",", trim = TRUE), " reasons recorded"), x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(), axis.text.x = ggplot2::element_blank(),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10),
-                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = 12.5),
-                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10)),
+                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = tsz(12.5)),
+                   plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9)),
                    plot.title.position = "plot", plot.margin = ggplot2::margin(6, 10, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
 }
@@ -583,20 +586,20 @@ reasonrate_chart_gg <- function(res) {
     ggplot2::geom_col(width = 0.72) +
     ggplot2::geom_vline(xintercept = res$overall, colour = C$muted, linetype = "dotted", linewidth = 0.9) +
     ggplot2::geom_vline(xintercept = res$std, colour = C$navy, linetype = "dashed", linewidth = 0.7) +
-    ggplot2::geom_label(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.1, fontface = "bold", colour = C$text, size = 3.4,
+    ggplot2::geom_label(ggplot2::aes(label = sprintf("%.1f%%", rate)), hjust = -0.1, fontface = "bold", colour = C$text, size = tsz(3.4),
                         fill = "white", label.size = 0, label.padding = ggplot2::unit(0.08, "lines")) +
     ggplot2::annotate("text", x = res$std, y = -Inf, label = sprintf("%s threshold: %g%%", reason_level_word(res$geo_level), res$std), hjust = -0.1, vjust = -0.8,
-                      colour = C$navy, size = 3.3) +
+                      colour = C$navy, size = tsz(3.3)) +
     ggplot2::annotate("text", x = res$overall, y = Inf, label = sprintf("overall: %.1f%%", res$overall),
-                      hjust = if (res$overall < res$std) 1.1 else -0.1, vjust = -0.7, colour = C$muted, size = 3.3) +
+                      hjust = if (res$overall < res$std) 1.1 else -0.1, vjust = -0.7, colour = C$muted, size = tsz(3.3)) +
     ggplot2::coord_cartesian(clip = "off") +
     ggplot2::scale_fill_identity() +
     ggplot2::scale_x_continuous(limits = c(0, xmax), labels = function(x) paste0(x, "%"), expand = c(0, 0)) +
     ggplot2::labs(x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(panel.grid.major.y = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(),
                    panel.grid.major.x = ggplot2::element_line(colour = "#E9EEEA"),
-                   axis.text.y = ggplot2::element_text(colour = C$text, size = 10),
+                   axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10)),
                    axis.text.x = ggplot2::element_text(colour = C$muted),
                    plot.margin = ggplot2::margin(18, 14, 6, 6),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
@@ -730,17 +733,17 @@ reason_heat_panel <- function(hd, geos, geo_names, show_y, min_n) {
   nrows$lab <- format(nrows$n, big.mark = ",", trim = TRUE)
   p <- ggplot2::ggplot() +
     ggplot2::geom_tile(data = d, ggplot2::aes(x, y, fill = fill), colour = "white", linewidth = 0.7) +
-    ggplot2::geom_text(data = d[nzchar(d$lab), , drop = FALSE], ggplot2::aes(x, y, label = lab, colour = txt), size = 3.1, fontface = "bold") +
-    ggplot2::geom_text(data = nrows, ggplot2::aes(x, y, label = lab), size = 2.9, colour = C$muted) +
+    ggplot2::geom_text(data = d[nzchar(d$lab), , drop = FALSE], ggplot2::aes(x, y, label = lab, colour = txt), size = tsz(3.1), fontface = "bold") +
+    ggplot2::geom_text(data = nrows, ggplot2::aes(x, y, label = lab), size = tsz(2.9), colour = C$muted) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::scale_x_discrete(position = "top", limits = lv) +
     ggplot2::scale_y_discrete(limits = ylv, drop = FALSE) +
     ggplot2::labs(x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme_minimal(base_size = tsz(10)) +
     ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                   axis.text.x = ggplot2::element_text(colour = C$text, size = 8.5, angle = 50, hjust = 0, vjust = 0),
-                   axis.text.y = if (show_y) ggplot2::element_text(colour = C$text, size = 9.5) else ggplot2::element_blank(),
-                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = 12),
+                   axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(8.5), angle = 50, hjust = 0, vjust = 0),
+                   axis.text.y = if (show_y) ggplot2::element_text(colour = C$text, size = tsz(9.5)) else ggplot2::element_blank(),
+                   plot.title = ggplot2::element_text(face = "bold", colour = kc, size = tsz(12)),
                    plot.title.position = "plot", plot.margin = ggplot2::margin(4, 40, 4, 4),
                    plot.background = ggplot2::element_rect(fill = "white", colour = NA))
   if (nrow(lead))
@@ -770,7 +773,7 @@ reason_heat_gg <- function(filtered, types, geo_level = "country", period_label 
     k <- names(hds)[i]
     ggplot2::ggplot() +
       ggplot2::annotate("text", x = if (i == 1) label_w / widths[1] + 0.01 else 0.01, y = 0.5, label = REASON_KIND_NAME[[k]], hjust = 0,
-                        fontface = "bold", size = 4.3, colour = REASON_KIND_COL[[k]]) +
+                        fontface = "bold", size = tsz(4.3), colour = REASON_KIND_COL[[k]]) +
       ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + ggplot2::theme_void() +
       ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(0, 4, 0, 4))
   })

@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # Admin Data Overview -- "Countries by Month" view (added next to the flextables)
 # One column per campaign month, one named box per country, coloured by the share of
@@ -57,10 +60,10 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
   fills <- c("95% or more" = C$green, "80 to 94%" = C$gold, "Below 80%" = C$red)
   ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = band, text = tip)) +
     ggplot2::geom_tile(width = 0.94, height = 0.92) +
-    ggplot2::geom_text(ggplot2::aes(label = name, colour = band == "80 to 94%"), size = 2.35, lineheight = 0.88,
+    ggplot2::geom_text(ggplot2::aes(label = name, colour = band == "80 to 94%"), size = tsz(2.35), lineheight = 0.88,
                        fontface = "bold", show.legend = FALSE) +
     ggplot2::geom_text(data = cnt, ggplot2::aes(mlab, nc + 0.9, label = paste0(nc, ifelse(nc == 1, " country", " countries"))),
-                       inherit.aes = FALSE, size = 3, colour = C$muted) +
+                       inherit.aes = FALSE, size = tsz(3), colour = C$muted) +
     ggplot2::scale_colour_manual(values = c("TRUE" = C$text, "FALSE" = "white"), guide = "none") +
     ggplot2::scale_fill_manual(values = fills, drop = FALSE, name = NULL) +
     ggplot2::scale_x_discrete(drop = FALSE) +
@@ -71,13 +74,13 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
       x = NULL, y = NULL,
       caption = paste0("Each box is one country and month (all vaccine types together); the value is its share of districts at 95% coverage or more. Source: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
                        format(Sys.Date(), "%Y-%m-%d"))) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 15, family = "serif"),
-      plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9.5),
-      plot.caption = ggplot2::element_text(colour = C$muted, size = 8, hjust = 0),
+      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(15), family = "serif"),
+      plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9.5)),
+      plot.caption = ggplot2::element_text(colour = C$muted, size = tsz(8), hjust = 0),
       plot.title.position = "plot", plot.caption.position = "plot",
-      axis.text.x = ggplot2::element_text(colour = C$text, size = 10, face = "bold"),
+      axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(10), face = "bold"),
       panel.grid = ggplot2::element_blank(),
       legend.position = if (show_legend) "top" else "none", legend.justification = "left",
       plot.margin = ggplot2::margin(10, 14, 8, 10),
@@ -86,7 +89,7 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
 
 admin_country_month_height <- function(dist_df) {
   d <- admin_coverage_country_month_data(dist_df)
-  max(4, 0.52 * max(table(d$floor_date)) + 2.2)
+  max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
 admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.0
 
@@ -148,8 +151,8 @@ admin_cm_cards_html <- function(dist_df, block_display = "All Countries", period
                        "border-left:5px solid ", k$col, "; border-radius:8px; padding:10px 14px;"),
         htmltools::div(style = paste0("font-size:", admin_card_px(k$value), "px; font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:", k$col, ";"),
                        title = k$value, k$value),
-        htmltools::div(style = "font-size:13px; font-weight:600; color:#22313A;", k$label),
-        htmltools::div(style = "font-size:11.5px; color:#66737A;", k$sub)
+        htmltools::div(style = "font-size:15px; font-weight:600; color:#22313A;", k$label),
+        htmltools::div(style = "font-size:13px; color:#66737A;", k$sub)
       )
     })
   ))
@@ -168,8 +171,8 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8.5, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = 3.8, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.9, vjust = 0.5) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = tsz(3.8), fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = tsz(2.9), colour = C$muted, lineheight = 0.9, vjust = 0.5) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -180,12 +183,12 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
   lg <- data.frame(x = c(8.9, 10.4, 11.8)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
                    col = vapply(li, `[[`, "", "col"), stringsAsFactors = FALSE)
   hd <- ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_cm_title(), hjust = 0, size = 5.3,
+    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_cm_title(), hjust = 0, size = tsz(5.3),
                       fontface = "bold", family = "serif", colour = C$navy) +
     ggplot2::annotate("text", x = 0.02, y = 0.18, label = admin_cm_subtitle(block_display, period_text),
-                      hjust = 0, size = 3.3, colour = C$muted) +
+                      hjust = 0, size = tsz(3.3), colour = C$muted) +
     ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
-    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = 3.5, colour = C$text) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
     ggplot2::scale_fill_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
@@ -275,8 +278,8 @@ admin_vacc_cards_html <- function(doses_df, block_display = "All Countries", per
                          "; border-radius:8px; padding:10px 14px;"),
           htmltools::div(style = paste0("font-size:", admin_card_px(k$value), "px; font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:", k$col, ";"),
                        title = k$value, k$value),
-          htmltools::div(style = "font-size:13px; font-weight:600; color:#22313A;", k$label),
-          htmltools::div(style = "font-size:11.5px; color:#66737A;", k$sub))
+          htmltools::div(style = "font-size:15px; font-weight:600; color:#22313A;", k$label),
+          htmltools::div(style = "font-size:13px; color:#66737A;", k$sub))
       })))
 }
 
@@ -300,10 +303,10 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
   fills <- setNames(vapply(ADMIN_VACC_BINS, `[[`, "", "col"), vapply(ADMIN_VACC_BINS, `[[`, "", "label"))
   ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = bin, text = tip)) +
     ggplot2::geom_tile(width = 0.94, height = 0.92) +
-    ggplot2::geom_text(ggplot2::aes(label = name, colour = txt), size = 3.6, lineheight = 0.9,
+    ggplot2::geom_text(ggplot2::aes(label = name, colour = txt), size = tsz(2.6), lineheight = 0.9,
                        fontface = "bold", show.legend = FALSE) +
     ggplot2::geom_text(data = cnt, ggplot2::aes(mlab, nc + 0.9, label = paste0(format(round(tot, 1), nsmall = 1), " M")),
-                       inherit.aes = FALSE, size = 4.4, fontface = "bold", colour = C$navy) +
+                       inherit.aes = FALSE, size = tsz(3.1), fontface = "bold", colour = C$navy) +
     ggplot2::scale_colour_manual(values = c(dark = C$text, light = "white"), guide = "none") +
     ggplot2::scale_fill_manual(values = fills, drop = FALSE, name = NULL) +
     ggplot2::scale_x_discrete(drop = FALSE) +
@@ -314,13 +317,13 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
       x = NULL, y = NULL,
       caption = paste0("Each box is one country and month; the number above a column is the total vaccinated that month (millions). Source: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
                        format(Sys.Date(), "%Y-%m-%d"))) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = 15, family = "serif"),
-      plot.subtitle = ggplot2::element_text(colour = C$muted, size = 9.5),
-      plot.caption = ggplot2::element_text(colour = C$muted, size = 8, hjust = 0),
+      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(15), family = "serif"),
+      plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9.5)),
+      plot.caption = ggplot2::element_text(colour = C$muted, size = tsz(8), hjust = 0),
       plot.title.position = "plot", plot.caption.position = "plot",
-      axis.text.x = ggplot2::element_text(colour = C$text, size = 12, face = "bold"),
+      axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(10), face = "bold"),
       panel.grid = ggplot2::element_blank(),
       legend.position = if (show_legend) "top" else "none", legend.justification = "left",
       plot.margin = ggplot2::margin(10, 14, 8, 10),
@@ -344,8 +347,8 @@ admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", 
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = 3.8, fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = 2.9, colour = C$muted, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = tsz(3.8), fontface = "bold", colour = C$text) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = tsz(2.9), colour = C$muted, lineheight = 0.9) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -355,12 +358,12 @@ admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", 
   lg <- data.frame(x = c(7.0, 8.4, 9.7, 11.0)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
                    col = vapply(li, `[[`, "", "col"), stringsAsFactors = FALSE)
   hd <- ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_vacc_title(), hjust = 0, size = 5.3,
+    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_vacc_title(), hjust = 0, size = tsz(5.3),
                       fontface = "bold", family = "serif", colour = C$navy) +
     ggplot2::annotate("text", x = 0.02, y = 0.18, label = admin_vacc_subtitle(block_display, period_text),
-                      hjust = 0, size = 3.3, colour = C$muted) +
+                      hjust = 0, size = tsz(3.3), colour = C$muted) +
     ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
-    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = 3.5, colour = C$text) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
     ggplot2::scale_fill_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +

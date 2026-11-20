@@ -273,6 +273,14 @@ safe_package_load <- function(pkg_list) {
 safe_package_load(required_packages)
 
 # ============================================================
+# ---- Text size of every chart: ONE number to change ----
+# APP_TEXT_SCALE = 1 gives the original sizes; 1.4 makes the small text of the charts (box labels, legends, axes, captions)
+# about 40% larger. Big titles grow less than small texts. Every chart file calls tsz() for its text sizes.
+# ============================================================
+APP_TEXT_SCALE <- 1.4
+tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
+# ============================================================
 # ---- Load external map function ----
 # ============================================================
 
@@ -3359,19 +3367,19 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
   # ============================================================
   
   # Base theme for consistent high-quality look – LARGER TEXT
-  base_theme <- theme_minimal(base_size = 18) +
+  base_theme <- theme_minimal(base_size = tsz(18)) +
     theme(
-      plot.title = element_text(face = "bold", size = 24, hjust = 0.5),
-      plot.subtitle = element_text(size = 18, hjust = 0.5, color = "gray30"),
+      plot.title = element_text(face = "bold", size = tsz(24), hjust = 0.5),
+      plot.subtitle = element_text(size = tsz(18), hjust = 0.5, color = "gray30"),
       # Make axis text LARGER
-      axis.text = element_text(size = 16, color = "gray3"),
-      axis.title = element_text(size = 18, color = "gray3"),
+      axis.text = element_text(size = tsz(16), color = "gray3"),
+      axis.title = element_text(size = tsz(18), color = "gray3"),
       # Axis lines (will be overridden in individual functions)
       axis.line = element_line(linewidth = 0.8, color = "gray30"),
       axis.ticks = element_line(linewidth = 0.8, color = "gray30"),
-      legend.text = element_text(size = 14),
-      legend.title = element_text(size = 15, face = "bold"),
-      strip.text = element_text(size = 18, face = "bold"),
+      legend.text = element_text(size = tsz(14)),
+      legend.title = element_text(size = tsz(15), face = "bold"),
+      strip.text = element_text(size = tsz(18), face = "bold"),
       strip.background = element_rect(fill = "#2c3e50", color = NA),
       panel.grid.major = element_line(color = "gray90", linewidth = 0.3),
       panel.grid.minor = element_blank()
@@ -3388,11 +3396,11 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, fill = "Reason") +
       theme_void() +
       theme(
-        plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-        plot.subtitle = element_text(size = 16, hjust = 0.5, color = "gray30"),
+        plot.title = element_text(face = "bold", size = tsz(20), hjust = 0.5),
+        plot.subtitle = element_text(size = tsz(16), hjust = 0.5, color = "gray30"),
         legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3409,11 +3417,11 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, fill = "Reason") +
       theme_void() +
       theme(
-        plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-        plot.subtitle = element_text(size = 16, hjust = 0.5, color = "gray30"),
+        plot.title = element_text(face = "bold", size = tsz(20), hjust = 0.5),
+        plot.subtitle = element_text(size = tsz(16), hjust = 0.5, color = "gray30"),
         legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3427,13 +3435,13 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       summarise(value = mean(value, na.rm = TRUE)) %>%
       ggplot(aes(area = value, fill = reasons, label = reasons)) +
       treemapify::geom_treemap(color = "white", linewidth = 0.5) +
-      treemapify::geom_treemap_text(colour = "white", place = "centre", size = 16) +
+      treemapify::geom_treemap_text(colour = "white", place = "centre", size = tsz(16)) +
       scale_fill_brewer(palette = "Set3", guide = "none") +
       labs(title = title, subtitle = subtitle) +
       theme_minimal() +
       theme(
-        plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-        plot.subtitle = element_text(size = 16, hjust = 0.5, color = "gray30")
+        plot.title = element_text(face = "bold", size = tsz(20), hjust = 0.5),
+        plot.subtitle = element_text(size = tsz(16), hjust = 0.5, color = "gray30")
       )
   }
   
@@ -3464,11 +3472,11 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
                      gridline.max.colour = "gray70") +
       labs(title = title, subtitle = subtitle) +
       theme(
-        plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-        plot.subtitle = element_text(size = 16, hjust = 0.5, color = "gray30"),
+        plot.title = element_text(face = "bold", size = tsz(20), hjust = 0.5),
+        plot.subtitle = element_text(size = tsz(16), hjust = 0.5, color = "gray30"),
         legend.position = "bottom",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3483,9 +3491,9 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = NULL, y = "Average Percentage (%)") +
       base_theme +
       theme(
-        axis.text.y = element_text(size = 16),
-        axis.text.x = element_text(size = 16),
-        axis.title.x = element_text(size = 18, margin = margin(t = 10)),
+        axis.text.y = element_text(size = tsz(16)),
+        axis.text.x = element_text(size = tsz(16)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 10)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         panel.grid.major.y = element_blank()
@@ -3506,9 +3514,9 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = NULL, y = "Percentage (%)") +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-        axis.text.y = element_text(size = 14),
-        axis.title.y = element_text(size = 18, margin = margin(r = 10)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+        axis.text.y = element_text(size = tsz(14)),
+        axis.title.y = element_text(size = tsz(18), margin = margin(r = 10)),
         axis.line = element_blank(),
         axis.ticks = element_blank()
       )
@@ -3535,15 +3543,15 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = geo_display, y = NULL) +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18, margin = margin(t = 12)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(16)),
+        axis.text.y = element_text(size = tsz(16)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 12)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         legend.position = "bottom",
         legend.key.width = unit(2, "cm"),
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3554,15 +3562,15 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = geo_display, y = "Percentage (%)") +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18, margin = margin(t = 12)),
-        axis.title.y = element_text(size = 18, margin = margin(r = 12)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(16)),
+        axis.text.y = element_text(size = tsz(16)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 12)),
+        axis.title.y = element_text(size = tsz(18), margin = margin(r = 12)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3573,15 +3581,15 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = geo_display, y = "Percentage (%)") +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18, margin = margin(t = 12)),
-        axis.title.y = element_text(size = 18, margin = margin(r = 12)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(16)),
+        axis.text.y = element_text(size = tsz(16)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 12)),
+        axis.title.y = element_text(size = tsz(18), margin = margin(r = 12)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3593,13 +3601,13 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = geo_display, y = "Percentage (%)") +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-        axis.text.y = element_text(size = 14),
-        axis.title.x = element_text(size = 18, margin = margin(t = 12)),
-        axis.title.y = element_text(size = 18, margin = margin(r = 12)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+        axis.text.y = element_text(size = tsz(14)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 12)),
+        axis.title.y = element_text(size = tsz(18), margin = margin(r = 12)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
-        strip.text = element_text(face = "bold", size = 16)
+        strip.text = element_text(face = "bold", size = tsz(16))
       )
   }
   
@@ -3611,14 +3619,14 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
       labs(title = title, subtitle = subtitle, x = geo_display, y = NULL) +
       base_theme +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
-        axis.text.y = element_text(size = 16),
-        axis.title.x = element_text(size = 18, margin = margin(t = 12)),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(16)),
+        axis.text.y = element_text(size = tsz(16)),
+        axis.title.x = element_text(size = tsz(18), margin = margin(t = 12)),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 15, face = "bold")
+        legend.text = element_text(size = tsz(14)),
+        legend.title = element_text(size = tsz(15), face = "bold")
       )
   }
   
@@ -3934,19 +3942,19 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
         labs(title = paste("Comprehensive Reasons Analysis -", geo_display, "Level -", block_type_text),
              subtitle = paste(period_label, geo_info),
              x = geo_display, y = NULL) +
-        theme_minimal(base_size = 16) +
+        theme_minimal(base_size = tsz(16)) +
         theme(
-          axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-          axis.text.y = element_text(size = 14),
-          axis.title.x = element_text(size = 16, margin = margin(t = 10)),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+          axis.text.y = element_text(size = tsz(14)),
+          axis.title.x = element_text(size = tsz(16), margin = margin(t = 10)),
           axis.line = element_line(color = "grey70", linewidth = 0.5),
           axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-          strip.text = element_text(face = "bold", size = 12, color = "white", lineheight = 0.85),
+          strip.text = element_text(face = "bold", size = tsz(12), color = "white", lineheight = 0.85),
           strip.background = element_rect(fill = "#2c3e50", color = NA),
           legend.position = "bottom",
           legend.key.width = unit(2, "cm"),
-          legend.text = element_text(size = 13),
-          legend.title = element_text(size = 14, face = "bold")
+          legend.text = element_text(size = tsz(13)),
+          legend.title = element_text(size = tsz(14), face = "bold")
         )
       
     } else if (viz_type %in% c("bar", "stacked_bar", "faceted_bar")) {
@@ -3960,17 +3968,17 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
              x = geo_display, y = "Percentage (%)") +
         base_theme +
         theme(
-          axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-          axis.text.y = element_text(size = 14),
-          axis.title.x = element_text(size = 16, margin = margin(t = 10)),
-          axis.title.y = element_text(size = 16, margin = margin(r = 10)),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+          axis.text.y = element_text(size = tsz(14)),
+          axis.title.x = element_text(size = tsz(16), margin = margin(t = 10)),
+          axis.title.y = element_text(size = tsz(16), margin = margin(r = 10)),
           axis.line = element_line(color = "grey70", linewidth = 0.5),
           axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-          strip.text = element_text(face = "bold", size = 16, color = "white"),
+          strip.text = element_text(face = "bold", size = tsz(16), color = "white"),
           strip.background = element_rect(fill = "#2c3e50", color = NA),
           legend.position = "right",
-          legend.text = element_text(size = 13),
-          legend.title = element_text(size = 14, face = "bold")
+          legend.text = element_text(size = tsz(13)),
+          legend.title = element_text(size = tsz(14), face = "bold")
         )
       
     } else {
@@ -3985,17 +3993,17 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
                x = geo_display, y = "Percentage (%)") +
           base_theme +
           theme(
-            axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-            axis.text.y = element_text(size = 14),
-            axis.title.x = element_text(size = 16, margin = margin(t = 10)),
-            axis.title.y = element_text(size = 16, margin = margin(r = 10)),
+            axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+            axis.text.y = element_text(size = tsz(14)),
+            axis.title.x = element_text(size = tsz(16), margin = margin(t = 10)),
+            axis.title.y = element_text(size = tsz(16), margin = margin(r = 10)),
             axis.line = element_line(color = "grey70", linewidth = 0.5),
             axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-            strip.text = element_text(face = "bold", size = 16, color = "white"),
+            strip.text = element_text(face = "bold", size = tsz(16), color = "white"),
             strip.background = element_rect(fill = "#2c3e50", color = NA),
             legend.position = "right",
-            legend.text = element_text(size = 13),
-            legend.title = element_text(size = 14, face = "bold")
+            legend.text = element_text(size = tsz(13)),
+            legend.title = element_text(size = tsz(14), face = "bold")
           )
       } else {
         combined_long <- combined_long %>%
@@ -4019,17 +4027,17 @@ reasons_heatmap_analysis <- function(data, x_months = NULL, specific_month = NUL
                x = geo_display, y = NULL) +
           base_theme +
           theme(
-            axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
-            axis.text.y = element_text(size = 14),
-            axis.title.x = element_text(size = 16, margin = margin(t = 10)),
+            axis.text.x = element_text(angle = 45, hjust = 1, size = tsz(14)),
+            axis.text.y = element_text(size = tsz(14)),
+            axis.title.x = element_text(size = tsz(16), margin = margin(t = 10)),
             axis.line = element_line(color = "grey70", linewidth = 0.5),
             axis.ticks = element_line(color = "grey70", linewidth = 0.5),
-            strip.text = element_text(face = "bold", size = 12, color = "white", lineheight = 0.85),
+            strip.text = element_text(face = "bold", size = tsz(12), color = "white", lineheight = 0.85),
             strip.background = element_rect(fill = "#2c3e50", color = NA),
             legend.position = "bottom",
             legend.key.width = unit(2, "cm"),
-            legend.text = element_text(size = 13),
-            legend.title = element_text(size = 14, face = "bold")
+            legend.text = element_text(size = tsz(13)),
+            legend.title = element_text(size = tsz(14), face = "bold")
           )
       }
     }
@@ -8798,7 +8806,7 @@ server <- function(input, output, session) {
     if (is.null(result$plot)) {
       ggplot() + theme_void() +
         labs(title = "No map available for the selected filters") +
-        theme(plot.title = element_text(hjust = 0.5, size = 14, colour = "gray40"))
+        theme(plot.title = element_text(hjust = 0.5, size = tsz(14), colour = "gray40"))
     } else {
       result$plot
     }
@@ -8832,7 +8840,7 @@ server <- function(input, output, session) {
     if (is.null(result$map)) {
       ggplot() + theme_void() +
         labs(title = "No summary map available for the selected filters") +
-        theme(plot.title = element_text(hjust = 0.5, size = 14, colour = "gray40"))
+        theme(plot.title = element_text(hjust = 0.5, size = tsz(14), colour = "gray40"))
     } else {
       result$map
     }
@@ -12203,7 +12211,7 @@ server <- function(input, output, session) {
       reasons_analysis()$combined_plot
     } else {
       ggplot() + theme_void() + labs(title = "No combined data available") +
-        theme(plot.title = element_text(size = 16, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(16), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12254,7 +12262,7 @@ server <- function(input, output, session) {
       reasons_analysis()$absence$plot
     } else {
       ggplot() + theme_void() + labs(title = "No absence reasons data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12294,12 +12302,12 @@ server <- function(input, output, session) {
         geom_point(aes(color = reasons), size = 5, show.legend = FALSE) +
         coord_flip() + scale_color_brewer(palette = "Set3") +
         labs(title = "Top 5 Absence Reasons (Average %)", x = NULL, y = "Average Percentage (%)") +
-        theme_minimal(base_size = 14) +
+        theme_minimal(base_size = tsz(14)) +
         theme(plot.title = element_text(face = "bold", hjust = 0.5),
               panel.grid.major.y = element_blank())
     } else {
       ggplot() + theme_void() + labs(title = "No top 5 data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12350,7 +12358,7 @@ server <- function(input, output, session) {
       reasons_analysis()$non_compliance$plot
     } else {
       ggplot() + theme_void() + labs(title = "No non-compliance data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12390,12 +12398,12 @@ server <- function(input, output, session) {
         geom_point(aes(color = reasons), size = 5, show.legend = FALSE) +
         coord_flip() + scale_color_brewer(palette = "Set3") +
         labs(title = "Top 5 Non-Compliance Reasons (Average %)", x = NULL, y = "Average Percentage (%)") +
-        theme_minimal(base_size = 14) +
+        theme_minimal(base_size = tsz(14)) +
         theme(plot.title = element_text(face = "bold", hjust = 0.5),
               panel.grid.major.y = element_blank())
     } else {
       ggplot() + theme_void() + labs(title = "No top 5 data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12446,7 +12454,7 @@ server <- function(input, output, session) {
       reasons_analysis()$traditional$plot
     } else {
       ggplot() + theme_void() + labs(title = "No traditional reasons data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12486,12 +12494,12 @@ server <- function(input, output, session) {
         geom_point(aes(color = reasons), size = 5, show.legend = FALSE) +
         coord_flip() + scale_color_brewer(palette = "Set3") +
         labs(title = "Top 5 Traditional Reasons (Average %)", x = NULL, y = "Average Percentage (%)") +
-        theme_minimal(base_size = 14) +
+        theme_minimal(base_size = tsz(14)) +
         theme(plot.title = element_text(face = "bold", hjust = 0.5),
               panel.grid.major.y = element_blank())
     } else {
       ggplot() + theme_void() + labs(title = "No top 5 data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12608,13 +12616,13 @@ server <- function(input, output, session) {
         coord_flip() +
         scale_color_brewer(palette = "Set1", name = "Reason Type") +
         labs(title = "Top Reasons Comparison Across Categories", x = NULL, y = "Average Percentage (%)") +
-        theme_minimal(base_size = 12) +
+        theme_minimal(base_size = tsz(12)) +
         theme(plot.title = element_text(face = "bold", hjust = 0.5),
               legend.position = "bottom",
               panel.grid.major.y = element_blank())
     } else {
       ggplot() + theme_void() + labs(title = "No comparison data available") +
-        theme(plot.title = element_text(size = 14, hjust = 0.5, color = "gray50"))
+        theme(plot.title = element_text(size = tsz(14), hjust = 0.5, color = "gray50"))
     }
   })
   
@@ -12661,7 +12669,7 @@ server <- function(input, output, session) {
     if (nrow(plot_data) == 0) {
       return(
         ggplot() +
-          annotate("text", x = 0.5, y = 0.5, label = "No data meeting thresholds", size = 6) +
+          annotate("text", x = 0.5, y = 0.5, label = "No data meeting thresholds", size = tsz(6)) +
           theme_void()
       )
     }
@@ -12688,15 +12696,15 @@ server <- function(input, output, session) {
         x = NULL,
         y = "Percentage (%)"
       ) +
-      theme_minimal(base_size = 14) +
+      theme_minimal(base_size = tsz(14)) +
       theme(
         axis.text.x = element_text(angle = 45, hjust = 1, size = axis_text_size, lineheight = 0.8),
-        axis.text.y = element_text(size = 9),
-        strip.text = element_text(face = "bold", size = 11, color = "white"),
+        axis.text.y = element_text(size = tsz(9)),
+        strip.text = element_text(face = "bold", size = tsz(11), color = "white"),
         strip.background = element_rect(fill = "#2c3e50", color = NA),
         panel.spacing = unit(1, "lines"),
-        plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
-        plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = 11),
+        plot.title = element_text(face = "bold", hjust = 0.5, size = tsz(16)),
+        plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = tsz(11)),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.margin = margin(10, 10, 20, 10)
@@ -13305,16 +13313,16 @@ server <- function(input, output, session) {
             x = NULL,
             y = "Percentage (%)"
           ) +
-          theme_minimal(base_size = 14) +
+          theme_minimal(base_size = tsz(14)) +
           theme(
             axis.text.x = element_text(angle = 45, hjust = 1, size = axis_text_size, color = "gray4", lineheight = 0.8),
-            axis.text.y = element_text(size = 15, color = "gray30"),
-            strip.text = element_text(face = "bold", size = 17, color = "white"),
+            axis.text.y = element_text(size = tsz(15), color = "gray30"),
+            strip.text = element_text(face = "bold", size = tsz(17), color = "white"),
             strip.background = element_rect(fill = "#2c3e50", color = NA),
             panel.spacing = unit(1, "lines"),
-            plot.title = element_text(face = "bold", hjust = 0.5, size = 21),
-            plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = 14),
-            plot.caption = element_text(hjust = 0, size = 14, face = "bold", lineheight = 1.3, 
+            plot.title = element_text(face = "bold", hjust = 0.5, size = tsz(21)),
+            plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = tsz(14)),
+            plot.caption = element_text(hjust = 0, size = tsz(14), face = "bold", lineheight = 1.3, 
                                         margin = margin(t = 20), color = "gray4"),
             panel.grid.major.x = element_blank(),
             panel.grid.minor = element_blank(),
@@ -14104,8 +14112,8 @@ server <- function(input, output, session) {
           subtitle = "Try adjusting your time period, geographic selection, or reason type"
         ) +
         ggplot2::theme(
-          plot.title = ggplot2::element_text(size = 16, hjust = 0.5, color = "gray50"),
-          plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+          plot.title = ggplot2::element_text(size = tsz(16), hjust = 0.5, color = "gray50"),
+          plot.subtitle = ggplot2::element_text(size = tsz(12), hjust = 0.5, color = "gray40")
         )
     }
   })

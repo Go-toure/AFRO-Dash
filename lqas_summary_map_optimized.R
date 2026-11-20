@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # lqas_summary_map_optimized.R  (MONTH-ALIGNED + BACKWARD COMPATIBLE)
 #  KEEP same Performance Table helper/style.
@@ -972,9 +975,9 @@ generate_lqas_summary_map_optimized <- function(data,
       ggplot2::theme_void() +
       ggplot2::labs(title = map_title) +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 12, hjust = 0.5, face = "bold"),
-        legend.title = ggplot2::element_text(size = 10),
-        legend.text  = ggplot2::element_text(size = 9)
+        plot.title = ggplot2::element_text(size = tsz(12), hjust = 0.5, face = "bold"),
+        legend.title = ggplot2::element_text(size = tsz(10)),
+        legend.text  = ggplot2::element_text(size = tsz(9))
       )
   } else {
     ggplot2::ggplot() +
@@ -988,9 +991,9 @@ generate_lqas_summary_map_optimized <- function(data,
       ggplot2::theme_void() +
       ggplot2::labs(title = map_title) +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 12, hjust = 0.5, face = "bold"),
-        legend.title = ggplot2::element_text(size = 10),
-        legend.text  = ggplot2::element_text(size = 9)
+        plot.title = ggplot2::element_text(size = tsz(12), hjust = 0.5, face = "bold"),
+        legend.title = ggplot2::element_text(size = tsz(10)),
+        legend.text  = ggplot2::element_text(size = tsz(9))
       )
   }
   
@@ -1079,9 +1082,9 @@ generate_lqas_summary_map_optimized <- function(data,
         ggplot2::theme_void() +
         ggplot2::labs(title = province_map_title) +
         ggplot2::theme(
-          plot.title = ggplot2::element_text(size = 12, hjust = 0.5, face = "bold"),
-          legend.title = ggplot2::element_text(size = 10),
-          legend.text  = ggplot2::element_text(size = 9)
+          plot.title = ggplot2::element_text(size = tsz(12), hjust = 0.5, face = "bold"),
+          legend.title = ggplot2::element_text(size = tsz(10)),
+          legend.text  = ggplot2::element_text(size = tsz(9))
         )
     } else {
       ggplot2::ggplot() +
@@ -1094,9 +1097,9 @@ generate_lqas_summary_map_optimized <- function(data,
         ggplot2::theme_void() +
         ggplot2::labs(title = province_map_title) +
         ggplot2::theme(
-          plot.title = ggplot2::element_text(size = 12, hjust = 0.5, face = "bold"),
-          legend.title = ggplot2::element_text(size = 10),
-          legend.text  = ggplot2::element_text(size = 9)
+          plot.title = ggplot2::element_text(size = tsz(12), hjust = 0.5, face = "bold"),
+          legend.title = ggplot2::element_text(size = tsz(10)),
+          legend.text  = ggplot2::element_text(size = tsz(9))
         )
     }
     

@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # lqas_summary_modern.R
 # Executive page for the LQAS Summary Maps: one message, plain words.
@@ -58,8 +61,8 @@ lq_nice <- function(x) {
 lq_header_gg <- function(title, subtitle) {
   C <- REFUSAL_COL
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.70, label = title, hjust = 0, size = 5.3, fontface = "bold", family = "serif", colour = C$navy) +
-    ggplot2::annotate("text", x = 0.02, y = 0.18, label = subtitle, hjust = 0, size = 3.2, colour = C$muted) +
+    ggplot2::annotate("text", x = 0.02, y = 0.70, label = title, hjust = 0, size = tsz(5.3), fontface = "bold", family = "serif", colour = C$navy) +
+    ggplot2::annotate("text", x = 0.02, y = 0.18, label = subtitle, hjust = 0, size = tsz(3.2), colour = C$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(6, 14, 0, 10))
@@ -73,9 +76,9 @@ lq_cards_gg <- function(label, value, sub, col) {
   ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.98, ymin = y0 + 0.05, ymax = y1 - 0.05), fill = "white", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = 0.02, xmax = 0.035, ymin = y0 + 0.05, ymax = y1 - 0.05, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(0.08, y1 - 0.22, label = toupper(label)), hjust = 0, size = 2.8, fontface = "bold", colour = C$muted) +
-    ggplot2::geom_text(ggplot2::aes(0.08, (y0 + y1) / 2 + 0.0, label = value), hjust = 0, size = 6.5, fontface = "bold", colour = C$navy) +
-    ggplot2::geom_text(ggplot2::aes(0.08, y0 + 0.21, label = sub), hjust = 0, size = 2.6, colour = C$muted, lineheight = 0.95) +
+    ggplot2::geom_text(ggplot2::aes(0.08, y1 - 0.22, label = toupper(label)), hjust = 0, size = tsz(2.8), fontface = "bold", colour = C$muted) +
+    ggplot2::geom_text(ggplot2::aes(0.08, (y0 + y1) / 2 + 0.0, label = value), hjust = 0, size = tsz(6.5), fontface = "bold", colour = C$navy) +
+    ggplot2::geom_text(ggplot2::aes(0.08, y0 + 0.21, label = sub), hjust = 0, size = tsz(2.6), colour = C$muted, lineheight = 0.95) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(-0.3 * n, n), expand = FALSE) +
     ggplot2::theme_void() +
@@ -85,7 +88,7 @@ lq_cards_gg <- function(label, value, sub, col) {
 lq_banner_gg <- function(text, col) {
   ggplot2::ggplot() +
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col) +
-    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = 3.8) +
+    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = tsz(3.8)) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(2, 14, 4, 10))
@@ -127,9 +130,9 @@ lq_map_panel <- function(res) {
       ggplot2::theme_void() +
       ggplot2::theme(
         plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-        plot.title = ggplot2::element_text(size = 10.2, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
-        plot.title.position = "plot", legend.position = "left", legend.justification = "center", legend.title = ggplot2::element_text(size = 8, colour = C$text),
-        legend.text = ggplot2::element_text(size = 7.8, colour = C$text), legend.key.size = grid::unit(0.38, "cm"),
+        plot.title = ggplot2::element_text(size = tsz(10.2), face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
+        plot.title.position = "plot", legend.position = "left", legend.justification = "center", legend.title = ggplot2::element_text(size = tsz(8), colour = C$text),
+        legend.text = ggplot2::element_text(size = tsz(7.8), colour = C$text), legend.key.size = grid::unit(0.38, "cm"),
         plot.margin = ggplot2::margin(6, 6, 2, 8))
   )
 }
@@ -152,10 +155,10 @@ lq_country_panel <- function(s, max_rows = 26) {
     ggplot2::geom_rect(data = rect, ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = col), colour = NA) +
     ggplot2::geom_segment(ggplot2::aes(x = LQ_THRESHOLD, xend = LQ_THRESHOLD, y = min(by$row) - 0.6, yend = max(by$row) + 1.15),
                           colour = C$navy, linetype = "dashed", linewidth = 0.55) +
-    ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = 2.8, fontface = "bold") +
-    ggplot2::geom_text(data = by, ggplot2::aes(x = 101.5, y = row, label = format(n, big.mark = ",")), hjust = 0, size = 2.7, colour = C$text) +
-    ggplot2::annotate("text", x = 101.5, y = max(by$row) + 0.75, label = "districts", hjust = 0, size = 2.6, colour = C$text) +
-    ggplot2::annotate("text", x = LQ_THRESHOLD, y = max(by$row) + 1.55, label = paste0(LQ_THRESHOLD, "% threshold"), size = 2.8,
+    ggplot2::geom_text(data = rect, ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = txt), size = tsz(2.8), fontface = "bold") +
+    ggplot2::geom_text(data = by, ggplot2::aes(x = 101.5, y = row, label = format(n, big.mark = ",")), hjust = 0, size = tsz(2.7), colour = C$text) +
+    ggplot2::annotate("text", x = 101.5, y = max(by$row) + 0.75, label = "districts", hjust = 0, size = tsz(2.6), colour = C$text) +
+    ggplot2::annotate("text", x = LQ_THRESHOLD, y = max(by$row) + 1.55, label = paste0(LQ_THRESHOLD, "% threshold"), size = tsz(2.8),
                       colour = C$navy, fontface = "bold") +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::scale_y_continuous(breaks = by$row, labels = nm, expand = ggplot2::expansion(add = c(0.6, 1.9))) +
@@ -163,8 +166,8 @@ lq_country_panel <- function(s, max_rows = 26) {
     ggplot2::labs(title = "Districts per country (%)", x = NULL, y = NULL) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-                   plot.title = ggplot2::element_text(size = 10.2, face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
-                   axis.text.y = ggplot2::element_text(size = 8.2, colour = C$text, hjust = 1, margin = ggplot2::margin(r = 4)),
+                   plot.title = ggplot2::element_text(size = tsz(10.2), face = "bold", colour = C$text, hjust = 0, margin = ggplot2::margin(0, 0, 4, 0)),
+                   axis.text.y = ggplot2::element_text(size = tsz(8.2), colour = C$text, hjust = 1, margin = ggplot2::margin(r = 4)),
                    plot.margin = ggplot2::margin(6, 4, 2, 4))
 }
 
@@ -197,9 +200,9 @@ lq_cards_row_gg <- function(label, value, sub, col) {
   ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = x0 + 0.02, xmax = x1 - 0.02, ymin = 0.06, ymax = 0.94), fill = "white", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = x0 + 0.02, xmax = x0 + 0.032, ymin = 0.06, ymax = 0.94, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.74, label = toupper(label)), hjust = 0, size = 2.8, fontface = "bold", colour = C$muted) +
-    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.36, label = value), hjust = 0, size = 7, fontface = "bold", colour = C$navy) +
-    ggplot2::geom_text(ggplot2::aes(x0 + 0.40, 0.36, label = sub), hjust = 0, size = 2.7, colour = C$muted, lineheight = 0.95) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.74, label = toupper(label)), hjust = 0, size = tsz(2.8), fontface = "bold", colour = C$muted) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.06, 0.36, label = value), hjust = 0, size = tsz(7), fontface = "bold", colour = C$navy) +
+    ggplot2::geom_text(ggplot2::aes(x0 + 0.40, 0.36, label = sub), hjust = 0, size = tsz(2.7), colour = C$muted, lineheight = 0.95) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0, n), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +

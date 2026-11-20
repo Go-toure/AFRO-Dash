@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # scope_analysis_optimized.R
 
 # Local text normalization + district-name disambiguation helpers (kept
@@ -314,17 +317,17 @@ generate_scope_plots_app <- function(scope_data,
     }
     
     p <- p +
-      ggplot2::theme_void(base_size = 9) +
+      ggplot2::theme_void(base_size = tsz(9)) +
       ggplot2::labs(
         fill = "Antigen(s)",
         title = format(sel_date, "%b %Y")
       ) +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 3)),
+        plot.title = ggplot2::element_text(size = tsz(10), face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 3)),
         plot.margin = ggplot2::margin(2, 2, 2, 2),
         legend.position = "right",
-        legend.title = ggplot2::element_text(size = 8, face = "bold", margin = ggplot2::margin(b = 2)),
-        legend.text = ggplot2::element_text(size = 7),
+        legend.title = ggplot2::element_text(size = tsz(8), face = "bold", margin = ggplot2::margin(b = 2)),
+        legend.text = ggplot2::element_text(size = tsz(7)),
         legend.key.height = ggplot2::unit(0.3, "cm"),
         legend.key.width = ggplot2::unit(0.15, "cm"),
         legend.box.margin = ggplot2::margin(0, 0, 0, -3)
@@ -354,8 +357,8 @@ generate_scope_plots_app <- function(scope_data,
       title = "SIA Scope",
       caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date()),
       theme = ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0, margin = ggplot2::margin(b = 4)),
-        plot.caption = ggplot2::element_text(size = 9, hjust = 1, face = "italic", margin = ggplot2::margin(t = 8)),
+        plot.title = ggplot2::element_text(size = tsz(14), face = "bold", hjust = 0, margin = ggplot2::margin(b = 4)),
+        plot.caption = ggplot2::element_text(size = tsz(9), hjust = 1, face = "italic", margin = ggplot2::margin(t = 8)),
         plot.margin = ggplot2::margin(5, 5, 5, 5)
       )
     )
@@ -760,7 +763,7 @@ generate_scope_summary_map <- function(scope_data,
       drop = FALSE,
       name = "Antigen(s)"
     ) +
-    ggplot2::theme_void(base_size = 11) +
+    ggplot2::theme_void(base_size = tsz(11)) +
     ggplot2::labs(
       title = paste("SIA Scope Summary Map –", period_label),
       subtitle = paste0(
@@ -770,12 +773,12 @@ generate_scope_summary_map <- function(scope_data,
       caption = paste("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date:", Sys.Date())
     ) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-      plot.subtitle = ggplot2::element_text(size = 10, hjust = 0.5, colour = "grey30", margin = ggplot2::margin(b = 6)),
-      plot.caption = ggplot2::element_text(size = 8, hjust = 1, face = "italic"),
+      plot.title = ggplot2::element_text(size = tsz(14), face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = tsz(10), hjust = 0.5, colour = "grey30", margin = ggplot2::margin(b = 6)),
+      plot.caption = ggplot2::element_text(size = tsz(8), hjust = 1, face = "italic"),
       legend.position = "right",
-      legend.title = ggplot2::element_text(size = 10, face = "bold"),
-      legend.text = ggplot2::element_text(size = 9)
+      legend.title = ggplot2::element_text(size = tsz(10), face = "bold"),
+      legend.text = ggplot2::element_text(size = tsz(9))
     )
   p <- add_disputed_area(p)
 
@@ -822,11 +825,11 @@ generate_scope_summary_map <- function(scope_data,
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = card_bg, colour = NA) +
     ggplot2::annotate("rect", xmin = 0, xmax = 0.006, ymin = 0, ymax = 1, fill = card_border, colour = NA) +
     ggplot2::annotate("text", x = 0.02, y = header_y, label = header_label,
-                       hjust = 0, vjust = 1, fontface = "bold", size = 3.3,
+                       hjust = 0, vjust = 1, fontface = "bold", size = tsz(3.3),
                        colour = card_text, family = "sans", lineheight = 1.15) +
     {if (!is.null(body_label))
       ggplot2::annotate("text", x = 0.02, y = body_y, label = body_label,
-                         hjust = 0, vjust = 1, size = 2.9,
+                         hjust = 0, vjust = 1, size = tsz(2.9),
                          colour = card_text, family = "sans", lineheight = 1.25)} +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), clip = "off", expand = FALSE) +
     ggplot2::theme_void() +

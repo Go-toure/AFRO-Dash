@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # lqas_optimized_operations.R
 # Pre-computed heavy operations for LQAS Summary Maps
 
@@ -258,9 +261,9 @@ generate_optimized_lqas_map <- function(filtered_performance,
     theme_void() +
     labs(title = full_title) +
     theme(
-      plot.title = element_text(size = 12, hjust = 0.5, face = "bold"),
-      legend.title = element_text(size = 10),
-      legend.text = element_text(size = 9)
+      plot.title = element_text(size = tsz(12), hjust = 0.5, face = "bold"),
+      legend.title = element_text(size = tsz(10)),
+      legend.text = element_text(size = tsz(9))
     )
   
   cat("  Map generation completed\n")

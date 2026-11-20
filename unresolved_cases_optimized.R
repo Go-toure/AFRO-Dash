@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # unresolved_cases_optimized.R
 # Optimized version of generate_unresolved_NC_plots_DS_app for better performance
 
@@ -430,19 +433,19 @@ generate_unresolved_NC_plots_DS_optimized <- function(data,
           ) +
           
           # Optimized theme for multi-plot layout
-          ggplot2::theme_void(base_size = 9) +
+          ggplot2::theme_void(base_size = tsz(9)) +
           ggplot2::labs(
             title = paste(reason_name, "–", month_label, safe_year),
             caption = note_text
           ) +
           ggplot2::theme(
-            plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 3)),
+            plot.title = ggplot2::element_text(size = tsz(10), face = "bold", hjust = 0.5, margin = ggplot2::margin(b = 3)),
             plot.margin = ggplot2::margin(2, 2, 2, 2),
-            plot.caption = ggplot2::element_text(size = 7, face = "italic", hjust = 0.5, 
+            plot.caption = ggplot2::element_text(size = tsz(7), face = "italic", hjust = 0.5, 
                                                  margin = ggplot2::margin(t = 3), lineheight = 0.8),
             legend.position = "right",
-            legend.title = ggplot2::element_text(size = 8, face = "bold", margin = ggplot2::margin(b = 2)),
-            legend.text = ggplot2::element_text(size = 7, margin = ggplot2::margin(0, 0, 0, 0)),
+            legend.title = ggplot2::element_text(size = tsz(8), face = "bold", margin = ggplot2::margin(b = 2)),
+            legend.text = ggplot2::element_text(size = tsz(7), margin = ggplot2::margin(0, 0, 0, 0)),
             legend.key.height = ggplot2::unit(0.4, "cm"),
             legend.key.width = ggplot2::unit(0.2, "cm"),
             legend.margin = ggplot2::margin(0, 0, 0, 0),
@@ -491,13 +494,13 @@ generate_unresolved_NC_plots_DS_optimized <- function(data,
           ) +
           ggplot2::theme(
             plot.title = ggplot2::element_text(
-              size = 12,
+              size = tsz(12),
               hjust = 0.5,
               face = "bold",
               margin = ggplot2::margin(b = 10)
             ),
             plot.caption = ggplot2::element_text(
-              size = 9,
+              size = tsz(9),
               hjust = 1,
               face = "italic",
               margin = ggplot2::margin(t = 8)

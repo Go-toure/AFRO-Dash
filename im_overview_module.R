@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # AFRO IM OVERVIEW  (Independent Monitoring)  --  Shiny module
 # ============================================================
@@ -347,18 +350,18 @@ im_cv95_stack_gg <- function(tbl) {
   fills <- c("95% or more" = K$green, "80 to 94%" = K$gold, "Below 80%" = K$red)
   ggplot2::ggplot(d, ggplot2::aes(mlab, k, fill = band, text = tip)) +
     ggplot2::geom_tile(width = 0.94, height = 0.92) +
-    ggplot2::geom_text(ggplot2::aes(label = name, colour = band == "80 to 94%"), size = 2.35,
+    ggplot2::geom_text(ggplot2::aes(label = name, colour = band == "80 to 94%"), size = tsz(2.35),
                        lineheight = 0.88, fontface = "bold", show.legend = FALSE) +
     ggplot2::geom_text(data = cnt, ggplot2::aes(mlab, nc + 0.9, label = paste0(nc, ifelse(nc == 1, " country", " countries"))),
-                       inherit.aes = FALSE, size = 3, colour = "#66737A") +
+                       inherit.aes = FALSE, size = tsz(3), colour = "#66737A") +
     ggplot2::scale_colour_manual(values = c("TRUE" = K$ink, "FALSE" = "white"), guide = "none") +
     ggplot2::scale_fill_manual(values = fills, drop = FALSE, name = NULL) +
     ggplot2::scale_x_discrete(drop = FALSE) +
     ggplot2::scale_y_continuous(breaks = NULL, expand = ggplot2::expansion(add = c(0.3, 0.8))) +
     ggplot2::labs(x = NULL, y = NULL) +
-    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(
-      axis.text.x = ggplot2::element_text(colour = K$ink, size = 10, face = "bold"),
+      axis.text.x = ggplot2::element_text(colour = K$ink, size = tsz(10), face = "bold"),
       panel.grid = ggplot2::element_blank(), legend.position = "none",
       plot.margin = ggplot2::margin(10, 14, 8, 10),
       plot.background = ggplot2::element_rect(fill = "white", colour = NA))

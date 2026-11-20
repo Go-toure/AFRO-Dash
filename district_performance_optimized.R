@@ -1,3 +1,6 @@
+# Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
+if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+
 # ============================================================
 # district_performance_optimized.R
 # FULL UPDATED VERSION + FACETED HEATMAP BY YEAR
@@ -449,7 +452,7 @@ district_lqas_performance <- function(data,
         )
       ) +
       # Professional theme
-      ggplot2::theme_minimal(base_size = 12) +
+      ggplot2::theme_minimal(base_size = tsz(12)) +
       ggplot2::theme(
         # Background
         plot.background = ggplot2::element_rect(fill = "white", color = NA),
@@ -838,19 +841,19 @@ district_lqas_performance <- function(data,
         labels = labels_with_counts,
         na.translate = FALSE
       ) +
-      ggplot2::theme_void(base_size = 9) +
+      ggplot2::theme_void(base_size = tsz(9)) +
       ggplot2::labs(fill = "LQAS Range", title = plot_title) +
       ggplot2::theme(
         plot.title = ggplot2::element_text(
-          size = 10,
+          size = tsz(10),
           face = "bold",
           hjust = 0.5,
           margin = ggplot2::margin(b = 3)
         ),
         plot.margin = ggplot2::margin(2, 2, 2, 2),
         legend.position = "right",
-        legend.title = ggplot2::element_text(size = 8, face = "bold"),
-        legend.text = ggplot2::element_text(size = 7),
+        legend.title = ggplot2::element_text(size = tsz(8), face = "bold"),
+        legend.text = ggplot2::element_text(size = tsz(7)),
         legend.key.height = ggplot2::unit(0.3, "cm"),
         legend.key.width = ggplot2::unit(0.15, "cm")
       )
@@ -993,7 +996,7 @@ district_lqas_performance <- function(data,
     ) +
     ggplot2::theme(
       plot.caption = ggplot2::element_text(
-        size = 9,
+        size = tsz(9),
         hjust = 1,
         face = "italic",
         margin = ggplot2::margin(t = 8)
