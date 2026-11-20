@@ -6058,10 +6058,10 @@ ui_for_block <- function() dashboardPage(
             solidHeader = TRUE,
             status = "info",
             
-            # Output type: the original flextable or the modern view (cards + country/month boxes)
+            # Output type: "Table" = the modern view (cards + country/month boxes, value "modern"), "Other view" = the original flextable (value "table")
             radioButtons("admin_output_type", "Output type:",
-                         choices = c("Table" = "table", "Other view" = "modern"),
-                         selected = "table", inline = TRUE),
+                         choices = c("Table" = "modern", "Other view" = "table"),
+                         selected = "modern", inline = TRUE),
             
             # Headline text and boxes: Table mode only (the modern view carries these metrics in its own cards)
             conditionalPanel(
