@@ -1074,14 +1074,19 @@ lqas_perf_stack_level_used <- function(df, selection) {
   level
 }
 
-lqas_perf_stack_height <- function(df, selection = NULL, max_rows = 60) {
+lqas_perf_stack_height <- function(df, selection = NULL, by_month = FALSE, vertical = TRUE, max_rows = 60) {
   if (is.null(df) || nrow(df) == 0) return(5)
-  d <- lqas_perf_stack_data(df, lqas_perf_stack_level_used(df, selection), FALSE)
+  level <- lqas_perf_stack_level_used(df, selection)
+  d <- lqas_perf_stack_data(df, level, FALSE)
   n <- min(max_rows, dplyr::n_distinct(d$unit))
-  max(4.5, 0.34 * n + 2.6)
+  if (!vertical) return(max(4.5, 0.34 * n + 2.6))
+  if (!by_month) return(if (n > 8) 6.8 else 6.0)
+  nm <- dplyr::n_distinct(lubridate::floor_date(as.Date(df$round_start_date), "month"))
+  ncol_f <- if (nm <= 2) nm else if (nm <= 6) 2 else 3
+  3.6 * ceiling(nm / max(1, ncol_f)) + 1.8
 }
 
-lqas_perf_stack_gg <- function(df, selection = NULL, by_month = FALSE, period_text = "", max_rows = 60) {
+lqas_perf_stack_gg <- function(df, selection = NULL, by_month = FALSE, period_text = "", max_rows = 60, vertical = TRUE) {
   empty <- function(msg) ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = msg, size = tsz(5)) + ggplot2::theme_void()
   if (is.null(df) || nrow(df) == 0) return(empty("No data for this selection"))
   C <- list(navy = "#14454F", text = "#22313A", muted = "#66737A")
@@ -1097,36 +1102,52 @@ lqas_perf_stack_gg <- function(df, selection = NULL, by_month = FALSE, period_te
   ord <- ord[order(-ord$high, -ord$n, ord$unit), , drop = FALSE]
   truncated <- nrow(ord) > max_rows
   ord <- utils::head(ord, max_rows)
-  ord$row <- rev(seq_len(nrow(ord)))
-  ord$lab <- paste0(nice(ord$unit), "  (", ord$n, ")")
+  ord$pos <- if (vertical) seq_len(nrow(ord)) else rev(seq_len(nrow(ord)))      # vertical: best on the left; horizontal: best on top
+  few <- nrow(ord) <= 8
+  ord$lab <- if (vertical && few) stringr::str_wrap(nice(ord$unit), 12) else nice(ord$unit)
   dat <- if (by_month) lqas_perf_stack_data(df, level, TRUE) else tot
   dat <- dat[dat$unit %in% ord$unit, , drop = FALSE]
-  dat$row <- ord$row[match(dat$unit, ord$unit)]
+  dat$pos <- ord$pos[match(dat$unit, ord$unit)]
   dat$performance <- factor(dat$performance, levels = LQAS_PERF_BANDS)
   grp <- if (by_month) c("unit", "month") else "unit"
   dat <- dat[do.call(order, c(lapply(grp, function(g) dat[[g]]), list(dat$performance))), , drop = FALSE]
   dat <- dplyr::ungroup(dplyr::mutate(dplyr::group_by(dat, dplyr::across(dplyr::all_of(grp))), x1 = cumsum(p), x0 = x1 - p))
   dat$lab <- ifelse(dat$p >= if (by_month) 28 else 9, sprintf("%.0f", dat$p), "")
+  nmonths <- 1
   if (by_month) {
-    mm <- sort(unique(dat$month))
+    mm <- sort(unique(dat$month)); nmonths <- length(mm)
     dat$month_lab <- factor(format(dat$month, "%b %Y"), levels = format(mm, "%b %Y"))
   }
   scope_txt <- if (level == "province") paste(nice(selection$country), collapse = ", ")
                else if (level == "district") paste(nice(selection$province), collapse = ", ")
                else "all countries of the analysis"
+  thr_lab <- if (by_month) "80%" else "80% threshold"
+  pct <- function(x) paste0(x, "%")
   p <- ggplot2::ggplot(dat) +
-    ggplot2::geom_rect(ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = performance), colour = NA) +
-    ggplot2::geom_vline(xintercept = 80, linetype = "dashed", colour = C$navy, linewidth = 0.6) +
-    ggplot2::geom_text(ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = performance), size = tsz(3), fontface = "bold", show.legend = FALSE) +
-    ggplot2::annotate("text", x = 80, y = max(ord$row) + 1.05, label = if (by_month) "80%" else "80% threshold", size = tsz(3), fontface = "bold", colour = C$navy) +
     ggplot2::scale_fill_manual(values = LQAS_PERF_COLS, breaks = LQAS_PERF_BANDS, drop = FALSE, name = "LQAS result") +
-    ggplot2::scale_colour_manual(values = c("high" = "white", "moderate" = C$text, "poor" = "white", "very poor" = "white"), guide = "none") +
-    ggplot2::scale_y_continuous(breaks = ord$row, labels = ord$lab, expand = ggplot2::expansion(add = c(0.6, 1.6))) +
-    ggplot2::scale_x_continuous(limits = c(0, 100), breaks = if (by_month) c(0, 80) else c(0, 20, 40, 60, 80, 100), labels = function(x) paste0(x, "%"), expand = c(0.005, 0)) +
+    ggplot2::scale_colour_manual(values = c("high" = "white", "moderate" = C$text, "poor" = "white", "very poor" = "white"), guide = "none")
+  if (vertical) {
+    p <- p +
+      ggplot2::geom_rect(ggplot2::aes(xmin = pos - 0.4, xmax = pos + 0.4, ymin = x0, ymax = x1, fill = performance), colour = NA) +
+      ggplot2::geom_hline(yintercept = 80, linetype = "dashed", colour = C$navy, linewidth = 0.6) +
+      ggplot2::geom_text(ggplot2::aes(x = pos, y = (x0 + x1) / 2, label = lab, colour = performance), size = tsz(3), fontface = "bold", show.legend = FALSE) +
+      ggplot2::scale_x_continuous(breaks = ord$pos, labels = ord$lab, expand = ggplot2::expansion(add = if (!few) c(1.6, 0.6) else 0.6)) +
+      ggplot2::scale_y_continuous(limits = c(0, 100), breaks = c(0, 20, 40, 60, 80, 100), labels = pct, expand = c(0.01, 0))
+  } else {
+    p <- p +
+      ggplot2::geom_rect(ggplot2::aes(xmin = x0, xmax = x1, ymin = pos - 0.38, ymax = pos + 0.38, fill = performance), colour = NA) +
+      ggplot2::geom_vline(xintercept = 80, linetype = "dashed", colour = C$navy, linewidth = 0.6) +
+      ggplot2::geom_text(ggplot2::aes(x = (x0 + x1) / 2, y = pos, label = lab, colour = performance), size = tsz(3), fontface = "bold", show.legend = FALSE) +
+      ggplot2::annotate("text", x = 80, y = max(ord$pos) + 1.05, label = thr_lab, size = tsz(3), fontface = "bold", colour = C$navy) +
+      ggplot2::scale_y_continuous(breaks = ord$pos, labels = ord$lab, expand = ggplot2::expansion(add = c(0.6, 1.6))) +
+      ggplot2::scale_x_continuous(limits = c(0, 100), breaks = if (by_month) c(0, 80) else c(0, 20, 40, 60, 80, 100), labels = pct, expand = c(0.005, 0))
+  }
+  slant <- vertical && !few
+  p <- p +
     ggplot2::labs(
       title = paste0("LQAS performance by ", level, ": share of district results in each performance band"),
       subtitle = paste0(scope_txt, if (nzchar(period_text)) paste0("  |  ", period_text) else "",
-                        "  |  dashed line = 80% of results rated high; (n) = district results counted"),
+                        "  |  dashed line = 80% of results rated high"),
       x = NULL, y = NULL,
       caption = paste0(if (truncated) paste0("Only the first ", max_rows, " ", level, "s are shown. ") else "",
                        "A district counts once per month. Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date: ", Sys.Date())) +
@@ -1137,14 +1158,22 @@ lqas_perf_stack_gg <- function(df, selection = NULL, by_month = FALSE, period_te
       plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9.5), hjust = 0),
       plot.caption = ggplot2::element_text(colour = C$muted, size = tsz(8.5), hjust = 0),
       plot.title.position = "plot", plot.caption.position = "plot",
-      axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10)),
-      axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(9.5)),
+      axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(if (vertical) 9.5 else 10)),
+      axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(if (vertical) 10 else 9.5),
+                                          angle = if (slant) 45 else 0, hjust = if (slant) 1 else 0.5, vjust = if (slant) 1 else 1),
       panel.grid = ggplot2::element_blank(),
       strip.text = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(10.5)),
       legend.position = "top", legend.justification = "left",
       legend.title = ggplot2::element_text(face = "bold", size = tsz(10)),
       legend.text = ggplot2::element_text(size = tsz(10)),
       plot.margin = ggplot2::margin(8, 12, 6, 8))
-  if (by_month) p <- p + ggplot2::facet_grid(. ~ month_lab)
+  if (by_month) {
+    p <- if (vertical) {
+      ncol_f <- if (nmonths <= 2) nmonths else if (nmonths <= 6) 2 else 3
+      p + ggplot2::facet_wrap(~ month_lab, ncol = max(1, ncol_f))
+    } else {
+      p + ggplot2::facet_grid(. ~ month_lab)
+    }
+  }
   p
 }

@@ -6389,10 +6389,17 @@ ui_for_block <- function() dashboardPage(
                           "Share of district results in each performance band, with the 80% threshold. ",
                           "One bar per country; select a country to see its provinces, select a province to see its districts."
                         ),
-                        radioButtons(
-                          "perf_stack_mode", "Show:",
-                          choices = c("Whole period" = "period", "Month by month" = "month"),
-                          selected = "period", inline = TRUE
+                        fluidRow(
+                          column(4, radioButtons(
+                            "perf_stack_mode", "Show:",
+                            choices = c("Whole period" = "period", "Month by month" = "month"),
+                            selected = "period", inline = TRUE
+                          )),
+                          column(4, radioButtons(
+                            "perf_stack_orient", "Bars:",
+                            choices = c("Vertical" = "vertical", "Horizontal" = "horizontal"),
+                            selected = "vertical", inline = TRUE
+                          ))
                         ),
                   
                         div(
@@ -10650,13 +10657,14 @@ server <- function(input, output, session) {
     res <- district_perf_analysis()
     req(res, res$filtered_data)
     lqas_perf_stack_gg(res$filtered_data, res$selection, by_month = identical(input$perf_stack_mode, "month"),
-                       period_text = res$period_info)
+                       period_text = res$period_info, vertical = !identical(input$perf_stack_orient, "horizontal"))
   })
   
   output$perf_stack_ui <- renderUI({
     res <- district_perf_analysis()
     req(res, res$filtered_data)
-    h <- round(lqas_perf_stack_height(res$filtered_data, res$selection) * 90)
+    h <- round(lqas_perf_stack_height(res$filtered_data, res$selection, by_month = identical(input$perf_stack_mode, "month"),
+                                      vertical = !identical(input$perf_stack_orient, "horizontal")) * 90)
     shinycssloaders::withSpinner(
       plotOutput("perf_stack", height = paste0(h, "px"), width = "100%"),
       type = 8, color = "#0072BC", size = 1.2
@@ -10678,7 +10686,8 @@ server <- function(input, output, session) {
         file,
         plot = perf_stack_plot(),
         width = 14,
-        height = lqas_perf_stack_height(res$filtered_data, res$selection),
+        height = lqas_perf_stack_height(res$filtered_data, res$selection, by_month = identical(input$perf_stack_mode, "month"),
+                                        vertical = !identical(input$perf_stack_orient, "horizontal")),
         dpi = 200,
         bg = "white"
       )
