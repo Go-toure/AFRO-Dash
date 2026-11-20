@@ -77,7 +77,7 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
       title = if (show_title) admin_cm_title(),
       subtitle = if (show_title) admin_cm_subtitle(block_display, period_text),
       x = NULL, y = NULL,
-      caption = paste0("Each box is one country and month (all vaccine types together); the value is its share of districts at 95% coverage or more. Source: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
+      caption = paste0("Each box is one country and month (all vaccine types together); the value is its share of districts at 95% coverage or more.\nSource: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
                        format(Sys.Date(), "%Y-%m-%d"))) +
     ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(
@@ -96,7 +96,7 @@ admin_country_month_height <- function(dist_df) {
   d <- admin_coverage_country_month_data(dist_df)
   max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
-admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.0
+admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.7
 
 # ------------------------------------------------------------
 # Headline numbers shown as light cards above the chart
@@ -169,15 +169,15 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
   cards <- admin_cm_cards(dist_df, metrics)
   k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(170 / k)),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(125 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8.5, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = tsz(3.8), fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = tsz(2.9), colour = C$muted, lineheight = 0.9, vjust = 0.5) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.47, label = stringr::str_wrap(label, 17)), hjust = 0, size = 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.17, label = sub), hjust = 0, size = 3.0, colour = C$muted, lineheight = 0.9, vjust = 0.5) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -185,21 +185,22 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
   main <- admin_coverage_country_month_gg(dist_df, block_display, period_text, show_title = FALSE, show_legend = FALSE)
   # header: title on the left, legend on the right of the same row, subtitle underneath
   li <- admin_cm_legend_items()
-  lg <- data.frame(x = c(8.9, 10.4, 11.8)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
+  lg <- data.frame(x = c(0.05, 2.1, 3.9)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
                    col = vapply(li, `[[`, "", "col"), stringsAsFactors = FALSE)
   hd <- ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_cm_title(), hjust = 0, size = tsz(5.3),
+    ggplot2::annotate("text", x = 0.02, y = 0.86, label = admin_cm_title(), hjust = 0, size = tsz(5.3),
                       fontface = "bold", family = "serif", colour = C$navy) +
-    ggplot2::annotate("text", x = 0.02, y = 0.18, label = admin_cm_subtitle(block_display, period_text),
+    ggplot2::annotate("text", x = 0.02, y = 0.55, label = paste0(block_display, if (nzchar(period_text)) paste0("  |  ", period_text) else "",
+                                   "  |  share of each country's districts at 95% coverage or more; best at the bottom"),
                       hjust = 0, size = tsz(3.3), colour = C$muted) +
-    ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
-    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
+    ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.17, fill = col), width = 0.22, height = 0.2) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.17, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
     ggplot2::scale_fill_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                    plot.margin = ggplot2::margin(6, 14, 0, 10))
-  patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(0.9, 1.9, 10))
+  patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(1.5, 2.6, 10))
 }
 
 # ============================================================
@@ -251,10 +252,10 @@ admin_vacc_cards <- function(doses_df, metrics = NULL) {
   other <- num(metrics$children_other)
   other_note <- if (!is.na(other) && other >= 0.05) paste0(" (", fm(other), " with other vaccines not shown)") else ""
   by_vacc <- list()
-  for (v in list(list(k = "children_nopv2", lab = "Children, nOPV2", col = C$purple, sub = "nOPV2 only; the 3 vaccine cards add up to Children vaccinated"),
-                 list(k = "children_bopv", lab = "Children, bOPV", col = "#8A6D3B", sub = "bOPV only; the 3 vaccine cards add up to Children vaccinated"),
+  for (v in list(list(k = "children_nopv2", lab = "Children, nOPV2", col = C$purple, sub = "nOPV2 only"),
+                 list(k = "children_bopv", lab = "Children, bOPV", col = "#8A6D3B", sub = "bOPV only"),
                  list(k = "children_nopv2_bopv", lab = "Children, nOPV2 & bOPV", col = C$red,
-                      sub = paste0("both vaccines in co-administration; the 3 vaccine cards add up to Children vaccinated", other_note)))) {
+                      sub = paste0("both vaccines together (co-administration)", other_note)))) {
     x <- num(metrics[[v$k]])
     if (!is.na(x)) by_vacc <- c(by_vacc, list(list(value = fmv(x), label = v$lab, sub = v$sub, col = v$col)))
   }
@@ -318,7 +319,7 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
       title = if (show_title) admin_vacc_title(),
       subtitle = if (show_title) admin_vacc_subtitle(block_display, period_text),
       x = NULL, y = NULL,
-      caption = paste0("Each box is one country and month; the number above a column is the total vaccinated that month (millions). Source: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
+      caption = paste0("Each box is one country and month; the number above a column is the total vaccinated that month (millions).\nSource: PEP SIA repository © WHO AFRO GIS CENTRE, generated on ",
                        format(Sys.Date(), "%Y-%m-%d"))) +
     ggplot2::theme_minimal(base_size = tsz(11)) +
     ggplot2::theme(
@@ -337,40 +338,40 @@ admin_vacc_height <- function(doses_df) {
   d <- admin_vacc_data(doses_df)
   max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
-admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + 1.0
+admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + 1.7
 
 admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", period_text = "", metrics = NULL) {
   C <- ADMIN_HM_COL
   cards <- admin_vacc_cards(doses_df, metrics); k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(170 / k)),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(125 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
     ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.44, label = label), hjust = 0, size = tsz(3.8), fontface = "bold", colour = C$text) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.2, label = sub), hjust = 0, size = tsz(2.9), colour = C$muted, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.47, label = stringr::str_wrap(label, 17)), hjust = 0, size = 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.17, label = sub), hjust = 0, size = 3.0, colour = C$muted, lineheight = 0.9) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                                            plot.margin = ggplot2::margin(6, 14, 0, 10))
   main <- admin_vacc_gg(doses_df, block_display, period_text, show_title = FALSE, show_legend = FALSE)
   li <- ADMIN_VACC_BINS
-  lg <- data.frame(x = c(7.0, 8.4, 9.7, 11.0)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
+  lg <- data.frame(x = c(0.05, 1.75, 3.45, 5.15)[seq_along(li)], label = vapply(li, `[[`, "", "label"),
                    col = vapply(li, `[[`, "", "col"), stringsAsFactors = FALSE)
   hd <- ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0.02, y = 0.72, label = admin_vacc_title(), hjust = 0, size = tsz(5.3),
+    ggplot2::annotate("text", x = 0.02, y = 0.86, label = admin_vacc_title(), hjust = 0, size = tsz(5.3),
                       fontface = "bold", family = "serif", colour = C$navy) +
-    ggplot2::annotate("text", x = 0.02, y = 0.18, label = admin_vacc_subtitle(block_display, period_text),
+    ggplot2::annotate("text", x = 0.02, y = 0.55, label = admin_vacc_subtitle(block_display, period_text),
                       hjust = 0, size = tsz(3.3), colour = C$muted) +
-    ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.72, fill = col), width = 0.22, height = 0.3) +
-    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.72, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
+    ggplot2::geom_tile(data = lg, ggplot2::aes(x, 0.17, fill = col), width = 0.22, height = 0.2) +
+    ggplot2::geom_text(data = lg, ggplot2::aes(x + 0.2, 0.17, label = label), hjust = 0, size = tsz(3.5), colour = C$text) +
     ggplot2::scale_fill_identity() +
     ggplot2::coord_cartesian(xlim = c(0, 13), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                    plot.margin = ggplot2::margin(6, 14, 0, 10))
-  patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(0.9, 1.9, 10))
+  patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(1.5, 2.6, 10))
 }

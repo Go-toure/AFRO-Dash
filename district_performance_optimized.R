@@ -1030,7 +1030,121 @@ district_lqas_performance <- function(data,
       max(processed_data$round_start_date, na.rm = TRUE)
     ),
     filtered_data = processed_data,
+    selection = list(country = country_selection, province = province_selection, district = district_selection),
     block_type = block_type,
     heatmap_geo_level = heatmap_geo_level
   )
+}
+
+
+# ============================================================
+# Stacked bars: share of LQAS results by performance band, with the 80% threshold
+# One bar per country; when a country is selected one bar per province of that country;
+# when a province is selected one bar per district of that province.
+# `df` is the `filtered_data` of district_lqas_performance(), `selection` its `selection`.
+# ============================================================
+LQAS_PERF_BANDS <- c("high", "moderate", "poor", "very poor")
+LQAS_PERF_COLS  <- c("high" = "green4", "moderate" = "yellow", "poor" = "red", "very poor" = "brown4")
+
+lqas_perf_stack_level <- function(selection) {
+  has <- function(x) !is.null(x) && length(x) > 0 && !all(is.na(x) | x == "")
+  if (has(selection$province)) "district" else if (has(selection$country)) "province" else "country"
+}
+
+# one line per unit (and month) and band: n results, share p (%) of the results of the unit; a district counts once per month and band
+lqas_perf_stack_data <- function(df, level = "country", by_month = FALSE) {
+  d <- df
+  d$unit <- trimws(as.character(d[[level]]))
+  d$month <- lubridate::floor_date(as.Date(d$round_start_date), "month")
+  d$performance <- as.character(d$performance)
+  d <- d[!is.na(d$unit) & d$unit != "" & !is.na(d$month) & d$performance %in% LQAS_PERF_BANDS, , drop = FALSE]
+  keys <- c("unit", intersect(c("country_key", "province_key", "district_key"), names(d)), "month", "performance")
+  d <- dplyr::distinct(d[, keys, drop = FALSE])
+  grp <- if (by_month) c("unit", "month") else "unit"
+  cnt <- dplyr::count(d, dplyr::across(dplyr::all_of(c(grp, "performance"))), name = "n")
+  tot <- dplyr::summarise(dplyr::group_by(cnt, dplyr::across(dplyr::all_of(grp))), total = sum(n), .groups = "drop")
+  cnt <- dplyr::left_join(cnt, tot, by = grp)
+  cnt$p <- 100 * cnt$n / cnt$total
+  cnt
+}
+
+lqas_perf_stack_level_used <- function(df, selection) {
+  level <- lqas_perf_stack_level(selection)
+  if (level != "country" && (!level %in% names(df) || !any(!is.na(df[[level]]) & nzchar(trimws(as.character(df[[level]])))))) level <- "country"
+  level
+}
+
+lqas_perf_stack_height <- function(df, selection = NULL, max_rows = 60) {
+  if (is.null(df) || nrow(df) == 0) return(5)
+  d <- lqas_perf_stack_data(df, lqas_perf_stack_level_used(df, selection), FALSE)
+  n <- min(max_rows, dplyr::n_distinct(d$unit))
+  max(4.5, 0.34 * n + 2.6)
+}
+
+lqas_perf_stack_gg <- function(df, selection = NULL, by_month = FALSE, period_text = "", max_rows = 60) {
+  empty <- function(msg) ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = msg, size = tsz(5)) + ggplot2::theme_void()
+  if (is.null(df) || nrow(df) == 0) return(empty("No data for this selection"))
+  C <- list(navy = "#14454F", text = "#22313A", muted = "#66737A")
+  level <- lqas_perf_stack_level_used(df, selection)
+  nice <- function(x) {
+    x <- stringr::str_to_title(tolower(as.character(x)))
+    x <- gsub("\\bOf\\b", "of", x); x <- gsub("\\bThe\\b", "the", x); x <- gsub("\\bAnd\\b", "and", x)
+    if (level == "country") short_country(x) else x
+  }
+  tot <- lqas_perf_stack_data(df, level, FALSE)
+  if (nrow(tot) == 0) return(empty("No LQAS results for this selection"))
+  ord <- dplyr::summarise(dplyr::group_by(tot, unit), high = sum(p[performance == "high"]), n = max(total), .groups = "drop")
+  ord <- ord[order(-ord$high, -ord$n, ord$unit), , drop = FALSE]
+  truncated <- nrow(ord) > max_rows
+  ord <- utils::head(ord, max_rows)
+  ord$row <- rev(seq_len(nrow(ord)))
+  ord$lab <- paste0(nice(ord$unit), "  (", ord$n, ")")
+  dat <- if (by_month) lqas_perf_stack_data(df, level, TRUE) else tot
+  dat <- dat[dat$unit %in% ord$unit, , drop = FALSE]
+  dat$row <- ord$row[match(dat$unit, ord$unit)]
+  dat$performance <- factor(dat$performance, levels = LQAS_PERF_BANDS)
+  grp <- if (by_month) c("unit", "month") else "unit"
+  dat <- dat[do.call(order, c(lapply(grp, function(g) dat[[g]]), list(dat$performance))), , drop = FALSE]
+  dat <- dplyr::ungroup(dplyr::mutate(dplyr::group_by(dat, dplyr::across(dplyr::all_of(grp))), x1 = cumsum(p), x0 = x1 - p))
+  dat$lab <- ifelse(dat$p >= if (by_month) 28 else 9, sprintf("%.0f", dat$p), "")
+  if (by_month) {
+    mm <- sort(unique(dat$month))
+    dat$month_lab <- factor(format(dat$month, "%b %Y"), levels = format(mm, "%b %Y"))
+  }
+  scope_txt <- if (level == "province") paste(nice(selection$country), collapse = ", ")
+               else if (level == "district") paste(nice(selection$province), collapse = ", ")
+               else "all countries of the analysis"
+  p <- ggplot2::ggplot(dat) +
+    ggplot2::geom_rect(ggplot2::aes(xmin = x0, xmax = x1, ymin = row - 0.38, ymax = row + 0.38, fill = performance), colour = NA) +
+    ggplot2::geom_vline(xintercept = 80, linetype = "dashed", colour = C$navy, linewidth = 0.6) +
+    ggplot2::geom_text(ggplot2::aes(x = (x0 + x1) / 2, y = row, label = lab, colour = performance), size = tsz(3), fontface = "bold", show.legend = FALSE) +
+    ggplot2::annotate("text", x = 80, y = max(ord$row) + 1.05, label = if (by_month) "80%" else "80% threshold", size = tsz(3), fontface = "bold", colour = C$navy) +
+    ggplot2::scale_fill_manual(values = LQAS_PERF_COLS, breaks = LQAS_PERF_BANDS, drop = FALSE, name = "LQAS result") +
+    ggplot2::scale_colour_manual(values = c("high" = "white", "moderate" = C$text, "poor" = "white", "very poor" = "white"), guide = "none") +
+    ggplot2::scale_y_continuous(breaks = ord$row, labels = ord$lab, expand = ggplot2::expansion(add = c(0.6, 1.6))) +
+    ggplot2::scale_x_continuous(limits = c(0, 100), breaks = if (by_month) c(0, 80) else c(0, 20, 40, 60, 80, 100), labels = function(x) paste0(x, "%"), expand = c(0.005, 0)) +
+    ggplot2::labs(
+      title = paste0("LQAS performance by ", level, ": share of district results in each performance band"),
+      subtitle = paste0(scope_txt, if (nzchar(period_text)) paste0("  |  ", period_text) else "",
+                        "  |  dashed line = 80% of results rated high; (n) = district results counted"),
+      x = NULL, y = NULL,
+      caption = paste0(if (truncated) paste0("Only the first ", max_rows, " ", level, "s are shown. ") else "",
+                       "A district counts once per month. Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date: ", Sys.Date())) +
+    ggplot2::theme_minimal(base_size = tsz(11)) +
+    ggplot2::theme(
+      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
+      plot.title = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(14), hjust = 0),
+      plot.subtitle = ggplot2::element_text(colour = C$muted, size = tsz(9.5), hjust = 0),
+      plot.caption = ggplot2::element_text(colour = C$muted, size = tsz(8.5), hjust = 0),
+      plot.title.position = "plot", plot.caption.position = "plot",
+      axis.text.y = ggplot2::element_text(colour = C$text, size = tsz(10)),
+      axis.text.x = ggplot2::element_text(colour = C$text, size = tsz(9.5)),
+      panel.grid = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold", colour = C$navy, size = tsz(10.5)),
+      legend.position = "top", legend.justification = "left",
+      legend.title = ggplot2::element_text(face = "bold", size = tsz(10)),
+      legend.text = ggplot2::element_text(size = tsz(10)),
+      plot.margin = ggplot2::margin(8, 12, 6, 8))
+  if (by_month) p <- p + ggplot2::facet_grid(. ~ month_lab)
+  p
 }

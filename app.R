@@ -6382,6 +6382,36 @@ ui_for_block <- function() dashboardPage(
                       ),
                 
                       tabPanel(
+                        tags$div(icon("chart-bar"), "Stacked Bars"),
+                  
+                        tags$p(
+                          style = "color:#66737A; margin:6px 0;",
+                          "Share of district results in each performance band, with the 80% threshold. ",
+                          "One bar per country; select a country to see its provinces, select a province to see its districts."
+                        ),
+                        radioButtons(
+                          "perf_stack_mode", "Show:",
+                          choices = c("Whole period" = "period", "Month by month" = "month"),
+                          selected = "period", inline = TRUE
+                        ),
+                  
+                        div(
+                          style = "text-align:center;",
+                          uiOutput("perf_stack_ui")
+                        ),
+                  
+                        div(
+                          style = "text-align:center; margin-top:15px;",
+                          downloadButton(
+                            "download_perf_stack",
+                            "Download Stacked Bars",
+                            class = "btn-primary-custom",
+                            style = "width:240px;"
+                          )
+                        )
+                      ),
+                
+                      tabPanel(
                         tags$div(icon("th"), "Faceted Heatmap"),
                   
                         div(
@@ -9242,7 +9272,7 @@ server <- function(input, output, session) {
       plotOutput("admin_vm_static", height = paste0(h, "px"))
     }
     tagList(admin_vacc_cards_html(res$doses_df, res$block_display, res$period_text, res$metrics), chart, tags$p(style = "color:#66737A; font-size:12px; margin-top:6px;",
-                       "Use the download button below to save the chart together with the cards."))
+                       "The three vaccine cards split Children vaccinated by vaccine (nOPV2 only, bOPV only, and both given together), so they add up to it. Use the download button below to save the chart together with the cards."))
   })
   
   if (requireNamespace("plotly", quietly = TRUE)) {
@@ -10614,6 +10644,46 @@ server <- function(input, output, session) {
     req(district_perf_analysis())
     district_perf_analysis()$multiplot
   })
+  
+  # ---- Stacked bars: share of results by band; country -> province -> district follows the selection of the analysis ----
+  perf_stack_plot <- reactive({
+    res <- district_perf_analysis()
+    req(res, res$filtered_data)
+    lqas_perf_stack_gg(res$filtered_data, res$selection, by_month = identical(input$perf_stack_mode, "month"),
+                       period_text = res$period_info)
+  })
+  
+  output$perf_stack_ui <- renderUI({
+    res <- district_perf_analysis()
+    req(res, res$filtered_data)
+    h <- round(lqas_perf_stack_height(res$filtered_data, res$selection) * 90)
+    shinycssloaders::withSpinner(
+      plotOutput("perf_stack", height = paste0(h, "px"), width = "100%"),
+      type = 8, color = "#0072BC", size = 1.2
+    )
+  })
+  
+  output$perf_stack <- renderPlot({
+    perf_stack_plot()
+  })
+  
+  output$download_perf_stack <- downloadHandler(
+    filename = function() {
+      paste0("lqas_performance_stacked_bars_", Sys.Date(), ".png")
+    },
+    content = function(file) {
+      res <- district_perf_analysis()
+      req(res, res$filtered_data)
+      ggplot2::ggsave(
+        file,
+        plot = perf_stack_plot(),
+        width = 14,
+        height = lqas_perf_stack_height(res$filtered_data, res$selection),
+        dpi = 200,
+        bg = "white"
+      )
+    }
+  )
   
   output$perf_heatmap <- renderPlot({
     req(district_perf_analysis())
