@@ -1,5 +1,10 @@
 # Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
 if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+if (!exists("short_country", mode = "function")) short_country <- function(x) {
+  x <- as.character(x); k <- tolower(trimws(x))
+  ifelse(is.na(x), x, ifelse(k %in% c("drc", "dr congo", "democratic republic of the congo", "democratic republic of congo"), "DRC",
+    ifelse(k %in% c("car", "central african republic"), "CAR", ifelse(grepl("tanzania", k), "Tanzania", x))))
+}
 
 # ============================================================
 # Admin Data Overview -- "Countries by Month" view (added next to the flextables)
@@ -52,7 +57,7 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
   d <- d |> dplyr::arrange(mlab, dplyr::desc(share95), Country) |>
     dplyr::group_by(mlab) |> dplyr::mutate(k = dplyr::row_number()) |> dplyr::ungroup()
   nm <- ifelse(d$Country == "CAR", "Central African Republic", tools::toTitleCase(tolower(d$Country)))
-  d$name <- paste0(stringr::str_wrap(nm, 12), "\n", d$share95, "%")
+  d$name <- paste0(stringr::str_wrap(short_country(nm), 13), "\n", d$share95, "%")
   d$tip <- paste0(d$Country, " | ", format(d$floor_date, "%B %Y"), "\n", d$share95,
                   "% of districts at 95% coverage or more\n(", d$n95, " of ", d$n, " district results)")
   cnt <- d |> dplyr::count(mlab, name = "nc")
@@ -294,9 +299,7 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
   nm <- ifelse(d$Country == "DRC", "Democratic Republic of the Congo",
         ifelse(d$Country == "CAR", "Central African Republic", tools::toTitleCase(tolower(d$Country))))
   # short names inside the boxes so the text can be large (the full name is in the tooltip)
-  short <- ifelse(d$Country == "DRC", "DRC", ifelse(d$Country == "CAR", "CAR",
-           ifelse(grepl("TANZANIA", toupper(d$Country)), "Tanzania", nm)))
-  d$name <- paste0(stringr::str_wrap(short, 13), "\n", format(round(d$m, 1), nsmall = 1), " M")
+  d$name <- paste0(stringr::str_wrap(short_country(nm), 13), "\n", format(round(d$m, 1), nsmall = 1), " M")
   d$tip <- paste0(nm, " | ", format(d$floor_date, "%B %Y"), "\n", format(round(d$m, 2), nsmall = 2), " M vaccinated\n", d$vacc)
   d$txt <- ifelse(d$bin %in% c("Under 1 M", "1 to 5 M"), "dark", "light")
   cnt <- d |> dplyr::group_by(mlab) |> dplyr::summarise(nc = dplyr::n(), tot = sum(m), .groups = "drop")

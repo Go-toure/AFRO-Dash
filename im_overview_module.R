@@ -1,5 +1,10 @@
 # Text size of the charts: APP_TEXT_SCALE in app.R (1 = original sizes); tsz() is defined there, this line only serves when the file is used alone.
 if (!exists("tsz", mode = "function")) tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+if (!exists("short_country", mode = "function")) short_country <- function(x) {
+  x <- as.character(x); k <- tolower(trimws(x))
+  ifelse(is.na(x), x, ifelse(k %in% c("drc", "dr congo", "democratic republic of the congo", "democratic republic of congo"), "DRC",
+    ifelse(k %in% c("car", "central african republic"), "CAR", ifelse(grepl("tanzania", k), "Tanzania", x))))
+}
 
 # ============================================================
 # AFRO IM OVERVIEW  (Independent Monitoring)  --  Shiny module
@@ -335,7 +340,7 @@ im_cv95_stack_data <- function(tbl) {
   d$cname <- im_nice_name(d$country)
   d <- d[order(d$mlab, -d$share, d$cname), , drop = FALSE]
   d$k <- stats::ave(seq_len(nrow(d)), d$mlab, FUN = seq_along)
-  d$name <- paste0(vapply(d$cname, function(x) paste(strwrap(x, 12), collapse = "\n"), character(1)),
+  d$name <- paste0(vapply(short_country(d$cname), function(x) paste(strwrap(x, 13), collapse = "\n"), character(1)),
                    "\n", d$share, "%")
   d$tip <- paste0(d$cname, " | ", format(d$mdate, "%B %Y"), "\n", d$share,
                   "% of districts at 95% coverage or more\n(", d$n_cv95, " of ", d$n_dist, " districts)")

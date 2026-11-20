@@ -279,6 +279,14 @@ safe_package_load(required_packages)
 # ============================================================
 APP_TEXT_SCALE <- 1.4
 tsz <- function(x) x * (1 + (get0("APP_TEXT_SCALE", ifnotfound = 1.4) - 1) * pmin(1, 10 / x))
+# Short country names for the small boxes of the charts (the full name stays in the hover text): DRC, CAR, Tanzania
+short_country <- function(x) {
+  x <- as.character(x); k <- tolower(trimws(x))
+  ifelse(is.na(x), x,
+    ifelse(k %in% c("drc", "dr congo", "democratic republic of the congo", "democratic republic of congo"), "DRC",
+    ifelse(k %in% c("car", "central african republic"), "CAR",
+    ifelse(grepl("tanzania", k), "Tanzania", x))))
+}
 
 # ============================================================
 # ---- Load external map function ----
