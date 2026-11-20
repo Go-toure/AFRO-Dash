@@ -1813,16 +1813,19 @@ im_overview_server <- function(id, data_path = IM_DATA_FILE) {
         shiny::div(style = "font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75;", label),
         shiny::div(style = paste0("font-size:28px;font-weight:700;line-height:1.2;color:", col, ";"), value),
         shiny::div(style = "font-size:12px;opacity:.75;", sub))
+    pc   <- function(x) { v <- 100 * x / n; if (v < 10) sprintf("%.1f%%", v) else sprintf("%.0f%%", v) }
     low  <- s[s$awareness_rate < 0.80, ]
     top  <- if (nrow(low) && "country" %in% names(low))
       head(sort(table(im_nice_name(low$country)), decreasing = TRUE), 4) else NULL
     shiny::tagList(
-      tile("High awareness + good coverage", paste0(round(100 * nq[4] / n), "%"),
+      tile("High awareness + good coverage", pc(nq[4]),
            paste0(format(nq[4], big.mark = ","), " of ", format(n, big.mark = ","), " districts"), "#3D8B6E"),
-      tile("Low awareness and low coverage", format(nq[1], big.mark = ","),
-           "districts (awareness below 80%, coverage below 90%): priority for social mobilisation", "#B83B5E"),
-      tile("High awareness but low coverage", format(nq[3], big.mark = ","),
-           "districts (awareness 80% or more, coverage below 90%): check operations and microplans", "#7A5C99"),
+      tile("Low awareness and low coverage", pc(nq[1]),
+           paste0(format(nq[1], big.mark = ","), " of ", format(n, big.mark = ","),
+                  " districts (awareness below 80%, coverage below 90%): priority for social mobilisation"), "#B83B5E"),
+      tile("High awareness but low coverage", pc(nq[3]),
+           paste0(format(nq[3], big.mark = ","), " of ", format(n, big.mark = ","),
+                  " districts (awareness 80% or more, coverage below 90%): check operations and microplans"), "#7A5C99"),
       if (!is.null(top) && length(top))
         shiny::div(style = "font-size:13px;margin-top:4px;",
           shiny::tags$b("Most low-awareness districts: "),
