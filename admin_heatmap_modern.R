@@ -238,13 +238,15 @@ admin_vacc_cards <- function(doses_df, metrics = NULL) {
     list(value = fm(dose), label = "Doses administered", sub = paste0("in the selected period, ", nrow(d), " country campaigns"), col = C$navy))
   if (!is.na(kids)) top <- c(top, list(list(value = fm(kids), label = "Children vaccinated",
                                             sub = "largest round per country, added up", col = C$blue)))
-  # children vaccinated by vaccine type (same way as the total: the largest month of each country, added up)
+  # children vaccinated by vaccine type: the largest month of each country split by vaccine, so the three add up to "Children vaccinated"
   fmv <- function(x) paste0(format(round(x, if (x < 1) 2 else 1), nsmall = if (x < 1) 2 else 1, big.mark = ","), " M")
+  other <- num(metrics$children_other)
+  other_note <- if (!is.na(other) && other >= 0.05) paste0(" (", fm(other), " with other vaccines not shown)") else ""
   by_vacc <- list()
-  for (v in list(list(k = "children_nopv2", lab = "Children, nOPV2", col = C$purple, sub = "vaccinated with nOPV2 only; largest month per country, added up"),
-                 list(k = "children_bopv", lab = "Children, bOPV", col = "#8A6D3B", sub = "vaccinated with bOPV only; largest month per country, added up"),
+  for (v in list(list(k = "children_nopv2", lab = "Children, nOPV2", col = C$purple, sub = "nOPV2 only; the 3 vaccine cards add up to Children vaccinated"),
+                 list(k = "children_bopv", lab = "Children, bOPV", col = "#8A6D3B", sub = "bOPV only; the 3 vaccine cards add up to Children vaccinated"),
                  list(k = "children_nopv2_bopv", lab = "Children, nOPV2 & bOPV", col = C$red,
-                      sub = "campaigns giving both vaccines; largest month per country, added up"))) {
+                      sub = paste0("both vaccines in co-administration; the 3 vaccine cards add up to Children vaccinated", other_note)))) {
     x <- num(metrics[[v$k]])
     if (!is.na(x)) by_vacc <- c(by_vacc, list(list(value = fmv(x), label = v$lab, sub = v$sub, col = v$col)))
   }
