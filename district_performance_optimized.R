@@ -767,7 +767,7 @@ district_lqas_performance <- function(data,
     month_data <- processed_data |> dplyr::filter(yearmonth == sel_date)
     if (nrow(month_data) == 0) next
 
-    plot_title <- paste("LQAS Performance –", format(sel_date, "%b %Y"))
+    plot_title <- format(sel_date, "%b %Y")      # only the month and the year; the page title is on the top left of the whole figure
 
     lqas_performance <- joined_by_month[[as.character(sel_date)]]
     if (is.null(lqas_performance) || nrow(lqas_performance) == 0) next
@@ -845,17 +845,17 @@ district_lqas_performance <- function(data,
       ggplot2::labs(fill = "LQAS Range", title = plot_title) +
       ggplot2::theme(
         plot.title = ggplot2::element_text(
-          size = tsz(10),
+          size = tsz(11.5),
           face = "bold",
           hjust = 0.5,
           margin = ggplot2::margin(b = 3)
         ),
         plot.margin = ggplot2::margin(2, 2, 2, 2),
         legend.position = "right",
-        legend.title = ggplot2::element_text(size = tsz(8), face = "bold"),
-        legend.text = ggplot2::element_text(size = tsz(7)),
-        legend.key.height = ggplot2::unit(0.3, "cm"),
-        legend.key.width = ggplot2::unit(0.15, "cm")
+        legend.title = ggplot2::element_text(size = tsz(9.5), face = "bold"),
+        legend.text = ggplot2::element_text(size = tsz(9)),
+        legend.key.height = ggplot2::unit(0.5, "cm"),
+        legend.key.width = ggplot2::unit(0.28, "cm")
       )
     
     plots_list[[length(plots_list) + 1]] <- add_disputed_area(p)
@@ -987,21 +987,28 @@ district_lqas_performance <- function(data,
     nrow = nrow_value
   ) +
     patchwork::plot_annotation(
+      title = "LQAS Performance by district and month",
       caption = paste(
         "Source: PEP SIA Repository |",
         block_type_text,
         "| © WHO AFRO GIS CENTRE | Production Date:",
         Sys.Date()
-      )
-    ) +
-    ggplot2::theme(
-      plot.caption = ggplot2::element_text(
-        size = tsz(9),
-        hjust = 1,
-        face = "italic",
-        margin = ggplot2::margin(t = 8)
       ),
-      plot.margin = ggplot2::margin(5, 5, 5, 5)
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(
+          size = tsz(18),
+          face = "bold",
+          hjust = 0,
+          margin = ggplot2::margin(b = 8)
+        ),
+        plot.caption = ggplot2::element_text(
+          size = tsz(10),
+          hjust = 1,
+          face = "italic",
+          margin = ggplot2::margin(t = 8)
+        ),
+        plot.margin = ggplot2::margin(5, 5, 5, 5)
+      )
     )
   
   heatmap_plot <- make_high_perf_heatmap(
