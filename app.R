@@ -2041,6 +2041,24 @@ admin_vaccinated_summary <- function(
     dplyr::summarise(total_children_vaccnted = max(children_vaccinated, na.rm = TRUE), .groups = "drop") |>
     dplyr::summarise(total_children_vaccnted = sum(total_children_vaccnted, na.rm = TRUE))
   
+  # Children vaccinated by vaccine type, counted like the total above (the largest month of each country, countries added up):
+  # nOPV2 only, bOPV only, and campaigns that gave both vaccines together (written "nOPV2&bOPV" or "nOPV2 & bOPV")
+  vtype_key <- gsub("\\s+", "", as.character(df$Vaccine_type))
+  children_for_vaccine <- function(keys) {
+    x <- df[vtype_key %in% keys, , drop = FALSE]
+    if (nrow(x) == 0) return(0)
+    x |>
+      dplyr::group_by(Country, floor_date) |>
+      dplyr::summarise(n = sum(TotalNbrVaccPolio, na.rm = TRUE), .groups = "drop") |>
+      dplyr::group_by(Country) |>
+      dplyr::summarise(n = max(n, na.rm = TRUE), .groups = "drop") |>
+      dplyr::summarise(s = sum(n, na.rm = TRUE)) |>
+      dplyr::pull(s)
+  }
+  children_nopv2 <- children_for_vaccine("nOPV2")
+  children_bopv  <- children_for_vaccine("bOPV")
+  children_both  <- children_for_vaccine(c("nOPV2&bOPV", "bOPV&nOPV2"))
+  
   ft_data <- df |>
     dplyr::select(Country, vaccine.type, floor_date, TotalNbrVaccPolio) |>
     dplyr::mutate(
@@ -2154,6 +2172,9 @@ admin_vaccinated_summary <- function(
     metrics = list(
       total_dose_administrated = round(total_doses / 1e6, 1),
       total_children_vaccinated = round(total_children_vaccnted$total_children_vaccnted / 1e6, 1),
+      children_nopv2 = children_nopv2 / 1e6,
+      children_bopv = children_bopv / 1e6,
+      children_nopv2_bopv = children_both / 1e6,
       n_countries = n_countries
     )
   )

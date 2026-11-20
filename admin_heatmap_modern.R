@@ -228,10 +228,6 @@ admin_vacc_subtitle <- function(block_display = "All Countries", period_text = "
 admin_vacc_cards <- function(doses_df, metrics = NULL) {
   C <- ADMIN_HM_COL
   d <- admin_vacc_data(doses_df)
-  nice <- function(x) ifelse(x == "DRC", "Democratic Republic of the Congo",
-                        ifelse(x == "CAR", "Central African Republic", tools::toTitleCase(tolower(x))))
-  bm <- d |> dplyr::group_by(floor_date) |> dplyr::summarise(m = sum(m), .groups = "drop") |> dplyr::slice_max(m, n = 1, with_ties = FALSE)
-  bc <- d |> dplyr::group_by(Country) |> dplyr::summarise(m = sum(m), .groups = "drop") |> dplyr::slice_max(m, n = 1, with_ties = FALSE)
   num <- function(x) if (is.null(x) || length(x) == 0 || is.na(x)) NA_real_ else as.numeric(x)
   fm <- function(x) paste0(format(round(x, 1), nsmall = 1, big.mark = ","), " M")
   # headline metrics that used to sit at the top of the page
@@ -242,13 +238,20 @@ admin_vacc_cards <- function(doses_df, metrics = NULL) {
     list(value = fm(dose), label = "Doses administered", sub = paste0("in the selected period, ", nrow(d), " country campaigns"), col = C$navy))
   if (!is.na(kids)) top <- c(top, list(list(value = fm(kids), label = "Children vaccinated",
                                             sub = "largest round per country, added up", col = C$blue)))
+  # children vaccinated by vaccine type (same way as the total: the largest month of each country, added up)
+  fmv <- function(x) paste0(format(round(x, if (x < 1) 2 else 1), nsmall = if (x < 1) 2 else 1, big.mark = ","), " M")
+  by_vacc <- list()
+  for (v in list(list(k = "children_nopv2", lab = "Children, nOPV2", col = C$purple, sub = "vaccinated with nOPV2 only; largest month per country, added up"),
+                 list(k = "children_bopv", lab = "Children, bOPV", col = "#8A6D3B", sub = "vaccinated with bOPV only; largest month per country, added up"),
+                 list(k = "children_nopv2_bopv", lab = "Children, nOPV2 & bOPV", col = C$red,
+                      sub = "campaigns giving both vaccines; largest month per country, added up"))) {
+    x <- num(metrics[[v$k]])
+    if (!is.na(x)) by_vacc <- c(by_vacc, list(list(value = fmv(x), label = v$lab, sub = v$sub, col = v$col)))
+  }
   c(top, list(
     list(value = as.character(nc), label = "Countries reporting",
-         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$teal),
-    list(value = format(bm$floor_date, "%b %Y"), label = "Busiest month",
-         sub = paste0(fm(bm$m), " vaccinated"), col = C$purple),
-    list(value = nice(bc$Country), label = "Largest total",
-         sub = paste0(fm(bc$m), " vaccinated over the period"), col = "#8A6D3B")))
+         sub = paste0("with campaigns over ", dplyr::n_distinct(d$floor_date), " months"), col = C$teal)),
+    by_vacc)
 }
 
 admin_vacc_cards_html <- function(doses_df, block_display = "All Countries", period_text = "", metrics = NULL) {
