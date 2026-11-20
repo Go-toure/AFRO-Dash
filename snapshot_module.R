@@ -384,7 +384,7 @@ snap_ui <- function(id) {
     shiny::div(class = "snap-wrap",
       shiny::div(class = "snap-hero",
         shiny::div(
-          shiny::tags$h2("Polio SIA at a Glance"),
+          shiny::tags$h2("SIA at a Glance"),
           shiny::tags$p(if (exists("FOCUS_ACTIVE", mode = "function") && FOCUS_ACTIVE())
                           paste0("WHO AFRO | ", focus_block(), " block | Independent monitoring (LQAS & IM) and campaign delivery")
                         else "WHO AFRO | Independent monitoring (LQAS & IM) and campaign delivery"),
