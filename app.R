@@ -1661,7 +1661,8 @@ cat("Deployment-ready data loading completed! Starting Shiny app...\n")
 apply_admin_extra_filters <- function(df,
                                       response_selection = NULL,
                                       date_selection = NULL,
-                                      round_selection = NULL) {
+                                      round_selection = NULL,
+                                      date_range = NULL) {
   if (!is.null(response_selection) && length(response_selection) > 0 &&
       "Response" %in% names(df)) {
     df <- df |> dplyr::filter(as.character(Response) %in% response_selection)
@@ -1670,11 +1671,39 @@ apply_admin_extra_filters <- function(df,
       "SIA_date" %in% names(df)) {
     df <- df |> dplyr::filter(as.Date(SIA_date) %in% as.Date(date_selection))
   }
+  # Date range (from - to, both days included on SIA_date); one open end is allowed
+  rng <- admin_date_range_clean(date_range)
+  if (!is.null(rng) && "SIA_date" %in% names(df)) {
+    d <- as.Date(df$SIA_date)
+    keep <- !is.na(d)
+    if (!is.na(rng[1])) keep <- keep & d >= rng[1]
+    if (!is.na(rng[2])) keep <- keep & d <= rng[2]
+    df <- df[keep, , drop = FALSE]
+  }
   if (!is.null(round_selection) && length(round_selection) > 0 &&
       "Round_Add" %in% names(df)) {
     df <- df |> dplyr::filter(as.character(Round_Add) %in% round_selection)
   }
   df
+}
+
+# Date range from the date-range input: c(from, to) as Dates (swapped if reversed), NULL when empty.
+admin_date_range_clean <- function(date_range) {
+  if (is.null(date_range) || length(date_range) == 0) return(NULL)
+  r <- suppressWarnings(as.Date(date_range))
+  r <- c(r, rep(as.Date(NA), 2))[1:2]
+  if (all(is.na(r))) return(NULL)
+  if (!is.na(r[1]) && !is.na(r[2]) && r[1] > r[2]) r <- r[2:1]
+  r
+}
+
+# "01 Jan 2026 to 30 Jun 2026" (open end: "from 01 Jan 2026" / "up to 30 Jun 2026"), "" when empty.
+admin_date_range_label <- function(date_range) {
+  r <- admin_date_range_clean(date_range)
+  if (is.null(r)) return("")
+  if (!is.na(r[1]) && !is.na(r[2])) paste(admin_date_label_en(r[1]), "to", admin_date_label_en(r[2]))
+  else if (!is.na(r[1])) paste("from", admin_date_label_en(r[1]))
+  else paste("up to", admin_date_label_en(r[2]))
 }
 
 # English "05 Jun 2026" label, independent of the R session / server language
@@ -1758,7 +1787,8 @@ admin_coverage_summary <- function(
     year_selection = NULL,
     response_selection = NULL,
     date_selection = NULL,
-    round_selection = NULL
+    round_selection = NULL,
+    date_range = NULL
 ) {
   flextable::set_flextable_defaults(
     background.color = "white",
@@ -1797,7 +1827,7 @@ admin_coverage_summary <- function(
   }
   
   # STEP 2b: Response / SIA date / Round number filters (optional)
-  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection)
+  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection, date_range)
   
   # STEP 3: Apply date filtering EXACTLY as original
   if (!is.null(x_months) && is.numeric(x_months)) {
@@ -1887,6 +1917,8 @@ admin_coverage_summary <- function(
   # STEP 14: Create header text
   period_text <- if (!is.null(date_selection) && length(date_selection) > 0) {
     "Selected Dates"
+  } else if (nzchar(admin_date_range_label(date_range))) {
+    admin_date_range_label(date_range)
   } else if (!is.null(x_months) && is.numeric(x_months)) {
     paste("Last", x_months, "Months")
   } else if (!is.null(year_selection) && length(year_selection) > 0) {
@@ -1990,7 +2022,8 @@ admin_vaccinated_summary <- function(
     year_selection = NULL,
     response_selection = NULL,
     date_selection = NULL,
-    round_selection = NULL
+    round_selection = NULL,
+    date_range = NULL
 ) {
   flextable::set_flextable_defaults(
     background.color = "white",
@@ -2041,7 +2074,7 @@ admin_vaccinated_summary <- function(
   }
   
   # Response / SIA date / Round number filters (optional)
-  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection)
+  df <- apply_admin_extra_filters(df, response_selection, date_selection, round_selection, date_range)
   
   if (nrow(df) == 0) stop("No data found. (Check Country names/blocks and SIA_date parsing.)")
   
@@ -2128,6 +2161,8 @@ admin_vaccinated_summary <- function(
   
   period_text <- if (!is.null(date_selection) && length(date_selection) > 0) {
     "Selected Dates"
+  } else if (nzchar(admin_date_range_label(date_range))) {
+    admin_date_range_label(date_range)
   } else if (!is.null(x_months) && is.numeric(x_months)) {
     paste("Last", x_months, "Months")
   } else if (!is.null(year_selection) && length(year_selection) > 0) {
@@ -6029,7 +6064,8 @@ ui_for_block <- function() dashboardPage(
             
             selectInput("admin_time_type", "Time Mode:", 
                         choices = c("Last X Months" = "months", 
-                                    "Specific Years" = "years"), 
+                                    "Specific Years" = "years",
+                                    "Date Range" = "range"), 
                         selected = "months"),
             
             conditionalPanel(
@@ -6043,6 +6079,13 @@ ui_for_block <- function() dashboardPage(
               textInput("admin_years", "Year(s):", 
                         placeholder = "e.g. 2023,2024",
                         value = format(Sys.Date(), "%Y"))
+            ),
+            
+            conditionalPanel(
+              condition = "input.admin_time_type == 'range'",
+              dateRangeInput("admin_date_range", "Date Range (SIA date):",
+                             start = as.Date(format(Sys.Date(), "%Y-01-01")), end = Sys.Date(),
+                             format = "yyyy-mm-dd", startview = "year", weekstart = 1)
             ),
             
             actionButton("admin_analyze", "Run Admin Overview", 
@@ -9051,6 +9094,8 @@ server <- function(input, output, session) {
       year_selection <- if (input$admin_time_type == "years" && input$admin_years != "") {
         as.numeric(strsplit(input$admin_years, ",")[[1]])
       } else NULL
+      # Date Range mode: from - to on the SIA date (both days included)
+      date_range <- if (input$admin_time_type == "range") admin_date_range_clean(input$admin_date_range) else NULL
       block_selection <- if (input$admin_block != "All") input$admin_block else NULL
       country_selection <- if (!is.null(input$admin_countries) && length(input$admin_countries) > 0)
         input$admin_countries else NULL
@@ -9065,6 +9110,7 @@ server <- function(input, output, session) {
       if (!is.null(date_selection)) {
         x_months <- NULL
         year_selection <- NULL
+        date_range <- NULL
       }
       
       # ---- Run coverage and vaccinated summaries ----
@@ -9079,7 +9125,8 @@ server <- function(input, output, session) {
         year_selection = year_selection,
         response_selection = response_selection,
         date_selection = date_selection,
-        round_selection = round_selection
+        round_selection = round_selection,
+        date_range = date_range
       )
       
       vacc_res <- admin_vaccinated_summary(
@@ -9093,7 +9140,8 @@ server <- function(input, output, session) {
         year_selection = year_selection,
         response_selection = response_selection,
         date_selection = date_selection,
-        round_selection = round_selection
+        round_selection = round_selection,
+        date_range = date_range
       )
       
       # ---- Compute Key Metrics ----

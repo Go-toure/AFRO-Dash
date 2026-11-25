@@ -396,11 +396,14 @@ snap_ui <- function(id) {
       shiny::div(class = "snap-filters",
         shiny::selectizeInput(ns("year"), "Year", choices = NULL, multiple = TRUE,
                               options = list(placeholder = "All years")),
+        shiny::dateRangeInput(ns("daterange"), "Date range", start = NA, end = NA, format = "yyyy-mm-dd",
+                              startview = "year", weekstart = 1, separator = " to "),
         shiny::selectInput(ns("block"), "AFRO block", choices = "All"),
         shiny::selectizeInput(ns("country"), "Country", choices = NULL, multiple = TRUE,
                               options = list(placeholder = "All countries")),
         shiny::actionButton(ns("reset"), "Reset", icon = shiny::icon("undo"), class = "btn-default",
                             style = "margin-bottom:10px;")),
+      shiny::uiOutput(ns("range_note")),
       shiny::uiOutput(ns("sec_im")),
       shiny::uiOutput(ns("sec_admin")),
       shiny::uiOutput(ns("sec_charts")),
@@ -433,6 +436,7 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
     }, ignoreInit = TRUE)
     shiny::observeEvent(input$reset, {
       shiny::updateSelectizeInput(session, "year", selected = character(0))
+      shiny::updateDateRangeInput(session, "daterange", start = NA, end = NA)
       shiny::updateSelectInput(session, "block", selected = "All")
       shiny::updateSelectizeInput(session, "country", choices = all_countries, selected = character(0))
     })
@@ -445,6 +449,31 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
     })
     sel_years <- shiny::reactive({ y <- suppressWarnings(as.integer(input$year)); if (length(y)) y else NULL })
 
+    # date range: c(from, to) as Dates, NULL when empty; a reversed pair is swapped, one open end is allowed
+    sel_range <- shiny::reactive({
+      r <- suppressWarnings(as.Date(input$daterange))
+      r <- c(r, rep(as.Date(NA), 2))[1:2]
+      if (all(is.na(r))) return(NULL)
+      if (!is.na(r[1]) && !is.na(r[2]) && r[1] > r[2]) r <- r[2:1]
+      r
+    })
+    by_range <- function(d, col = "date") {
+      r <- sel_range()
+      if (is.null(d) || is.null(r)) return(d)
+      x <- d[[col]]
+      keep <- !is.na(x)
+      if (!is.na(r[1])) keep <- keep & x >= r[1]
+      if (!is.na(r[2])) keep <- keep & x <= r[2]
+      d[keep, , drop = FALSE]
+    }
+    # years touched by the date range (the ONA counts are stored by year)
+    range_years <- shiny::reactive({
+      r <- sel_range(); if (is.null(r)) return(NULL)
+      lo <- if (is.na(r[1])) 2020L else as.integer(format(r[1], "%Y"))
+      hi <- if (is.na(r[2])) as.integer(format(Sys.Date(), "%Y")) else as.integer(format(r[2], "%Y"))
+      seq.int(lo, hi)
+    })
+
     by_country <- function(d) {
       sc <- sel_countries()
       if (is.null(d) || is.null(sc)) d else d[d$country %in% sc, , drop = FALSE]
@@ -456,11 +485,13 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
     Mc <- shiny::reactive(by_country(M))           # country filtered (all years) -> charts
     Ac <- shiny::reactive(by_country(A))
     Sc <- shiny::reactive(by_country(S))
-    Mf <- shiny::reactive(by_year(Mc()))
-    Af <- shiny::reactive(by_year(Ac()))
+    Mf <- shiny::reactive(by_range(by_year(Mc())))     # year and date range both apply
+    Af <- shiny::reactive(by_range(by_year(Ac())))
     Sf <- shiny::reactive({
       s <- Sc(); if (is.null(s)) return(NULL)
-      sy <- sel_years()
+      sy <- sel_years(); ry <- range_years()
+      # ONA counts exist by year only: a date range takes in the whole years it touches
+      if (!is.null(ry)) sy <- if (is.null(sy)) ry else intersect(sy, ry)
       if (is.null(sy)) s[s$year == "ALL", , drop = FALSE] else s[s$year %in% as.character(sy), , drop = FALSE]
     })
 
@@ -533,6 +564,15 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
         sub_l <- vapply(yrs, function(y) sum(s$submissions[s$source == "LQAS" & s$year == as.character(y)], na.rm = TRUE), numeric(1))
       }
       list(years = yrs, cv = cv, doses = ds, sub_i = sub_i, sub_l = sub_l)
+    })
+
+    output$range_note <- shiny::renderUI({
+      r <- sel_range(); if (is.null(r)) return(NULL)
+      lab <- if (!is.na(r[1]) && !is.na(r[2])) paste(format(r[1], "%d %b %Y"), "to", format(r[2], "%d %b %Y"))
+             else if (!is.na(r[1])) paste("from", format(r[1], "%d %b %Y")) else paste("up to", format(r[2], "%d %b %Y"))
+      shiny::div(class = "snap-note", style = "margin:6px 16px;",
+        shiny::HTML(paste0("<b>Date range ", lab, "</b>: LQAS / IM rounds are selected by round start date and campaign delivery by SIA date. ",
+                           "ONA submissions, settlements and health facilities are counted by year, so they cover the whole years of the range.")))
     })
 
     # ---- header ----------------------------------------------------------------------
@@ -661,7 +701,10 @@ snap_server <- function(id, blocks = NULL, files = SNAP_FILES) {
     snapshot_table <- shiny::reactive({
       r <- im_metrics(); a <- adm_metrics()
       f <- function(sec, metric, val, note = "") data.frame(Section = sec, Metric = metric, Value = val, Note = note, stringsAsFactors = FALSE)
+      rg <- sel_range()
+      rg_txt <- if (is.null(rg)) "All" else paste(ifelse(is.na(rg[1]), "...", format(rg[1], "%Y-%m-%d")), "to", ifelse(is.na(rg[2]), "...", format(rg[2], "%Y-%m-%d")))
       sel <- paste0("Year: ", if (length(input$year)) paste(input$year, collapse = ",") else "All",
+                    " | Date range: ", rg_txt,
                     " | Block: ", input$block, " | Countries: ", if (length(input$country)) paste(input$country, collapse = ", ") else "All")
       rows <- list(
         f("Selection", "Filters", NA, sel),
