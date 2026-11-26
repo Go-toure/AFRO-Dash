@@ -1,0 +1,46 @@
+ANSWER RULES (always apply):
+1. Every number comes from a tool result. Never compute a figure from memory or from an earlier answer.
+2. State the unit (lots, children, records, districts, percent), the period the tool used (the default is the last 6 months: say it, or ask) and the dataset (LQAS or administrative data).
+3. Quote the warnings that touch the figure; if a tool result carries a quality flag, say it.
+4. If the data cannot answer (for example children vaccinated according to LQAS, a dataset the tools do not reach, a future date), say so in one sentence and name the data that could.
+5. If two definitions exist, give the main one, name it, and give the other in one line.
+6. Correct a false premise before answering (do not add nOPV2 and bOPV totals of a co-administered campaign: the total is the larger of the two; LQAS rows are lots, not districts).
+7. A figure you cannot get from a tool is not given. Aggregated indicators only.
+
+DATA LQAS: LQAS lots (Lot Quality Assurance Sampling after a campaign)
+One row is: one row = one LQAS lot in one district and round: up to 6 clusters of 10 children, so total_sampled is at most 60 (30 to 50 when a lot is under-reported with 3 to 5 clusters)
+- lots_assessed: number of rows [len(df)]
+- lot_pass: a lot passes when at most 3 children of the lot of 60 are missed (config pass_threshold 3); column status is Pass or Fail [status == 'Pass' (total_missed <= 3)]
+- pass_rate: share of lots that pass, in percent [100 * (status == 'Pass').mean()]
+- performance_band: high: fewer than 4 missed; moderate: 4 to 8; poor: 9 to 19; very poor: 20 or more (column performance, code in R/02_process_lqas.R). Based on total_missed. [performance]
+- total_missed: LOT measure: 60 minus total_vaccinated in every row (100% of rows on 26 Nov 2026). In an under-reported lot (fewer than 60 children sampled) the children never sampled are counted as missed, so such a lot can fail although every sampled child was vaccinated. [total_missed (= 60 - total_vaccinated)]
+- missed_children_rate: the dashboard's missed rate: children sampled and NOT found vaccinated, over children sampled (never the mean of row percentages, never total_missed over total_sampled) [100 * (1 - total_vaccinated.sum() / total_sampled.sum())]
+- coverage_of_sampled: the dashboard's LQAS coverage: children found vaccinated over children sampled [100 * total_vaccinated.sum() / total_sampled.sum()]
+- reasons_for_missed: counts r_* (non-compliance, house not visited, child absent, asleep, visitor, vaccinated but not finger-marked, security, not born, other_r) and their prct_r_* shares of total_missed; abs_reason_* and nc_reason_* give details of absence and non-compliance.... [sum of the r_* columns over lots with total_sampled == 60]
+Warnings:
+- A row is a lot, not a child and not a district: a district-round can have several lots (lot_id). Say 'lots' when counting rows.
+- total_missed is 60 minus vaccinated in EVERY row: the children never sampled in an under-reported lot (3 to 5 clusters, 30 to 50 children) count as missed. In 2026 that is 3,990 of the 18,044 children counted missed (22%), so the lot measures (total_missed, status, performance) and the dashboard's missed rate (sampled children...
+- In the reasons, other_r absorbs those unsampled children (4,020 of the 5,339 'other' in 2026 come from under-reported lots): 'other' is the largest reason in the whole file but is mostly an artifact; for the reasons use complete lots.
+- 291 Nigerian lots (2020 to 2026; 16 in 2026) have only 1 or 2 clusters (10 or 20 children sampled) and are all 'Fail' with 40 to 55 missed. They lower Nigeria's pass rate (74.9% in 2026 with them, 76.3% without lots below 30 children); the rule of at least 3 clusters is not applied to them (OPEN_QUESTIONS).
+- Cluster numbers are ordinal; number_clusters is the number of forms in the lot (6 is complete).
+- Rows where geo_code is empty (3.4% on 26 Nov 2026, mostly Ethiopia, Zimbabwe, Angola) cannot be joined to the geographic reference.
+- DR Congo, Algeria, South Sudan, Nigeria, Rwanda and Ethiopia use their own selection logic (page workflows/15); never compare their lots with another country without saying so.
+- Always give the period asked for (the dashboard tools default to the last 6 months): never answer 'the rate' without the months or years it covers.
+- LQAS samples children: it never gives the number of children vaccinated in a country; use the administrative data for that.
+
+DATA ADMIN: Administrative vaccination data (polio SIAs, one record per district round vaccine)
+One row is: one row = one district, one campaign round and one vaccine; a co-administered campaign is ONE combined row (Vaccine_type 'nOPV2 & bOPV')
+- children_vaccinated: sum of TotalNbrVaccPolio (for a co-administered row it is the LARGER of the two vaccine totals, so a child given both vaccines counts once). Never add Tot_Vacc_nOPV2 and Total_Vacc_bOPV. [TotalNbrVaccPolio.sum()]
+- target_population: sum of PopPolio (children targeted in the district and round) [PopPolio.sum()]
+- administrative_coverage: official coverage = children vaccinated / target population (TotalNbrVaccPolio / PopPolio); the stored CVPolio is kept as reference only; a ratio where 1.00 is 100% [TotalNbrVaccPolio.sum() / PopPolio.sum()]
+- districts_reaching_95: share of district records with coverage at or above 0.95 [((TotalNbrVaccPolio / PopPolio) >= 0.95).mean()]
+- campaign_count: distinct Response names (a campaign) or distinct Response and Round_Add (a round) [Response.nunique()]
+Warnings:
+- Coverage above 1.5 is not credible (target too low); 1,272 records on 26 Nov 2026 are above the ceiling and listed for the countries. State the number of records above 1.5 beside any coverage.
+- MR rows (measles-rubella in an integrated campaign) have TotalNbrVaccPolio 0: exclude Vaccine_type == 'MR' from polio coverage.
+- Some PopPolio values are corrected by the engine (250 records in v30: decimals, district median) or estimated by a model (listed for confirmation): say 'reported and corrected figures'.
+- Records with the same names but different figures are different units (about 2,600), not duplicates: do not drop them.
+- Many columns are filled for few records (Integ*, Pop*, AgeG* of other interventions, the 39 V2 template columns about 0.7%): never average over missing values without saying how many records have the value.
+- Integ* flags are written Yes, yes, YES, No, NO, 0: compare case-insensitively. AFRO_block has a typo variant 'LBC' for 'LCB'.
+- Pending rounds (no records 15 days after the start) are not in the file: absence of a record is not zero coverage (Pending_admin_data.xlsx lists them).
+- Response is empty on 3.4% of records and written differently in old campaigns; the lookup is the authority for campaign name, date and round.
