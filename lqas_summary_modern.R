@@ -95,9 +95,13 @@ lq_cards_gg <- function(label, value, sub, col) {
 }
 
 lq_banner_gg <- function(text, col) {
+  # the two messages go on two lines, and the text shrinks if the longer line would not fit the width (13 in at the default scale)
+  text <- gsub("\\s*\\|\\s*", "\n", text)
+  longest <- max(nchar(strsplit(text, "\n", fixed = TRUE)[[1]]), 1L)
+  fit <- min(1, 118 / longest) * (if (grepl("\n", text, fixed = TRUE)) 0.92 else 1)
   ggplot2::ggplot() +
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col) +
-    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = lqs(3.8)) +
+    ggplot2::annotate("text", x = 0.5, y = 0.5, label = text, colour = "white", fontface = "bold", size = lqs(3.8) * fit, lineheight = 1.05) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA), plot.margin = ggplot2::margin(2, 14, 4, 10))

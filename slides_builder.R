@@ -151,6 +151,18 @@ slb_add_table <- function(pres, ft, title, subtitle, pal, footer) {
   officer::ph_with(pres, value = fitted$ft, location = officer::ph_location(left = left, top = 1.25))
 }
 
+# a ready-made figure (the modern views: they carry their own title and cards, drawn for a 13 in wide page): placed whole, aspect kept, no header bar
+slb_add_figure <- function(pres, fig, title, subtitle, pal, footer) {
+  f <- slm_png(fig)
+  pres <- officer::add_slide(pres, layout = "Blank", master = "Office Theme")
+  bw <- SLB_W - 0.4; bh <- SLB_H - 0.65
+  sc <- min(bw / fig$w, bh / fig$h); w <- fig$w * sc; h <- fig$h * sc
+  pres <- officer::ph_with(pres, value = officer::external_img(f, width = w, height = h, unit = "in"),
+                           location = officer::ph_location(left = (SLB_W - w) / 2, top = 0.15, width = w, height = h))
+  pres <- slb_box(pres, list(slb_par(slb_txt(footer, 9, pal$muted), left = 22)), 0, 7.08, 11.6, 0.35)
+  slb_box(pres, list(slb_par(slb_txt(length(pres) + 0, 9, pal$muted), align = "right", right = 22)), 11.7, 7.08, 1.63, 0.35)
+}
+
 # metrics: list of list(label=, value=) -> row of cards
 slb_add_metrics <- function(pres, metrics, title, subtitle, pal, footer) {
   n <- length(metrics)
@@ -189,6 +201,7 @@ slb_df_table <- function(df, max_rows = 18) {
 
 slb_items <- function(key, res) {
   per <- function(x) if (!is.null(x$period_info) && length(x$period_info) == 1) as.character(x$period_info) else NULL
+  if (key %in% names(SLM_LABELS_SAFE())) return(Filter(Negate(is.null), list(slb_item("charts", "figure", SLM_LABELS_SAFE()[[key]], res))))
   switch(key,
     scope = Filter(Negate(is.null), list(
       slb_item("maps", "plot", "SIA Scope Analysis", res$plot, "Districts in scope by round"))),
@@ -245,6 +258,8 @@ slb_items <- function(key, res) {
     list())
 }
 
+SLM_LABELS_SAFE <- function() if (exists("SLM_LABELS")) get("SLM_LABELS") else character(0)
+
 SLB_ANALYSIS_LABELS <- c(
   scope = "SIA Scope Analysis", admin = "Admin Data Overview",
   missed = "Missed Children Analysis", coverage = "Coverage Analysis",
@@ -252,6 +267,8 @@ SLB_ANALYSIS_LABELS <- c(
   reasons = "Reasons Analysis", unresolved = "Unresolved Cases",
   im_overview = "IM Overview", im_reasons = "IM Reasons for Missed Children",
   im_priority = "IM Priority Districts")
+# the modern views are listed first, then the classic ones (slides_modern.R defines SLM_LABELS)
+if (exists("SLM_LABELS")) SLB_ANALYSIS_LABELS <- c(SLB_ANALYSIS_LABELS["scope"], SLM_LABELS, SLB_ANALYSIS_LABELS[setdiff(names(SLB_ANALYSIS_LABELS), "scope")])
 
 # ---- title / scope / closing slides -------------------------------------------------
 slb_title_slide <- function(pres, meta, pal) {
@@ -333,6 +350,7 @@ slb_build_pptx <- function(results, meta, analyses = names(results),
       res <- tryCatch({
         pres <- switch(it$type,
           plot = slb_add_plot(pres, it$obj, it$title, it$sub, pal, footer),
+          figure = slb_add_figure(pres, it$obj, it$title, it$sub, pal, footer),
           table = slb_add_table(pres, it$obj, it$title, it$sub, pal, footer),
           metrics = slb_add_metrics(pres, it$obj, it$title, it$sub, pal, footer))
         TRUE

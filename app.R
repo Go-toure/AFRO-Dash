@@ -350,6 +350,13 @@ if (SNAPSHOT_AVAILABLE) {
 # Both are plain function files (officer / flextable / ggplot2, no extra packages).
 SLIDES_BUILDER_AVAILABLE <- file.exists("slides_builder.R") && file.exists("im_slides.R")
 if (SLIDES_BUILDER_AVAILABLE) {
+  # the modern views as slide figures (Admin, LQAS, Reasons, IM Overview): shared with the weekly deck script; loaded first, the builder lists them
+  if (file.exists("im_slides_modern.R") && file.exists("slides_modern.R")) {
+    source("im_slides_modern.R")
+    source("slides_modern.R")
+  } else {
+    cat("Modern slide figures not available (im_slides_modern.R / slides_modern.R not found)\n")
+  }
   source("slides_builder.R")
   source("im_slides.R")
 } else {
@@ -7444,13 +7451,22 @@ ui_for_block <- function() dashboardPage(
                 column(4,
                   tags$h4(class = "sl-h", "2. What to include"),
                   div(class = "sl-links",
+                      actionLink("slide_select_weekly", "Weekly technical set"), " | ",
                       actionLink("slide_select_all", "Select all"), " | ",
                       actionLink("slide_select_none", "Clear")),
                   checkboxGroupInput(
                     "slide_analyses", NULL,
                     choices = c(
                       "SIA Scope Analysis" = "scope",
-                      "Admin Data Overview" = "admin",
+                      "Admin: children vaccinated by country and month (modern)" = "m_admin_vacc",
+                      "Admin: districts reaching 95% by country and month (modern)" = "m_admin_cov",
+                      "LQAS: performance over time, executive view (modern)" = "m_lqas_exec",
+                      "LQAS: reasons children are missed, heatmap (modern)" = "m_reasons",
+                      "IM: intelligence report, key numbers (modern)" = "m_im_cards",
+                      "IM: districts at 95% coverage (modern)" = "m_im_cv95",
+                      "IM: operational failure (modern)" = "m_im_opfail",
+                      "IM: social mobilisation (modern)" = "m_im_sm",
+                      "Admin Data Overview (tables)" = "admin",
                       "Missed Children Analysis" = "missed",
                       "Coverage Analysis" = "coverage",
                       "LQAS District Performance" = "district_perf",
@@ -7461,7 +7477,7 @@ ui_for_block <- function() dashboardPage(
                       "IM Reasons for Missed Children" = "im_reasons",
                       "IM Priority Districts" = "im_priority"
                     ),
-                    selected = c("scope", "admin", "missed", "coverage", "im_overview")
+                    selected = c("scope", "m_admin_vacc", "m_admin_cov", "m_lqas_exec", "m_reasons", "m_im_cards", "m_im_cv95", "m_im_opfail", "m_im_sm")
                   ),
                   conditionalPanel(
                     condition = "input.slide_analyses && input.slide_analyses.includes('unresolved')",
@@ -14621,10 +14637,14 @@ server <- function(input, output, session) {
     if (length(x)) x else NULL
   }
 
-  slide_all_keys <- c("scope", "admin", "missed", "coverage", "district_perf", "lqas_maps",
+  slide_all_keys <- c("scope", if (exists("SLM_KEYS")) SLM_KEYS, "admin", "missed", "coverage", "district_perf", "lqas_maps",
                       "reasons", "unresolved", "im_overview", "im_reasons", "im_priority")
   observeEvent(input$slide_select_all, {
     updateCheckboxGroupInput(session, "slide_analyses", selected = slide_all_keys)
+  })
+  # the nine slides of the weekly technical deck
+  observeEvent(input$slide_select_weekly, {
+    updateCheckboxGroupInput(session, "slide_analyses", selected = if (exists("SLM_WEEKLY")) SLM_WEEKLY else character(0))
   })
   observeEvent(input$slide_select_none, {
     updateCheckboxGroupInput(session, "slide_analyses", selected = character(0))
@@ -14762,6 +14782,18 @@ server <- function(input, output, session) {
           NULL)
       }
 
+      # ---- modern views (same figures as the Admin, LQAS, Reasons and IM Overview tabs; slides_modern.R) ----
+      m_keys <- if (exists("SLM_KEYS")) intersect(analyses, SLM_KEYS) else character(0)
+      if (length(m_keys)) {
+        ctx <- list(dat = dat, admin_data = admin_data, afro_blocks = afro_blocks, months = months, years = years, block = block,
+                    countries = countries, provinces = provinces, districts = districts, geo_args = geo_args, lookups = lookups)
+        if (any(grepl("^m_im_", m_keys))) ctx$im_df <- tryCatch(slm_im_df(ctx), error = function(e) NULL)
+        for (k in m_keys) {
+          setProgress(value = min(1, i_done / n_total), detail = label_of(k))
+          run_one(k, function() slm_build(k, ctx))
+        }
+      }
+
       # ---- Independent Monitoring analyses (static versions of the IM Overview views) ----
       im_keys <- intersect(analyses, c("im_overview", "im_reasons", "im_priority"))
       if (length(im_keys)) {
@@ -14846,6 +14878,7 @@ server <- function(input, output, session) {
     }
     body <- switch(it$type,
       plot = plotOutput("slide_preview_plot", height = "480px"),
+      figure = plotOutput("slide_preview_figure", height = paste0(round(min(max(it$obj$h / it$obj$w * 1000, 380), 760)), "px")),
       table = div(class = "flextable-output", style = "max-height: 520px; overflow: auto;", htmltools_value(it$obj)),
       metrics = div(class = "sl-metrics",
         lapply(seq_along(it$obj), function(i) {
@@ -14864,6 +14897,12 @@ server <- function(input, output, session) {
     req(it, identical(it$type, "plot"))
     it$obj
   })
+
+  output$slide_preview_figure <- renderPlot({
+    it <- slide_current_item()
+    req(it, identical(it$type, "figure"))
+    it$obj$plot
+  }, res = 96)
 
   # Slide navigation
   observeEvent(input$next_slide, {
