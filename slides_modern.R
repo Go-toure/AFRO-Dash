@@ -36,8 +36,15 @@ slm_im_df <- function(ctx) {
 slm_admin_args <- function(ctx) list(admin_data = ctx$admin_data, afro_blocks = ctx$afro_blocks, x_months = ctx$months, year_selection = ctx$years,
                                      block_selection = if (is.null(ctx$block)) "All" else ctx$block, country_selection = ctx$countries)
 
+# the figure is drawn to its PNG inside this function, while slide mode is on (ggplot evaluates part of its aesthetics only when it is printed)
 slm_build <- function(key, ctx) {
-  switch(key,
+  # slide mode: compact cards, no repeated figure titles, the dashboard's original text size (the slide title says what the figure is)
+  old_c <- get0("SLM_COMPACT", ifnotfound = NULL); old_t <- get0("APP_TEXT_SCALE", ifnotfound = NULL)
+  assign("SLM_COMPACT", TRUE, envir = globalenv()); assign("APP_TEXT_SCALE", 1, envir = globalenv())
+  restore <- function() { if (is.null(old_c)) { if (exists("SLM_COMPACT", envir = globalenv())) rm("SLM_COMPACT", envir = globalenv()) } else assign("SLM_COMPACT", old_c, envir = globalenv())
+                          if (!is.null(old_t)) assign("APP_TEXT_SCALE", old_t, envir = globalenv()) }
+  on.exit(restore(), add = TRUE)
+  fig <- switch(key,
     m_admin_vacc = {
       r <- slm_call(admin_vaccinated_summary, slm_admin_args(ctx), keep_null = "x_months")
       if (is.null(r$doses_df) || !nrow(r$doses_df)) stop("no administrative data for these filters")
@@ -63,15 +70,19 @@ slm_build <- function(key, ctx) {
       g <- reason_heat_gg(filt, c("traditional", "nc", "absence"), "country", attr(filt, "period_label"))
       slm_fig(g$plot, g$height)
     },
-    m_im_cards  = { df <- ctx$im_df; if (is.null(df)) stop("no Independent Monitoring records for these filters"); slm_fig(imw_cards_fig(df, slm_period_txt(ctx)), 5.2) },
+    m_im_cards  = { df <- ctx$im_df; if (is.null(df)) stop("no Independent Monitoring records for these filters"); slm_fig(imw_cards_fig(df, slm_period_txt(ctx)), 3.8) },
     m_im_cv95   = { df <- ctx$im_df; if (is.null(df)) stop("no Independent Monitoring records for these filters"); r <- imw_cv95_fig(df, slm_period_txt(ctx)); slm_fig(r$plot, r$height) },
     m_im_opfail = { df <- ctx$im_df; if (is.null(df)) stop("no Independent Monitoring records for these filters"); slm_fig(imw_opfail_fig(df, slm_period_txt(ctx)), 6) },
     m_im_sm     = { df <- ctx$im_df; if (is.null(df)) stop("no Independent Monitoring records for these filters"); slm_fig(imw_sm_fig(df, slm_period_txt(ctx)), 6.4) },
     stop("unknown analysis: ", key))
+  fig$h <- min(fig$h, if (is.null(ctx$hmax)) 6.4 else ctx$hmax)
+  fig$png <- slm_png(fig)
+  fig
 }
 
 # PNG of a figure (the same device settings as the slide builder)
 slm_png <- function(fig, dpi = 150) {
+  if (!is.null(fig$png) && file.exists(fig$png)) return(fig$png)
   f <- tempfile(fileext = ".png")
   if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png(f, width = fig$w, height = fig$h, units = "in", res = dpi, background = "white")
   else grDevices::png(f, width = fig$w, height = fig$h, units = "in", res = dpi, bg = "white")

@@ -3,20 +3,21 @@
 # Needs the dashboard definitions loaded (im_overview_module.R helpers, im_slides.R) and a prepared IM data frame (lower-case names).
 IMW <- list(green = "#3D8B6E", gold = "#E3B23C", red = "#B83B5E", blue = "#2F7F9E", navy = "#005C97", ink = "#1A2637", muted = "#66737A", purple = "#7A5C99", teal = "#1F7A8C", orange = "#E08A3C")
 imw_num <- function(x) format(round(as.numeric(x)), big.mark = ",", scientific = FALSE, trim = TRUE)
-imw_card <- function(value, label, sub = "", col = IMW$navy, vsize = 8.5) {
+imw_card <- function(value, label, sub = "", col = IMW$navy, vsize = 8.5, cap = 3.3) {
+  cmp <- isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE)) && cap < 5; if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) vsize <- min(vsize, cap)
   ggplot2::ggplot() +
     ggplot2::annotate("rect", xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = col, alpha = 0.08, colour = NA) +
     ggplot2::annotate("rect", xmin = 0, xmax = 0.022, ymin = 0, ymax = 1, fill = col, colour = NA) +
-    ggplot2::annotate("text", x = 0.06, y = 0.66, label = value, hjust = 0, fontface = "bold", size = vsize, colour = col) +
-    ggplot2::annotate("text", x = 0.06, y = 0.37, label = label, hjust = 0, fontface = "bold", size = 3.3, colour = IMW$ink) +
-    ggplot2::annotate("text", x = 0.06, y = 0.15, label = sub, hjust = 0, size = 2.7, colour = IMW$muted) +
+    ggplot2::annotate("text", x = 0.06, y = if (cmp) 0.70 else 0.66, label = value, hjust = 0, fontface = "bold", size = vsize, colour = col) +
+    ggplot2::annotate("text", x = 0.06, y = if (cmp) 0.36 else 0.37, label = label, hjust = 0, fontface = "bold", size = if (cmp) 2.3 else 3.3, colour = IMW$ink) +
+    ggplot2::annotate("text", x = 0.06, y = if (cmp) 0.12 else 0.15, label = sub, hjust = 0, size = if (cmp) 1.9 else 2.7, colour = IMW$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + ggplot2::theme_void() +
     ggplot2::theme(plot.margin = ggplot2::margin(3, 4, 3, 4))
 }
 imw_head <- function(title, sub) {
   ggplot2::ggplot() +
-    ggplot2::annotate("text", x = 0, y = 0.68, label = title, hjust = 0, fontface = "bold", size = 6, colour = IMW$ink) +
-    ggplot2::annotate("text", x = 0, y = 0.22, label = sub, hjust = 0, size = 3.2, colour = IMW$muted) +
+    ggplot2::annotate("text", x = 0, y = 0.68, label = title, hjust = 0, fontface = "bold", size = if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) 4.4 else 6, colour = IMW$ink) +
+    ggplot2::annotate("text", x = 0, y = 0.22, label = sub, hjust = 0, size = if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) 2.5 else 3.2, colour = IMW$muted) +
     ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + ggplot2::theme_void() + ggplot2::theme(plot.margin = ggplot2::margin(6, 10, 2, 10))
 }
 imw_banner <- function(txt, col = IMW$navy) {
@@ -40,13 +41,13 @@ imw_cards_fig <- function(df, period_txt) {
   key <- intersect(c("country", "response", "vaccine_type", "roundnumber"), names(df))
   n_round <- nrow(unique(df[, key, drop = FALSE]))
   hh <- sum(as.numeric(df$number_of_hh_visited), na.rm = TRUE)
-  top <- imw_row(imw_card(imw_num(hh), "HOUSEHOLDS VISITED", "households checked by the monitors", IMW$navy, 9),
-                 imw_card(imw_num(tf), "CHILDREN FOUND VACCINATED", paste0("of ", imw_num(tp), " children checked"), IMW$green, 9),
-                 imw_card(imw_num(max(tp - tf, 0)), "MISSED CHILDREN", paste0(sprintf("%.1f%%", 100 * max(tp - tf, 0) / max(tp, 1)), " of children checked"), IMW$red, 9),
-                 imw_card(if (is.na(aw)) "-" else sprintf("%.1f%%", 100 * aw), "CAREGIVER AWARENESS", "target 80%", IMW$gold, 9))
-  small <- imw_row(imw_card(imw_num(n_round), "Campaign rounds", "", IMW$navy, 6.5), imw_card(imw_num(length(unique(df$country))), "Countries", "", IMW$navy, 6.5),
-                   imw_card(imw_num(nrow(unique(df[, intersect(c("country", "province"), names(df)), drop = FALSE]))), "Provinces", "", IMW$navy, 6.5),
-                   imw_card(imw_num(nrow(unique(df[, intersect(c("country", "province", "district"), names(df)), drop = FALSE]))), "Districts", "", IMW$navy, 6.5))
+  top <- imw_row(imw_card(imw_num(hh), "HOUSEHOLDS VISITED", "households checked by the monitors", IMW$navy, 9, 7),
+                 imw_card(imw_num(tf), "CHILDREN FOUND VACCINATED", paste0("of ", imw_num(tp), " children checked"), IMW$green, 9, 7),
+                 imw_card(imw_num(max(tp - tf, 0)), "MISSED CHILDREN", paste0(sprintf("%.1f%%", 100 * max(tp - tf, 0) / max(tp, 1)), " of children checked"), IMW$red, 9, 7),
+                 imw_card(if (is.na(aw)) "-" else sprintf("%.1f%%", 100 * aw), "CAREGIVER AWARENESS", "target 80%", IMW$gold, 9, 7))
+  small <- imw_row(imw_card(imw_num(n_round), "Campaign rounds", "", IMW$navy, 6.5, 5.5), imw_card(imw_num(length(unique(df$country))), "Countries", "", IMW$navy, 6.5, 5.5),
+                   imw_card(imw_num(nrow(unique(df[, intersect(c("country", "province"), names(df)), drop = FALSE]))), "Provinces", "", IMW$navy, 6.5, 5.5),
+                   imw_card(imw_num(nrow(unique(df[, intersect(c("country", "province", "district"), names(df)), drop = FALSE]))), "Districts", "", IMW$navy, 6.5, 5.5))
   cowplot::plot_grid(imw_head("AFRO Regional Independent Monitoring Intelligence", paste0(period_txt, "  |  ", imw_period(df), "  |  generated ", format(Sys.Date(), "%d %b %Y"))),
                      top, small, ncol = 1, rel_heights = c(0.9, 2.2, 1.1)) -> g
   g
@@ -73,8 +74,8 @@ imw_cv95_fig <- function(df, period_txt) {
                    imw_card(as.character(nlow), "Below 80%", paste0("of districts at 95% coverage (", pct(nlow), ")"), K$red))
   hh <- max(4, 0.52 * max(table(im_cv95_stack_data(tbl)$mlab)) + 2.2)
   main <- im_cv95_stack_gg(tbl)
-  list(plot = cowplot::plot_grid(imw_head("Campaign coverage by country and month", paste0(period_txt, "  |  share of each country's monitored districts at 95% coverage or more  |  green = 95% or more, amber = 80 to 94%, red = below 80%")), cards, main, ncol = 1, rel_heights = c(0.8, 1.25, hh)),
-       height = hh + 2.4)
+  list(plot = cowplot::plot_grid(imw_head("Campaign coverage by country and month", paste0(period_txt, "  |  share of each country's monitored districts at 95% coverage or more  |  green = 95% or more, amber = 80 to 94%, red = below 80%")), cards, main, ncol = 1, rel_heights = if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) c(0.85, 1.0, hh) else c(0.8, 1.25, hh)),
+       height = hh + (if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) 1.85 else 2.4))
 }
 
 # slide 8: operational failure profile
@@ -135,13 +136,13 @@ imw_sm_fig <- function(df, period_txt) {
     ggplot2::labs(x = "Caregiver awareness rate (%)", y = "Vaccination coverage, IM (%)") +
     ggplot2::theme_minimal(base_size = 11) + ggplot2::theme(legend.position = "bottom", panel.grid.minor = ggplot2::element_blank(), plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                                                          axis.title = ggplot2::element_text(colour = IMW$muted), plot.margin = ggplot2::margin(6, 8, 6, 10)) +
-    ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size = 3, alpha = 1)))
+    ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, override.aes = list(size = 3, alpha = 1)))
   low <- s[s$awareness_rate < 0.80, ]
   topc <- if (nrow(low) && "country" %in% names(low)) head(sort(table(im_nice_name(low$country)), decreasing = TRUE), 4) else NULL
   side <- cowplot::plot_grid(
-    imw_card(pc(q("High awareness + good coverage")), "High awareness and good coverage", paste0(imw_num(q("High awareness + good coverage")), " of ", imw_num(n), " districts"), "#3D8B6E", 7),
-    imw_card(pc(q("Low awareness + low coverage")), "Low awareness and low coverage", paste0(imw_num(q("Low awareness + low coverage")), " districts: priority for social mobilisation"), IMW$red, 7),
-    imw_card(pc(q("High awareness but low coverage")), "High awareness but low coverage", paste0(imw_num(q("High awareness but low coverage")), " districts: check operations and microplans"), IMW$purple, 7),
+    imw_card(pc(q("High awareness + good coverage")), "High awareness and good coverage", paste0(imw_num(q("High awareness + good coverage")), " of ", imw_num(n), " districts"), "#3D8B6E", 7, 6),
+    imw_card(pc(q("Low awareness + low coverage")), "Low awareness and low coverage", paste0(imw_num(q("Low awareness + low coverage")), " districts: priority for social mobilisation"), IMW$red, 7, 6),
+    imw_card(pc(q("High awareness but low coverage")), "High awareness but low coverage", paste0(imw_num(q("High awareness but low coverage")), " districts: check operations and microplans"), IMW$purple, 7, 6),
     ggplot2::ggplot() + ggplot2::annotate("text", x = 0, y = 0.5, hjust = 0, size = 3.1, colour = IMW$ink, label = if (!is.null(topc)) paste(strwrap(paste0("Most low-awareness districts: ", paste0(names(topc), " (", as.integer(topc), ")", collapse = ", ")), 34), collapse = "\n") else "") +
       ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) + ggplot2::theme_void(),
     ncol = 1, rel_heights = c(1, 1, 1, 0.7))

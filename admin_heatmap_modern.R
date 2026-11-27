@@ -94,9 +94,12 @@ admin_coverage_country_month_gg <- function(dist_df, block_display = "All Countr
 
 admin_country_month_height <- function(dist_df) {
   d <- admin_coverage_country_month_data(dist_df)
+  if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) return(max(3, 0.40 * max(table(d$floor_date)) + 1.3))
   max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
-admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + 1.7
+# slide mode (slides_modern.R): no figure title or legend row, a compact card strip, the chart takes the rest of the slide
+admin_slide_mode <- function() isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))
+admin_country_month_height_cards <- function(dist_df) admin_country_month_height(dist_df) + (if (admin_slide_mode()) 0.9 else 1.7)
 
 # ------------------------------------------------------------
 # Headline numbers shown as light cards above the chart
@@ -169,15 +172,15 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
   cards <- admin_cm_cards(dist_df, metrics)
   k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(125 / k)),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) 80 else round(125 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8.5, 118 * 4 / k)), hjust = 0, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.76 else 0.74, label = value, colour = col, size = admin_card_mm(value, if (admin_slide_mode()) 3.3 else 8.5, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.47, label = stringr::str_wrap(label, 17)), hjust = 0, size = 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.17, label = sub), hjust = 0, size = 3.0, colour = C$muted, lineheight = 0.9, vjust = 0.5) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.46 else 0.47, label = stringr::str_wrap(label, if (admin_slide_mode()) 40 else 17)), hjust = 0, size = if (admin_slide_mode()) 2.3 else 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.15 else 0.17, label = sub), hjust = 0, size = if (admin_slide_mode()) 1.9 else 3.0, colour = C$muted, lineheight = 0.9, vjust = 0.5) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -200,6 +203,7 @@ admin_cm_with_cards_gg <- function(dist_df, block_display = "All Countries", per
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                    plot.margin = ggplot2::margin(6, 14, 0, 10))
+  if (admin_slide_mode()) return(patchwork::wrap_plots(cp, main, ncol = 1, heights = c(1.3, 10)))
   patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(1.5, 2.6, 10))
 }
 
@@ -336,23 +340,24 @@ admin_vacc_gg <- function(doses_df, block_display = "All Countries", period_text
 
 admin_vacc_height <- function(doses_df) {
   d <- admin_vacc_data(doses_df)
+  if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) return(max(3, 0.40 * max(table(d$floor_date)) + 1.3))
   max(4, 0.62 * max(table(d$floor_date)) + 2.2)
 }
-admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + 1.7
+admin_vacc_height_cards <- function(doses_df) admin_vacc_height(doses_df) + (if (admin_slide_mode()) 0.9 else 1.7)
 
 admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", period_text = "", metrics = NULL) {
   C <- ADMIN_HM_COL
   cards <- admin_vacc_cards(doses_df, metrics); k <- length(cards)
   cd <- do.call(rbind, lapply(seq_along(cards), function(i)
-    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, round(125 / k)),
+    data.frame(i = i, value = cards[[i]]$value, label = cards[[i]]$label, sub = stringr::str_wrap(cards[[i]]$sub, if (isTRUE(get0("SLM_COMPACT", ifnotfound = FALSE))) 80 else round(125 / k)),
                col = cards[[i]]$col, stringsAsFactors = FALSE)))
   cp <- ggplot2::ggplot(cd) +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i + 0.47, ymin = 0, ymax = 1), fill = "#F7F9F6", colour = "#E3E8E1") +
     ggplot2::geom_rect(ggplot2::aes(xmin = i - 0.47, xmax = i - 0.455, ymin = 0, ymax = 1, fill = col)) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.74, label = value, colour = col, size = admin_card_mm(value, 8, 118 * 4 / k)), hjust = 0, fontface = "bold") +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.76 else 0.74, label = value, colour = col, size = admin_card_mm(value, if (admin_slide_mode()) 3.3 else 8, 118 * 4 / k)), hjust = 0, fontface = "bold") +
     ggplot2::scale_size_identity() +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.47, label = stringr::str_wrap(label, 17)), hjust = 0, size = 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
-    ggplot2::geom_text(ggplot2::aes(i - 0.40, 0.17, label = sub), hjust = 0, size = 3.0, colour = C$muted, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.46 else 0.47, label = stringr::str_wrap(label, if (admin_slide_mode()) 40 else 17)), hjust = 0, size = if (admin_slide_mode()) 2.3 else 3.7, fontface = "bold", colour = C$text, lineheight = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(i - 0.40, if (admin_slide_mode()) 0.15 else 0.17, label = sub), hjust = 0, size = if (admin_slide_mode()) 1.9 else 3.0, colour = C$muted, lineheight = 0.9) +
     ggplot2::scale_fill_identity() + ggplot2::scale_colour_identity() +
     ggplot2::coord_cartesian(xlim = c(0.5, k + 0.5), ylim = c(0, 1), expand = FALSE) +
     ggplot2::theme_void() + ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
@@ -373,5 +378,6 @@ admin_vacc_with_cards_gg <- function(doses_df, block_display = "All Countries", 
     ggplot2::theme_void() +
     ggplot2::theme(plot.background = ggplot2::element_rect(fill = "white", colour = NA),
                    plot.margin = ggplot2::margin(6, 14, 0, 10))
+  if (admin_slide_mode()) return(patchwork::wrap_plots(cp, main, ncol = 1, heights = c(1.3, 10)))
   patchwork::wrap_plots(hd, cp, main, ncol = 1, heights = c(1.5, 2.6, 10))
 }

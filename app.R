@@ -14878,7 +14878,7 @@ server <- function(input, output, session) {
     }
     body <- switch(it$type,
       plot = plotOutput("slide_preview_plot", height = "480px"),
-      figure = plotOutput("slide_preview_figure", height = paste0(round(min(max(it$obj$h / it$obj$w * 1000, 380), 760)), "px")),
+      figure = imageOutput("slide_preview_figure", height = "auto"),
       table = div(class = "flextable-output", style = "max-height: 520px; overflow: auto;", htmltools_value(it$obj)),
       metrics = div(class = "sl-metrics",
         lapply(seq_along(it$obj), function(i) {
@@ -14898,11 +14898,12 @@ server <- function(input, output, session) {
     it$obj
   })
 
-  output$slide_preview_figure <- renderPlot({
+  # the modern figures are drawn to a PNG once (slides_modern.R); the preview shows that same file
+  output$slide_preview_figure <- renderImage({
     it <- slide_current_item()
-    req(it, identical(it$type, "figure"))
-    it$obj$plot
-  }, res = 96)
+    req(it, identical(it$type, "figure"), !is.null(it$obj$png))
+    list(src = it$obj$png, contentType = "image/png", width = "100%", alt = it$title)
+  }, deleteFile = FALSE)
 
   # Slide navigation
   observeEvent(input$next_slide, {
