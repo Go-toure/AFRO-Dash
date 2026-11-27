@@ -279,3 +279,60 @@ def render_place_map(df, country, district, place, out_png, boundaries_dir, rscr
     except Exception:
         info = {}
     return out_png, info
+
+
+def select_routes(df, country, province=None, district=None, year=None, months=None, latest_round=False, response=None, round_=None):
+    """Routes that pass the quality rules for a selection; latest_round keeps the most recent campaign round of the selection (found by date; a round = response + round label)."""
+    d = _ok(df)
+    for col, v in (("country", country), ("province", province), ("district", district), ("response", response), ("round", round_)):
+        if v:
+            d = d[d[col].map(lambda x: norm(x) if isinstance(x, str) else "") == norm(v)]
+    if year:
+        d = d[d.year == int(year)]
+    if months:
+        ms = [str(m) for m in (months if isinstance(months, (list, tuple)) else [months])]
+        d = d[d.date.dt.strftime("%Y-%m").isin(ms)] if any("-" in m for m in ms) else d[d.date.dt.month.isin([int(m) for m in ms])]
+    info = {}
+    d = d.dropna(subset=["lat", "lon"])
+    if latest_round and d.date.notna().any():
+        row = d.loc[d.date.idxmax()]
+        d = d[(d.response == row["response"]) & (d["round"] == row["round"])]
+        info["latest_round"] = {"response": row["response"], "round": row["round"], "first_route": _d(d.date.min()), "last_route": _d(d.date.max())}
+    return d, info
+
+
+def footprint_window(d, mine_mask, radius_m=None):
+    """(xmin, xmax, ymin, ymax) of the map: a radius around the place, else the place's routes, else the central 99% of the routes, with a margin."""
+    import numpy as np
+    ref = d[mine_mask] if mine_mask is not None and mine_mask.any() else d
+    lon0, lat0 = float(ref.lon.median()), float(ref.lat.median())
+    mdeg_lat = 111320.0
+    mdeg_lon = 111320.0 * float(np.cos(np.radians(lat0)))
+    if radius_m:
+        r = float(radius_m)
+        return (lon0 - r / mdeg_lon, lon0 + r / mdeg_lon, lat0 - r / mdeg_lat, lat0 + r / mdeg_lat)
+    lo_x, hi_x = ref.lon.quantile(0.005), ref.lon.quantile(0.995)
+    lo_y, hi_y = ref.lat.quantile(0.005), ref.lat.quantile(0.995)
+    px = max((hi_x - lo_x) * 0.06, 150 / mdeg_lon); py = max((hi_y - lo_y) * 0.06, 150 / mdeg_lat)
+    return (float(lo_x - px), float(hi_x + px), float(lo_y - py), float(hi_y + py))
+
+
+def render_footprint(routes, mine_mask, window, out_png, boundaries_dir, rscript, country, title, subtitle, basemap=False):
+    """Draws the footprint map with make_footprint_map.R; returns (png path, info from R)."""
+    import csv, subprocess, tempfile, json
+    tmp = tempfile.mkdtemp(prefix="sia_fp_")
+    cs = os.path.join(tmp, "routes.csv")
+    r = routes.copy(); r["mine"] = mine_mask.astype(int).values if hasattr(mine_mask, "values") else 1
+    r[["lat", "lon", "lat_end", "lon_end", "children", "mine"]].head(30000).to_csv(cs, index=False)
+    open(cs + ".txt", "w", encoding="utf-8").write("\n".join([str(country), str(title).replace("\n", " "), str(subtitle).replace("\n", " ")]))
+    width_m = (window[1] - window[0]) * 111320.0
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = subprocess.run([rscript, os.path.join(here, "make_footprint_map.R"), boundaries_dir, cs, out_png, str(country), title, subtitle] + ["%.6f" % x for x in window] + ["1" if basemap else "0", "%.0f" % width_m],
+                       capture_output=True, text=True, timeout=300)
+    if p.returncode or not os.path.exists(out_png):
+        raise RuntimeError("the map could not be drawn: " + ((p.stderr or p.stdout).strip().splitlines() or ["R failed"])[-1][:300])
+    try:
+        info = json.load(open(out_png + ".json", encoding="utf-8"))
+    except Exception:
+        info = {}
+    return out_png, info

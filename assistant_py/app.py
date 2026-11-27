@@ -4,7 +4,7 @@ Run on the owner's computer:   pip install -r requirements.txt   then   set ANTH
 The model answers only through the engine (tools/catalog_engine.py): aggregated figures with unit, period and warnings; it never sees a record and writes no code.
 INTERNAL USE: the page has no sign-in; do not publish it publicly. The public AFRO-Dash assistant is a separate decision (workflows/18, section 3d).
 """
-import asyncio, os, sys, tempfile, uuid
+import asyncio, os, shutil, sys, tempfile, uuid
 
 from shiny import App, ui
 
@@ -61,12 +61,21 @@ def server(input, output, session):
             return
         state["history"] = trim(hist)  # keep the conversation short
         t = trail(calls)
-        imgs = ""
+        imgs, seen = "", set()
+        for path, fname in getattr(bot(), "files", []):   # files made for this question (maps, decks, charts): shown when images, always offered as downloads
+            if fname in seen or not os.path.exists(path):
+                continue
+            seen.add(fname)
+            name = "%s_%s" % (uuid.uuid4().hex[:6], fname)
+            shutil.copyfile(path, os.path.join(CHARTS, name))
+            if fname.lower().endswith(".png"):
+                imgs += "\n\n![%s](charts/%s)" % (fname, name)
+            imgs += "\n\n[Download %s](charts/%s)" % (fname, name)
         for b in getattr(bot(), "images", []):
             name = "c_%s.png" % uuid.uuid4().hex[:10]
             with open(os.path.join(CHARTS, name), "wb") as f:
                 f.write(b)
-            imgs += "\n\n![chart](charts/%s)" % name
+            imgs += "\n\n![chart](charts/%s)\n\n[Download this image](charts/%s)" % (name, name)
         await chat.append_message(reply + imgs + ("\n\n<details><summary>Data used</summary>\n\n" + "\n".join("- `%s`" % x for x in t) + "\n\n</details>" if t else ""))
 
 

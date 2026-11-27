@@ -86,6 +86,27 @@ SETTLEMENT_TOOL = {"name": "find_settlement", "description": "Information about 
                        "map": {"type": "boolean", "description": "true to draw the routes of the place on the district boundary"}},
                        "required": ["name"]}}
 TOOLS.append(SETTLEMENT_TOOL)
+FOOTPRINT_TOOL = {"name": "make_footprint_map", "description": "Draw a FOOTPRINT MAP (an image the user can see and download) of the monitor routes of the IM settlement files that found missed children: every route as a line from its start to its end, coloured by the children missed, with a scale bar, on the district boundary. Use it for 'settlement map', 'footprint', 'routes', 'zoom to a settlement / 300 m', 'last round conducted in <country>'. Give the country. With `place` (settlement or health facility name) it zooms on that place; `radius_m` is the half-width of the window around the place (300 gives a window of 600 m); without `place` it draws all the routes of the selection (country, district, year, months, latest_round). `latest_round` keeps the most recent campaign round of the selection. When the place name matches several places it returns the candidates: ask which one, then call again with `pick`. For a district-level shaded map use make_map instead.",
+                  "input_schema": {"type": "object", "properties": {
+                      "country": {"type": "string"}, "province": {"type": "string"}, "district": {"type": "string"},
+                      "place": {"type": "string", "description": "settlement or health facility to zoom on"},
+                      "pick": {"type": "integer", "description": "1-based number of the candidate, after a first call returned several"},
+                      "radius_m": {"type": "number", "description": "half-width of the window around the place, in metres (for example 300)"},
+                      "latest_round": {"type": "boolean", "description": "keep only the most recent campaign round of the country selection"},
+                      "year": {"type": "integer"}, "months": {"type": "array", "items": {"type": "string"}},
+                      "response": {"type": "string"}, "round": {"type": "string"},
+                      "basemap": {"type": "boolean", "description": "street map under the routes when the R packages ggspatial and rosm are installed"},
+                      "title": {"type": "string"}},
+                      "required": ["country"]}}
+TOOLS.append(FOOTPRINT_TOOL)
+SP_FLAGS = ("--sharepoint-push", "--upload-only", "--force-upload")
+JOB_TOOLS = [
+    {"name": "run_job", "description": "Run a pipeline job of the owner's computer through the job runner and return its result: the weekly technical slides (weekly_deck: a PowerPoint the user can download), refresh of the scope, LQAS, IM, Form A, preparedness, team supervision, vaccine accountability, social mobilization, AFP data, admin checks, backups, maps. The jobs download and rebuild LOCAL files and never publish to SharePoint by default. Pass `flags` only from the job's allowed flags (for example --months=12, --countries=NIGERIA,CHAD for weekly_deck). A SharePoint upload (--sharepoint-push, --upload-only, --force-upload) needs `user_confirmed_sharepoint=true`, which you may set ONLY when the user's own latest message explicitly asked for that upload. Long jobs take minutes: the call waits up to `wait_seconds` (default 300); if the job is still running it returns its id and you tell the user, who can ask for the status later.",
+     "input_schema": {"type": "object", "properties": {
+         "job": {"type": "string"}, "flags": {"type": "array", "items": {"type": "string"}},
+         "wait_seconds": {"type": "integer"}, "user_confirmed_sharepoint": {"type": "boolean"}}, "required": ["job"]}},
+    {"name": "job_status", "description": "Status and result of a job started with run_job (its id), or the last job when no id is given.",
+     "input_schema": {"type": "object", "properties": {"id": {"type": "string"}}}}]
 FIGURE = re.compile(r"\d{1,3}(,\d{3})+|\d+\.\d+|\b\d{3,}\b|\d\s?%")
 
 
@@ -120,6 +141,7 @@ def system_prompt(here=HERE, engine=None):
             ""
             "For the last, latest or most recent round or campaign use latest_round=true and name the campaign and round the result reports; never choose a round by its label and never group by round to find the latest. "
             "For a question about ONE settlement, village or health facility (what happened there, how many missed children, why, when, where) call find_settlement with the name and the country; if it returns several candidates, list them and ask which one, then call again with pick; add map=true when a map is asked. State that the settlement files hold only routes that found missed children (no coverage rate per settlement) and the routes left out. For totals over many places use query_data on the dataset settlement. "
+            "Every table, chart, map, slide deck or file you produce is offered to the user as a download link under your answer: say so briefly, never invent a link or a file path. For a settlement map, a footprint map, routes on a map, a zoom on a settlement (for example 300 m) or the routes of the last round of a country call make_footprint_map (the user can download the image); a district-shaded map of any metric is make_map. For LQAS performance by district use metric district_performance_class (a class per district) with make_map and latest_round=true. When the user asks to run, refresh or update data, or to return the weekly technical (SIA weekly) slides, call run_job: weekly_deck builds the weekly technical slides (PowerPoint, 9 slides) the user downloads; dash_analysis produces ANY analysis of the AFRO dashboard with any filters (flags --analyses=<keys, comma separated> with keys scope, m_admin_vacc, m_admin_cov, m_lqas_exec, m_reasons, m_im_cards, m_im_cv95, m_im_opfail, m_im_sm, admin, missed, coverage, district_perf, lqas_maps, reasons, unresolved, im_overview, im_reasons, im_priority, or all; --months=N or --years=2025,2026; --block=; --countries=; --provinces=; --districts=): it returns a PowerPoint and one PNG per chart or map; 'update the scope data' = run_job scope_refresh; LQAS, IM, Form A, preparedness, team supervision, vaccine accountability, social mobilization, AFP, admin checks and backups are jobs too; refresh_all_data runs them all. Refresh jobs rebuild local files and never upload to SharePoint unless the user's own message explicitly asks for the upload; report the job status and what it produced. "
             "For a graph or chart call make_chart (bars for categories, a line for year or month): the image is shown after your reply, so describe what it shows and restate the warnings. For a map call make_map (district by geo code for LQAS, admin and IM; other datasets by province, state or district name inside one country, or by country): the image is shown after your reply, so say what it shows, how many places were placed, and restate the warnings; use latest_round=true for the last round. If the tool says R is missing, say that this computer cannot draw maps and give the table instead. "
             "When the question does not name the dataset, name the dataset you used. A dataset that is not in the list below is not available here: say so, do not guess. Answer in the language of the question, briefly.\n\nDATASETS AND THEIR METRICS (use these exact names):\n" + listing + "\n\nRULES OF THE CATALOGUE:\n" + rules)
 
@@ -212,8 +234,17 @@ class Assistant:
         self.model = model or DEFAULT_MODEL
         self.max_steps = max_steps
         self.images = []
+        self.files = []   # (path, name): files made during a question (a deck, a map) that the page offers as downloads
         self.system = system_prompt(self.engine.here, self.engine)
         self.tools = build_tools(self.engine)
+        self.jobs = self._jobs_module()
+        if self.jobs:
+            jobs = sorted(self.jobs.JOBS) + sorted(self.jobs.CHAINS)
+            for t in copy.deepcopy(JOB_TOOLS):
+                if t["name"] == "run_job":
+                    t["input_schema"]["properties"]["job"]["enum"] = jobs
+                    t["description"] += " Jobs: " + "; ".join("%s = %s [flags: %s]" % (k, v["what"], " ".join(v["flags"]) or "none") for k, v in self.jobs.JOBS.items()) + "; chains (no flags): " + "; ".join("%s = %s" % (k, ", ".join(v)) for k, v in self.jobs.CHAINS.items())
+                self.tools.append(t)
         if client is None:
             if not load_key():
                 raise SystemExit("ANTHROPIC_API_KEY not found: set the environment variable, or put ANTHROPIC_API_KEY=... in the .env file of this project (chat_app/.env, or .env next to app.py)")
@@ -234,6 +265,7 @@ class Assistant:
             elif name == "query_data":
                 call = dict(args)
                 out = self.engine.run_call(call)
+                self._offer_table(out, args)
                 if isinstance(out.get("table"), list) and len(out["table"]) > MAX_TABLE_ROWS:
                     out["table_rows_total"] = len(out["table"])
                     out["table"] = out["table"][:MAX_TABLE_ROWS]
@@ -262,6 +294,12 @@ class Assistant:
                        "table": res["table"][:30], "warnings": res.get("warnings", []), "notes": res.get("notes", [])}
             elif name == "find_settlement":
                 out = self._find_settlement(args)
+            elif name == "make_footprint_map":
+                out = self._footprint(args)
+            elif name == "run_job":
+                out = self._run_job(args)
+            elif name == "job_status":
+                out = self._job_status(args)
             else:
                 out = {"error": "unknown tool " + str(name)}
         except EngineError as e:
@@ -269,6 +307,164 @@ class Assistant:
         except Exception as e:  # a bad argument must not stop the conversation
             out = {"error": "the query failed: %s" % str(e)[:200]}
         return json.dumps(out, ensure_ascii=False, default=str)
+
+    def _offer_table(self, res, args):
+        """Every table the engine returns is also offered as a CSV download (the full table, not only the rows shown)."""
+        try:
+            import csv, tempfile
+            tab = res.get("table") if isinstance(res, dict) else None
+            if not isinstance(tab, list) or not tab or not isinstance(tab[0], dict):
+                return
+            cols = list(tab[0].keys())
+            for r in tab:
+                for k in r:
+                    if k not in cols:
+                        cols.append(k)
+            slug = re.sub(r"[^a-z0-9]+", "_", ("%s_%s_%s" % (args.get("dataset", ""), args.get("metric", ""), args.get("by") or "")).lower()).strip("_")[:50] or "table"
+            path = os.path.join(tempfile.mkdtemp(prefix="sia_tab_"), "table_%s.csv" % slug)
+            with open(path, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.DictWriter(f, fieldnames=cols)
+                w.writeheader()
+                w.writerows(tab)
+            self.files.append((path, os.path.basename(path)))
+            res["downloadable"] = "the full table is offered to the user as a CSV download"
+        except Exception:
+            pass
+
+    # ----- footprint map of settlement routes -----
+    def _footprint(self, a):
+        import settlement_tools as st, tempfile
+        from map_tools import rscript, boundaries_dir, MapError
+        if "settlement" not in self.engine.ds or not self.engine.available("settlement"):
+            return {"error": "the settlement files (AFRO-Dash/input/<form id>.csv.gz) are not available in this installation"}
+        if not a.get("country"):
+            return {"error": "give the country"}
+        R = rscript()
+        if not R:
+            return {"error": "R is not installed on this computer: maps need Rscript"}
+        df = self.engine.load("settlement")[0]
+        d, info = st.select_routes(df, a["country"], a.get("province"), a.get("district"), a.get("year"), a.get("months"), bool(a.get("latest_round")), a.get("response"), a.get("round"))
+        if d.empty:
+            return {"error": "no route with missed children for this selection (country, district, period)"}
+        notes, mask, label = [], None, None
+        if a.get("place"):
+            cands = st.search_places(df, a["place"], a["country"], a.get("district"), a.get("province"), limit=10)
+            if not cands:
+                return {"found": False, "message": "no place of this name in the settlement files of %s: check the spelling" % a["country"]}
+            exact = [c for c in cands if c["match"] == "exact name"]
+            pick = a.get("pick")
+            if pick and 1 <= int(pick) <= len(cands):
+                ch = cands[int(pick) - 1]
+            elif len(cands) == 1:
+                ch = cands[0]
+            elif len(exact) == 1:
+                ch = exact[0]
+            else:
+                return {"resolved": False, "message": "several places match: ask the user which one, then call again with `pick`", "candidates": [dict(number=i + 1, **c) for i, c in enumerate(cands)]}
+            pk = st.norm(ch["place"])
+            mask = (d.place_key == pk) & (d.district == ch["district"])
+            if not mask.any():
+                d2, _ = st.select_routes(df, a["country"], a.get("province"), a.get("district"), a.get("year"), a.get("months"), False, a.get("response"), a.get("round"))
+                m2 = (d2.place_key == pk) & (d2.district == ch["district"])
+                if not m2.any():
+                    return {"error": "this place has no route with missed children for this selection"}
+                d, mask = d2, m2
+                notes.append("the place has no route in the latest round of the country: all its rounds are drawn")
+                info.pop("latest_round", None)
+            label = ch["place"].title()
+        window = st.footprint_window(d, mask, a.get("radius_m"))
+        d = d[(d.lon.between(window[0], window[1]) & d.lat.between(window[2], window[3])) | (d.lon_end.between(window[0], window[1]) & d.lat_end.between(window[2], window[3]))]
+        mask = mask.reindex(d.index, fill_value=False) if mask is not None else None
+        import pandas as pd
+        mk = mask if mask is not None else pd.Series(True, index=d.index)
+        lr = info.get("latest_round")
+        sub = " | ".join(x for x in [a["country"].title() + ((", " + a["district"].title()) if a.get("district") else ""),
+                                      ("latest round %s %s (%s to %s)" % (lr["response"], lr["round"], lr["first_route"], lr["last_route"])) if lr else (str(a["year"]) if a.get("year") else ""),
+                                      ("window %s m wide" % int(round((window[1] - window[0]) * 111320 * 0.999))) if a.get("radius_m") else ""] if x)
+        title = a.get("title") or (label or "Footprint of IM routes with missed children, %s" % a["country"].title())
+        try:
+            png, minfo = st.render_footprint(d, mk, window, os.path.join(tempfile.mkdtemp(prefix="sia_fp_"), "footprint.png"), boundaries_dir(self.engine), R, a["country"], title, sub, bool(a.get("basemap")))
+        except (MapError, RuntimeError) as e:
+            return {"error": str(e)}
+        slug = re.sub(r"[^a-z0-9]+", "_", (label or a["country"]).lower()).strip("_")[:40]
+        self.files.append((png, "footprint_%s.png" % slug))
+        mine = d[mk]
+        return {"map_created": True, "downloadable": True, "place": label, "country": a["country"], "routes_drawn": int(len(mine)), "children_missed_on_drawn_routes": int(mine.children.sum()),
+                "first_route": mine.date.min().strftime("%Y-%m-%d") if mine.date.notna().any() else None, "last_route": mine.date.max().strftime("%Y-%m-%d") if mine.date.notna().any() else None,
+                "latest_round": lr, "window_width_m": minfo.get("window_width_m"), "scale_bar_m": minfo.get("scale_bar_m"), "street_map": minfo.get("street_map"), "notes": notes,
+                "warnings": ["Only monitor routes that found at least one missed child are drawn: routes that found nobody are not in the data.",
+                             "Routes with GPS outside the country, more than 100 children on one route or longer than 5 km are left out."] + ([] if not a.get("basemap") or minfo.get("street_map") else ["No street map: the R packages ggspatial and rosm are not installed on this computer, so the background is the district boundary."])}
+
+    # ----- pipeline jobs through the job runner -----
+    @staticmethod
+    def _jobs_module():
+        try:
+            import job_runner
+            return job_runner
+        except Exception:
+            return None
+
+    def _jobs_base(self):
+        return self.jobs.BASE
+
+    def _job_result(self, base, jid, t0=None):
+        f = base / "done" / (jid + ".json")
+        if not f.exists():
+            state = "running" if (base / "running" / (jid + ".json")).exists() else "queued" if (base / "queue" / (jid + ".json")).exists() else "unknown id"
+            return {"id": jid, "state": state}
+        r = json.loads(f.read_text(encoding="utf-8"))
+        out = {"id": jid, "job": r.get("job"), "state": "finished", "status": r.get("status"), "exit_code": r.get("exit_code"), "started": r.get("started"), "finished": r.get("finished"), "log_tail": (r.get("tail") or [])[-25:]}
+        files = []
+        if t0 is None and r.get("started"):
+            try:
+                import datetime as _dt
+                t0 = _dt.datetime.fromisoformat(r["started"]).timestamp()
+            except Exception:
+                t0 = None
+        outdir = base / "outputs"
+        if outdir.exists() and t0 and r.get("status") == "ok":
+            for p in sorted(outdir.glob("*")):
+                if p.is_file() and not p.name.endswith(".json") and p.stat().st_mtime >= t0 - 2:
+                    self.files.append((str(p), p.name)); files.append(p.name)
+        if files:
+            out["files_ready_to_download"] = files
+        return out
+
+    def _run_job(self, a):
+        import time, datetime
+        if not self.jobs:
+            return {"error": "pipeline jobs are only available on the owner's computer (the page started from the agent repository with the job runner)"}
+        job, flags = a.get("job"), [str(x) for x in (a.get("flags") or [])]
+        if job not in self.jobs.JOBS and job not in self.jobs.CHAINS:
+            return {"error": "unknown job; jobs: " + ", ".join(sorted(self.jobs.JOBS) + sorted(self.jobs.CHAINS))}
+        if any(f.split("=")[0] in SP_FLAGS or f.startswith("--sharepoint") for f in flags) and not a.get("user_confirmed_sharepoint"):
+            return {"error": "a SharePoint upload needs the user's explicit yes in their own message; ask them, then call again with user_confirmed_sharepoint=true"}
+        base = self._jobs_base()
+        (base / "queue").mkdir(parents=True, exist_ok=True)
+        t0 = time.time()
+        jid = "%s_%s" % (datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f"), job)
+        (base / "queue" / (jid + ".json")).write_text(json.dumps({"id": jid, "job": job, "flags": flags, "by": "assistant"}), encoding="utf-8")
+        wait = min(int(a.get("wait_seconds") or 300), 900)
+        while time.time() - t0 < wait:
+            time.sleep(4)
+            r = self._job_result(base, jid, t0)
+            if r["state"] == "finished":
+                return r
+            if r["state"] == "queued" and time.time() - t0 > 25:
+                return {"id": jid, "state": "queued", "message": "the job runner does not pick the job up: it is not running on this computer. Start it with: python tools/job_runner.py (the job stays queued and starts as soon as it runs)"}
+        return {"id": jid, "state": "running", "message": "still running after %d s: tell the user it is running and to ask for the status later" % wait}
+
+    def _job_status(self, a):
+        if not self.jobs:
+            return {"error": "pipeline jobs are only available on the owner's computer"}
+        base = self._jobs_base()
+        jid = a.get("id")
+        if not jid:
+            allj = sorted(list((base / "done").glob("*.json")) + list((base / "running").glob("*.json")) + list((base / "queue").glob("*.json")), key=lambda p: p.name)
+            if not allj:
+                return {"error": "no job yet"}
+            jid = allj[-1].stem
+        return self._job_result(base, jid, None)
 
     def _find_settlement(self, a):
         import settlement_tools as st
@@ -317,6 +513,7 @@ class Assistant:
     def ask(self, user_text, history=None):
         """Returns (reply, history, calls). Charts drawn during the question are in self.images (PNG bytes). history is the list of messages to send back with the next question."""
         self.images = []
+        self.files = []
         msgs = list(history or []) + [{"role": "user", "content": user_text}]
         calls, retried, text, extra = [], False, "", []
         for _ in range(self.max_steps):
@@ -349,7 +546,10 @@ def trail(calls):
     """One line per tool call, for the page and the logs."""
     out = []
     for c in calls:
-        if c["tool"] == "find_settlement":
+        if c["tool"] in ("run_job", "job_status", "make_footprint_map"):
+            i = c["input"]
+            out.append("%s %s%s" % (c["tool"].replace("_", " "), i.get("job") or i.get("id") or i.get("place") or i.get("country") or "", "  [error]" if c["error"] else ""))
+        elif c["tool"] == "find_settlement":
             i = c["input"]
             out.append("settlement %s%s%s" % (i.get("name", ""), (" (%s)" % ", ".join(str(i[k]) for k in ("district", "country") if i.get(k))) if (i.get("district") or i.get("country")) else "", "  [error]" if c["error"] else ""))
         elif c["tool"] in ("query_data", "make_chart", "make_map"):

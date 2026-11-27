@@ -152,6 +152,13 @@
      "formula": "max(round_start_date)",
      "expr": "pd.to_datetime(df.round_start_date, errors='coerce').max()",
      "kind": "date"
+    },
+    "district_performance_class": {
+     "unit": "performance class",
+     "def": "performance class of the district: the most frequent class of its lots (high 0-3 missed in the lot of 60, moderate 4-8, poor 9-19, very poor 20 or more); on a tie the worse class",
+     "formula": "modal performance of the lots; worse class on a tie",
+     "expr": "(lambda c: [k for k in ['very poor','poor','moderate','high'] if c.get(k,0)==c.max()][0])(df.performance.value_counts())",
+     "kind": "scalar"
     }
    },
    "warnings": [
@@ -1430,6 +1437,10 @@
      "kind": "settlement",
      "path": "@dash/input/*.csv.gz"
     }
+   ],
+   "round_key": [
+    "response",
+    "round"
    ]
   }
  },
