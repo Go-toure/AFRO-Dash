@@ -1239,6 +1239,198 @@
      "path": "@here/catalog/raw_catalog.json"
     }
    ]
+  },
+  "settlement": {
+   "semantic": "settlement",
+   "date_col": "date",
+   "entity": "monitor routes",
+   "dims": {
+    "country": "country",
+    "province": "province",
+    "district": "district",
+    "facility": "facility",
+    "settlement": "place",
+    "response": "response",
+    "round": "round",
+    "monitoring": "monitoring",
+    "year": "year"
+   },
+   "metrics": {
+    "routes": {
+     "unit": "routes",
+     "def": "monitor routes that found at least one missed child (routes that pass the quality rules)",
+     "formula": "number of routes with qc == OK",
+     "expr": "int((df.qc=='OK').sum())",
+     "kind": "scalar"
+    },
+    "children_missed": {
+     "unit": "children",
+     "def": "children found missed on those routes (Total_child_missed summed)",
+     "formula": "sum(children) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','children'].sum())",
+     "kind": "scalar"
+    },
+    "households_with_missed_children": {
+     "unit": "households",
+     "def": "households where at least one missed child was found",
+     "formula": "count of Household_1..10 cells above 0, summed",
+     "expr": "float(df.loc[df.qc=='OK','hh_missed'].sum())",
+     "kind": "scalar"
+    },
+    "settlements": {
+     "unit": "places",
+     "def": "distinct places (settlement, else health facility) with missed children found",
+     "formula": "distinct country, province, district, place",
+     "expr": "int(df.loc[df.qc=='OK',['country','province','district','place']].drop_duplicates().shape[0])",
+     "kind": "scalar"
+    },
+    "districts_covered": {
+     "unit": "districts",
+     "def": "distinct districts with at least one route",
+     "formula": "distinct country, district",
+     "expr": "int(df.loc[df.qc=='OK',['country','district']].drop_duplicates().shape[0])",
+     "kind": "scalar"
+    },
+    "children_per_route": {
+     "unit": "children per route",
+     "def": "average children found missed per route (routes only exist where at least one was found)",
+     "formula": "children_missed / routes",
+     "expr": "float(df.loc[df.qc=='OK','children'].sum()/max((df.qc=='OK').sum(),1))",
+     "kind": "scalar"
+    },
+    "reasons": {
+     "unit": "children",
+     "def": "reasons of the missed children with their share (the reason counts of the routes)",
+     "formula": "sum of Reason_* over routes with qc == OK",
+     "expr": "(lambda d: (lambda s: pd.DataFrame({'reason':s.index,'children':s.values.astype(int),'share_percent':(100*s/s.sum()).round(1).values}).sort_values('children',ascending=False))(d[['absent','nc','not_visited','asleep','vacc_routine','other']].sum().rename({'absent':'Absent','nc':'Non-compliance','not_visited':'Not visited','asleep':'Asleep','vacc_routine':'Vaccinated (routine)','other':'Other'})))(df[df.qc=='OK'])",
+     "kind": "table"
+    },
+    "routes_left_out": {
+     "unit": "routes",
+     "def": "routes that fail a quality rule (GPS outside the country or missing, more than 100 children on one route, route longer than 5 km)",
+     "formula": "number of routes with qc != OK",
+     "expr": "int((df.qc!='OK').sum())",
+     "kind": "scalar"
+    },
+    "children_absent": {
+     "unit": "children",
+     "def": "children missed because of: child absent",
+     "formula": "sum(absent) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','absent'].sum())",
+     "kind": "scalar"
+    },
+    "children_noncompliance": {
+     "unit": "children",
+     "def": "children missed because of: non-compliance",
+     "formula": "sum(nc) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','nc'].sum())",
+     "kind": "scalar"
+    },
+    "children_not_visited": {
+     "unit": "children",
+     "def": "children missed because of: household not visited",
+     "formula": "sum(not_visited) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','not_visited'].sum())",
+     "kind": "scalar"
+    },
+    "children_asleep": {
+     "unit": "children",
+     "def": "children missed because of: child asleep",
+     "formula": "sum(asleep) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','asleep'].sum())",
+     "kind": "scalar"
+    },
+    "children_vaccinated_routine": {
+     "unit": "children",
+     "def": "children missed because of: vaccinated in routine",
+     "formula": "sum(vacc_routine) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','vacc_routine'].sum())",
+     "kind": "scalar"
+    },
+    "children_other_reason": {
+     "unit": "children",
+     "def": "children missed because of: other reason",
+     "formula": "sum(other) over routes with qc == OK",
+     "expr": "float(df.loc[df.qc=='OK','other'].sum())",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "routes",
+      "children_missed",
+      "households_with_missed_children",
+      "settlements",
+      "districts_covered",
+      "children_per_route",
+      "reasons",
+      "children_absent",
+      "children_noncompliance",
+      "children_not_visited",
+      "children_asleep",
+      "children_vaccinated_routine",
+      "children_other_reason"
+     ],
+     "count": "int((df.qc!='OK').sum())",
+     "text": "{n} route(s) of this selection are left out: GPS outside the country or missing, more than 100 children on one route, or a route longer than 5 km (the rules of the IM Settlement Maps tab)."
+    },
+    {
+     "metrics": [
+      "reasons",
+      "children_absent",
+      "children_noncompliance",
+      "children_not_visited",
+      "children_asleep",
+      "children_vaccinated_routine",
+      "children_other_reason"
+     ],
+     "count": "int((df.loc[df.qc=='OK',['absent','nc','not_visited','asleep','vacc_routine','other']].fillna(0).sum(axis=1)==0).sum())",
+     "text": "{n} route(s) have no reason recorded (some country forms do not record reasons: they count as zero here, so the reason shares only describe the routes that recorded one)."
+    },
+    {
+     "metrics": [
+      "routes",
+      "children_missed",
+      "households_with_missed_children",
+      "settlements",
+      "districts_covered",
+      "children_per_route",
+      "reasons",
+      "children_absent",
+      "children_noncompliance",
+      "children_not_visited",
+      "children_asleep",
+      "children_vaccinated_routine",
+      "children_other_reason"
+     ],
+     "text": "Only monitor routes that found at least one missed child are in these files: a place has no coverage rate or denominator here, only where, when, how many and why children were found missed."
+    },
+    {
+     "metrics": [
+      "routes",
+      "children_missed",
+      "households_with_missed_children",
+      "settlements",
+      "districts_covered",
+      "children_per_route",
+      "reasons",
+      "children_absent",
+      "children_noncompliance",
+      "children_not_visited",
+      "children_asleep",
+      "children_vaccinated_routine",
+      "children_other_reason"
+     ],
+     "text": "A place name is the settlement of the form, else the health facility; the same name exists in several districts and countries, so give the country (and the district) with the place."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "settlement",
+     "path": "@dash/input/*.csv.gz"
+    }
+   ]
   }
  },
  "generated_at": "2026-11-26"

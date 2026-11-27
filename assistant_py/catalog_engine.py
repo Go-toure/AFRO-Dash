@@ -100,6 +100,9 @@ class Engine:
             keep = s.get("usecols") or (ADMIN_COLS if name == "admin" else None)
             if keep:
                 df = df[[c for c in df.columns if c in keep]]
+        elif kind == "settlement":   # route-level files of the IM Settlement Maps tab (AFRO-Dash/input/<form id>.csv.gz), cleaned by tools/settlement_tools.py
+            from settlement_tools import load_settlements
+            df = load_settlements(os.path.dirname(p))
         elif kind == "admin":
             cache = os.path.join(self.here, "state", "admin_subset.pkl")
             if os.path.exists(cache) and os.path.getmtime(cache) > os.path.getmtime(p):

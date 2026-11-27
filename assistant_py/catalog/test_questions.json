@@ -1777,6 +1777,47 @@
     "year": 2026,
     "pick": "value"
    }
+  },
+  {
+   "id": "settlement_01",
+   "dataset": "settlement",
+   "question": "How many monitor routes that found missed children are in the IM settlement files (quality rules applied)?",
+   "code": "int((df.qc=='OK').sum())",
+   "tolerance": 0,
+   "expected": 570661,
+   "tool_call": {
+    "dataset": "settlement",
+    "metric": "routes",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "settlement_02",
+   "dataset": "settlement",
+   "question": "How many children were found missed on IM routes in the DRC in 2026?",
+   "code": "float(df[(df.qc=='OK')&(df.country=='DEMOCRATIC REPUBLIC OF THE CONGO')&(df.year==2026)].children.sum())",
+   "tolerance": 0,
+   "expected": 60633,
+   "tool_call": {
+    "dataset": "settlement",
+    "metric": "children_missed",
+    "pick": "value",
+    "country": "Democratic Republic of the Congo",
+    "year": 2026
+   }
+  },
+  {
+   "id": "settlement_03",
+   "dataset": "settlement",
+   "question": "How many settlement routes are left out because of a quality rule?",
+   "code": "int((df.qc!='OK').sum())",
+   "tolerance": 0,
+   "expected": 15268,
+   "tool_call": {
+    "dataset": "settlement",
+    "metric": "routes_left_out",
+    "pick": "value"
+   }
   }
  ],
  "sources": {
@@ -1809,6 +1850,7 @@
   "im_repository",
   "raw_team_supervision",
   "raw_vaccine_accountability",
-  "rawcat"
+  "rawcat",
+  "settlement"
  ]
 }

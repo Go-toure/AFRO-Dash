@@ -1,724 +1,836 @@
 {
-  "_about": "Hand-written meaning of each dataset for natural-language exploration: grain, key, official metrics, caveats and which tool answers what. tools/build_catalog.py joins it with the real file headers and dictionaries into catalog/data_catalog.json. Paths are relative to Gith_repositories. Author: Gorgui Ba Toure. Written 26 Nov 2026 from the dictionaries, the pipeline code and the data. Rules for the language model are in catalog/ASK_RULES.md.",
-  "datasets": [
+ "_about": "Hand-written meaning of each dataset for natural-language exploration: grain, key, official metrics, caveats and which tool answers what. tools/build_catalog.py joins it with the real file headers and dictionaries into catalog/data_catalog.json. Paths are relative to Gith_repositories. Author: Gorgui Ba Toure. Written 26 Nov 2026 from the dictionaries, the pipeline code and the data. Rules for the language model are in catalog/ASK_RULES.md.",
+ "datasets": [
+  {
+   "id": "lqas",
+   "title": "LQAS lots (Lot Quality Assurance Sampling after a campaign)",
+   "repo": "Posit-LQAS-Workflow",
+   "file": "Posit-LQAS-Workflow/data/final/afro_lqas_repositorty.csv",
+   "format": "csv",
+   "also_in": [
+    "SharePoint 7. SIA_Data/Data Repository/AFRO_LQAS_data_c.csv",
+    "AFRO-Dash/input/AFRO_LQAS_data_c.rds"
+   ],
+   "dictionary": {
+    "file": "Posit-LQAS-Workflow/data/metadata/AFRO_LQAS_data_c_dictionary.xlsx",
+    "sheet": "Full_Dictionary",
+    "name_col": "Variable",
+    "type_col": "Type",
+    "desc_col": "Notes",
+    "example_col": "Example"
+   },
+   "grain": "one row = one LQAS lot in one district and round: up to 6 clusters of 10 children, so total_sampled is at most 60 (30 to 50 when a lot is under-reported with 3 to 5 clusters)",
+   "key": [
+    "country",
+    "province",
+    "district",
+    "admin_3_level",
+    "response",
+    "roundNumber",
+    "lot_id"
+   ],
+   "time_columns": [
+    "lqas_start_date",
+    "lqas_end_date",
+    "round_start_date",
+    "year"
+   ],
+   "geography_columns": [
+    "country",
+    "province",
+    "district",
+    "admin_3_level",
+    "afro_block",
+    "geo_code"
+   ],
+   "refresh": "run_pipeline.R (full or --skip-fetch); the file is rewritten at each run",
+   "metrics": [
     {
-      "id": "lqas",
-      "title": "LQAS lots (Lot Quality Assurance Sampling after a campaign)",
-      "repo": "Posit-LQAS-Workflow",
-      "file": "Posit-LQAS-Workflow/data/final/afro_lqas_repositorty.csv",
-      "format": "csv",
-      "also_in": [
-        "SharePoint 7. SIA_Data/Data Repository/AFRO_LQAS_data_c.csv",
-        "AFRO-Dash/input/AFRO_LQAS_data_c.rds"
-      ],
-      "dictionary": {
-        "file": "Posit-LQAS-Workflow/data/metadata/AFRO_LQAS_data_c_dictionary.xlsx",
-        "sheet": "Full_Dictionary",
-        "name_col": "Variable",
-        "type_col": "Type",
-        "desc_col": "Notes",
-        "example_col": "Example"
-      },
-      "grain": "one row = one LQAS lot in one district and round: up to 6 clusters of 10 children, so total_sampled is at most 60 (30 to 50 when a lot is under-reported with 3 to 5 clusters)",
-      "key": [
-        "country",
-        "province",
-        "district",
-        "admin_3_level",
-        "response",
-        "roundNumber",
-        "lot_id"
-      ],
-      "time_columns": [
-        "lqas_start_date",
-        "lqas_end_date",
-        "round_start_date",
-        "year"
-      ],
-      "geography_columns": [
-        "country",
-        "province",
-        "district",
-        "admin_3_level",
-        "afro_block",
-        "geo_code"
-      ],
-      "refresh": "run_pipeline.R (full or --skip-fetch); the file is rewritten at each run",
-      "metrics": [
-        {
-          "name": "lots_assessed",
-          "definition": "number of rows",
-          "formula": "len(df)"
-        },
-        {
-          "name": "lot_pass",
-          "definition": "a lot passes when at most 3 children of the lot of 60 are missed (config pass_threshold 3); column status is Pass or Fail",
-          "formula": "status == 'Pass'  (total_missed <= 3)"
-        },
-        {
-          "name": "pass_rate",
-          "definition": "share of lots that pass, in percent",
-          "formula": "100 * (status == 'Pass').mean()"
-        },
-        {
-          "name": "performance_band",
-          "definition": "high: fewer than 4 missed; moderate: 4 to 8; poor: 9 to 19; very poor: 20 or more (column performance, code in R/02_process_lqas.R). Based on total_missed.",
-          "formula": "performance"
-        },
-        {
-          "name": "total_missed",
-          "definition": "LOT measure: 60 minus total_vaccinated in every row (100% of rows on 26 Nov 2026). In an under-reported lot (fewer than 60 children sampled) the children never sampled are counted as missed, so such a lot can fail although every sampled child was vaccinated.",
-          "formula": "total_missed  (= 60 - total_vaccinated)"
-        },
-        {
-          "name": "missed_children_rate",
-          "definition": "the dashboard's missed rate: children sampled and NOT found vaccinated, over children sampled (never the mean of row percentages, never total_missed over total_sampled)",
-          "formula": "100 * (1 - total_vaccinated.sum() / total_sampled.sum())"
-        },
-        {
-          "name": "coverage_of_sampled",
-          "definition": "the dashboard's LQAS coverage: children found vaccinated over children sampled",
-          "formula": "100 * total_vaccinated.sum() / total_sampled.sum()"
-        },
-        {
-          "name": "reasons_for_missed",
-          "definition": "counts r_* (non-compliance, house not visited, child absent, asleep, visitor, vaccinated but not finger-marked, security, not born, other_r) and their prct_r_* shares of total_missed; abs_reason_* and nc_reason_* give details of absence and non-compliance. other_r also holds the unsampled children of under-reported lots (see caveats): for reasons use complete lots (total_sampled == 60) or say so.",
-          "formula": "sum of the r_* columns over lots with total_sampled == 60"
-        }
-      ],
-      "caveats": [
-        "A row is a lot, not a child and not a district: a district-round can have several lots (lot_id). Say 'lots' when counting rows.",
-        "total_missed is 60 minus vaccinated in EVERY row: the children never sampled in an under-reported lot (3 to 5 clusters, 30 to 50 children) count as missed. In 2026 that is 3,990 of the 18,044 children counted missed (22%), so the lot measures (total_missed, status, performance) and the dashboard's missed rate (sampled children not vaccinated: 4.06% in 2026, against 5.22% for total_missed over total_sampled) differ. Always say which one is used.",
-        "In the reasons, other_r absorbs those unsampled children (4,020 of the 5,339 'other' in 2026 come from under-reported lots): 'other' is the largest reason in the whole file but is mostly an artifact; for the reasons use complete lots.",
-        "291 Nigerian lots (2020 to 2026; 16 in 2026) have only 1 or 2 clusters (10 or 20 children sampled) and are all 'Fail' with 40 to 55 missed. They lower Nigeria's pass rate (74.9% in 2026 with them, 76.3% without lots below 30 children); the rule of at least 3 clusters is not applied to them (OPEN_QUESTIONS).",
-        "Cluster numbers are ordinal; number_clusters is the number of forms in the lot (6 is complete).",
-        "Rows where geo_code is empty (3.4% on 26 Nov 2026, mostly Ethiopia, Zimbabwe, Angola) cannot be joined to the geographic reference.",
-        "DR Congo, Algeria, South Sudan, Nigeria, Rwanda and Ethiopia use their own selection logic (page workflows/15); never compare their lots with another country without saying so.",
-        "Always give the period asked for (the dashboard tools default to the last 6 months): never answer 'the rate' without the months or years it covers.",
-        "LQAS samples children: it never gives the number of children vaccinated in a country; use the administrative data for that.",
-        "Two dates: round_start_date is the start of the campaign round (the dashboard's 'SIA date', used for its data period and month filters); lqas_start_date is the date of the LQAS survey, usually 4 days later (a few rows differ by months). The column year follows the survey date.",
-        "A campaign round is identified by country + response (campaign) + vaccine type + round label (RND1, RND2...); the dashboard's 'Campaigns' tile counts these rounds, not campaign names."
-      ],
-      "dashboard_tools": [
-        "get_missed",
-        "get_coverage",
-        "get_reasons",
-        "get_district_performance",
-        "get_trend",
-        "get_anomalies"
-      ],
-      "pages": [
-        "workflows/03_lqas.md",
-        "workflows/15_lqas_pipeline_in_depth.md",
-        "workflows/09_raw_form_analysis.md"
-      ]
+     "name": "lots_assessed",
+     "definition": "number of rows",
+     "formula": "len(df)"
     },
     {
-      "id": "admin",
-      "title": "Administrative vaccination data (polio SIAs, one record per district round vaccine)",
-      "repo": "Admin_data_coadministration / AFRO_admin_operations_center",
-      "file": "AFRO_admin_operations_center/ops_work/backup_repo/snapshots/admin/AFRO_admin_data__*.xlsx",
-      "pick": "newest",
-      "format": "xlsx",
-      "also_in": [
-        "SharePoint 7. SIA_Data/Data Repository/AFRO_admin_data.xlsx (the live file)",
-        "AFRO-Dash/input/AFRO_admin_data.rds"
-      ],
-      "dictionary": {
-        "file": "AFRO_admin_operations_center/ops_work/workspace/runs/v*/AFRO_admin_data_dictionary_v*.xlsx",
-        "pick": "newest",
-        "sheet": "Data dictionary",
-        "name_col": "Column",
-        "type_col": "Type",
-        "desc_col": "Description",
-        "group_col": "Group",
-        "filled_col": "Filled (%)",
-        "range_col": "Range / values"
-      },
-      "grain": "one row = one district, one campaign round and one vaccine; a co-administered campaign is ONE combined row (Vaccine_type 'nOPV2 & bOPV')",
-      "key": [
-        "Country",
-        "Province",
-        "District",
-        "Response",
-        "Round_Add",
-        "SIA_date",
-        "Vaccine_type"
-      ],
-      "time_columns": [
-        "SIA_date",
-        "Year",
-        "SIAMTH",
-        "Date_Report"
-      ],
-      "geography_columns": [
-        "Ctry_Code",
-        "Country",
-        "Province",
-        "District",
-        "Admin_3",
-        "AFRO_block",
-        "geo_code"
-      ],
-      "refresh": "each publish of the admin cycle (admin.py publish or the Operations Center); on 26 Nov 2026 it is build v30, 44,451 records, 205 columns",
-      "metrics": [
-        {
-          "name": "children_vaccinated",
-          "definition": "sum of TotalNbrVaccPolio (for a co-administered row it is the LARGER of the two vaccine totals, so a child given both vaccines counts once). Never add Tot_Vacc_nOPV2 and Total_Vacc_bOPV.",
-          "formula": "TotalNbrVaccPolio.sum()"
-        },
-        {
-          "name": "target_population",
-          "definition": "sum of PopPolio (children targeted in the district and round)",
-          "formula": "PopPolio.sum()"
-        },
-        {
-          "name": "administrative_coverage",
-          "definition": "official coverage = children vaccinated / target population (TotalNbrVaccPolio / PopPolio); the stored CVPolio is kept as reference only; a ratio where 1.00 is 100%",
-          "formula": "TotalNbrVaccPolio.sum() / PopPolio.sum()"
-        },
-        {
-          "name": "districts_reaching_95",
-          "definition": "share of district records with coverage at or above 0.95",
-          "formula": "((TotalNbrVaccPolio / PopPolio) >= 0.95).mean()"
-        },
-        {
-          "name": "campaign_count",
-          "definition": "distinct Response names (a campaign) or distinct Response and Round_Add (a round)",
-          "formula": "Response.nunique()"
-        }
-      ],
-      "caveats": [
-        "Coverage above 1.5 is not credible (target too low); 1,272 records on 26 Nov 2026 are above the ceiling and listed for the countries. State the number of records above 1.5 beside any coverage.",
-        "MR rows (measles-rubella in an integrated campaign) have TotalNbrVaccPolio 0: exclude Vaccine_type == 'MR' from polio coverage.",
-        "Some PopPolio values are corrected by the engine (250 records in v30: decimals, district median) or estimated by a model (listed for confirmation): say 'reported and corrected figures'.",
-        "Records with the same names but different figures are different units (about 2,600), not duplicates: do not drop them.",
-        "Many columns are filled for few records (Integ*, Pop*, AgeG* of other interventions, the 39 V2 template columns about 0.7%): never average over missing values without saying how many records have the value.",
-        "Integ* flags are written Yes, yes, YES, No, NO, 0: compare case-insensitively. AFRO_block has a typo variant 'LBC' for 'LCB'.",
-        "Pending rounds (no records 15 days after the start) are not in the file: absence of a record is not zero coverage (Pending_admin_data.xlsx lists them).",
-        "Response is empty on 3.4% of records and written differently in old campaigns; the lookup is the authority for campaign name, date and round.",
-        "The dashboard has two figures: 'Doses administered' (sum of TotalNbrVaccPolio over all rounds, 367.6 million in 2026) and 'Children vaccinated' (for each country the month with the most vaccinations, summed over countries, 188.6 million in 2026). Never call the sum of rounds 'children vaccinated'."
-      ],
-      "dashboard_tools": [
-        "get_admin_summary",
-        "get_coverage (type administrative)",
-        "get_scope_summary"
-      ],
-      "pages": [
-        "workflows/02_admin_cycle.md",
-        "workflows/14_admin_engine_rules.md",
-        "workflows/17_operations_center_in_depth.md"
-      ]
+     "name": "lot_pass",
+     "definition": "a lot passes when at most 3 children of the lot of 60 are missed (config pass_threshold 3); column status is Pass or Fail",
+     "formula": "status == 'Pass'  (total_missed <= 3)"
     },
     {
-      "id": "im_submissions",
-      "title": "Independent monitoring (IM): one submission per monitored settlement (10 households)",
-      "repo": "AFRO-Independant-Monitoring-data-workflow",
-      "file": "AFRO-Dash/input/<form_id>.csv.gz",
-      "format": "csv.gz (35 forms)",
-      "also_in": [
-        "AFRO-Dash/input/AFRO_IM_data.rds (the regional table the dashboard reads)",
-        "SharePoint 7. SIA_Data/Data Repository/AFRO_Inside_HH_M.csv"
-      ],
-      "grain": "one row = one monitoring submission (a settlement or facility visited, ten households in the columns Household_1 to Household_10); date_monitored, lat/lon given",
-      "key": [
-        "COUNTRY",
-        "PROVINCE",
-        "DISTRICT",
-        "Facility",
-        "Settlement",
-        "Response",
-        "roundNumber",
-        "date_monitored"
-      ],
-      "time_columns": [
-        "date_monitored"
-      ],
-      "geography_columns": [
-        "COUNTRY",
-        "PROVINCE",
-        "DISTRICT",
-        "Facility",
-        "Settlement",
-        "lat",
-        "lon"
-      ],
-      "refresh": "run_workflow.R (by hand, the nightly task does not exist)",
-      "metrics": [
-        {
-          "name": "children_missed",
-          "definition": "Total_child_missed summed over the chosen submissions",
-          "formula": "Total_child_missed.sum()"
-        },
-        {
-          "name": "reasons",
-          "definition": "Reason_Absent, Reason_NC (non-compliance), Reason_NotVisited, Reason_Asleep, Reason_VaccinatedRoutine, Reason_Others",
-          "formula": "sum of the Reason_* columns"
-        }
-      ],
-      "caveats": [
-        "Country names in these files are not standardised (codes and spellings); use the regional table AFRO_IM_data after geoname cleaning for any country comparison.",
-        "The repository files (data/final/<form>.csv) are aggregated differently (87 columns with cv = u5_FM / u5_present and missed_child = u5_present - u5_FM, true on 99.9% of rows) and their qc_flag says 'Needs review' on 69% of rows (101,267 of 146,007 on 26 Nov 2026): never drop those rows, quote the flag.",
-        "The unit of the repository rows (several rows per district-round) is to be confirmed with the owner (OPEN_QUESTIONS).",
-        "Comments of the monitors are free text and stay local; only counts by theme are shareable."
-      ],
-      "dashboard_tools": [
-        "get_missed",
-        "get_reasons"
-      ],
-      "pages": [
-        "workflows/04_im.md",
-        "workflows/12_im_dashboard_and_cloud.md"
-      ]
+     "name": "pass_rate",
+     "definition": "share of lots that pass, in percent",
+     "formula": "100 * (status == 'Pass').mean()"
     },
     {
-      "id": "form_a",
-      "title": "Form A: vaccine management in a campaign (45 country forms, 3 versions: vials, daily, bottles)",
-      "repo": "AFRO-Form-A-data-workflow",
-      "file": "AFRO-Form-A-data-workflow/data/final/afro_form_a_repository.csv",
-      "format": "csv",
-      "grain": "one row = one report of one place (National, Regional, District or Facility; sub-district and ward count as Facility) for one round. Several reports of the same place are kept: is_latest_of_place marks the one that counts.",
-      "extra_files": [
-        "afro_form_a_district_round.csv (adds only facility-level reports)",
-        "afro_form_a_country_round.csv (groups by level)"
-      ],
-      "caveats": [
-        "Reports of different levels are never added together: a country can have a National report, Regional reports and District reports for the same round (129,944 of 167,938 rows are Facility, 28,881 District, 4,619 National, 4,494 Regional).",
-        "Only the last report of a place and round counts (is_latest_of_place): 104,762 of 167,938 rows on 24 Nov 2026. Earlier submissions stay in the file.",
-        "46.7% of rows carry at least one qc_flags value; the largest are stock_mismatch (41,040), campaign_from_lookup_date (25,651), returned_below_distributed (21,453) and campaign_not_in_lookup (13,997). Quote the flags that touch the figure.",
-        "wastage_rate can be negative (children vaccinated above doses used; 4,536 rows flagged wastage_negative) and ranges down to -63,560: use the median over unflagged reports, never the mean.",
-        "Campaign and round follow the GPEI lookup (as in the admin data); campaign_source says whether the name was typed or found from the lookup.",
-        "target_population is asked by some versions of the form only.",
-        "33 countries have reports (45 forms); the Form A is a report of stock, not of coverage: use the administrative data for children vaccinated per district."
-      ],
-      "pages": [
-        "workflows/10_ona_form_pipelines.md"
-      ],
-      "key": [
-        "record_uuid"
-      ],
-      "time_columns": [
-        "report_date",
-        "campaign_start",
-        "submission_time"
-      ],
-      "geography_columns": [
-        "iso3",
-        "country",
-        "region",
-        "district",
-        "facility"
-      ],
-      "dictionary": {
-        "file": "AFRO-Form-A-data-workflow/data/metadata/AFRO_form_a_dictionary.xlsx",
-        "sheet": "Columns",
-        "name_col": "Column",
-        "desc_col": "Description"
-      },
-      "metrics": [
-        {
-          "name": "reports",
-          "definition": "reports that count: the last report of each place and round, one level at a time (District, never National + Regional + District + Facility added together)",
-          "formula": "df[(df.is_latest_of_place.astype(str)=='True') & (df.level=='District')]"
-        },
-        {
-          "name": "wastage_rate",
-          "definition": "(doses_used - children_vaccinated) / doses_used x 100, recomputed with one formula for every country (the form's own value is form_wastage_rate). Summarise with the median, after leaving out the reports flagged wastage_negative, wastage_over_100 or implausible_number.",
-          "formula": "median of wastage_rate over the chosen reports"
-        },
-        {
-          "name": "unaccounted_vials",
-          "definition": "vials_distributed - (usable + unusable vials back from the lower level); negative means more vials back than distributed",
-          "formula": "unaccounted_vials"
-        },
-        {
-          "name": "children_vaccinated",
-          "definition": "children vaccinated reported by the place; add only reports of ONE level",
-          "formula": "children_vaccinated.sum() over latest reports of one level"
-        }
-      ]
+     "name": "performance_band",
+     "definition": "high: fewer than 4 missed; moderate: 4 to 8; poor: 9 to 19; very poor: 20 or more (column performance, code in R/02_process_lqas.R). Based on total_missed.",
+     "formula": "performance"
     },
     {
-      "id": "preparedness",
-      "title": "SIA preparedness validation checklist (38 country forms, English, French, Portuguese)",
-      "repo": "AFRO-Preparedness-Validation-data-workflow",
-      "file": "AFRO-Preparedness-Validation-data-workflow/data/final/afro_preparedness_repository.csv",
-      "format": "csv",
-      "grain": "one row = one supervision visit of one place (several visits before a round are normal and all kept; is_latest_of_place marks the last visit of each place and round)",
-      "extra_files": [
-        "afro_preparedness_country_round.csv",
-        "afro_preparedness_nigeria_extra_items.csv"
-      ],
-      "caveats": [
-        "Count places with is_latest_of_place, not visits: 235,844 latest visits of 417,503 rows on 24 Nov 2026.",
-        "The checklist is filled BEFORE the round: when the campaign is missing it is the next round of the country starting in the lookup (21 days before the visit to 120 days after); 133,744 rows have campaign_from_lookup_date.",
-        "qc_flags all_yes (12 or more questions answered and all ready) is on 83,374 rows (20%): to check, not removed. few_answers (134 rows): fewer than 10 questions answered.",
-        "Nigeria uses its own checklist (form 356): only the questions shared with the standard checklist are in this table.",
-        "Names of monitors are not kept, only monitor_group.",
-        "Level of the place comes from the form's 'level validated' question, else the deepest name filled (level_source)."
-      ],
-      "pages": [
-        "workflows/10_ona_form_pipelines.md"
-      ],
-      "key": [
-        "record_uuid"
-      ],
-      "time_columns": [
-        "report_date",
-        "campaign_start",
-        "submission_time"
-      ],
-      "geography_columns": [
-        "iso3",
-        "country",
-        "region",
-        "district",
-        "facility",
-        "settlement"
-      ],
-      "dictionary": {
-        "file": "AFRO-Preparedness-Validation-data-workflow/data/metadata/AFRO_preparedness_dictionary.xlsx",
-        "sheet": "Columns",
-        "name_col": "Column",
-        "desc_col": "Description"
-      },
-      "metrics": [
-        {
-          "name": "readiness_pct",
-          "definition": "items_ready / items_answered x 100: share of 'ready' answers among Yes/No answers (NA ignored); for 'vials with VVM at discard point' ready means No",
-          "formula": "readiness_pct"
-        },
-        {
-          "name": "readiness_of_places",
-          "definition": "mean readiness over the last visit of each place and round (places, not visits)",
-          "formula": "df[df.is_latest_of_place.astype(str)=='True'].readiness_pct.mean()"
-        },
-        {
-          "name": "percent_yes_per_question",
-          "definition": "share of Yes among answered, per checklist question, over places",
-          "formula": "yes / answered over latest visits"
-        },
-        {
-          "name": "section_readiness",
-          "definition": "ready_Microplan, ready_ColdChain_Logistics, ready_SocialMobilization, ready_Training: readiness % of each section",
-          "formula": "ready_*"
-        }
-      ]
+     "name": "total_missed",
+     "definition": "LOT measure: 60 minus total_vaccinated in every row (100% of rows on 26 Nov 2026). In an under-reported lot (fewer than 60 children sampled) the children never sampled are counted as missed, so such a lot can fail although every sampled child was vaccinated.",
+     "formula": "total_missed  (= 60 - total_vaccinated)"
     },
     {
-      "id": "vaccine_accountability",
-      "title": "Vaccine accountability, Nigeria (form 829)",
-      "repo": "AFRO-Vaccine-Accountability-data-workflow",
-      "file": "AFRO-Vaccine-Accountability-data-workflow/data/final/afro_vaccine_accountability_repository.csv",
-      "format": "csv",
-      "grain": "one row = one ward and campaign-day report",
-      "extra_files": [
-        "afro_vaccine_accountability_lga_month.csv",
-        "afro_vaccine_accountability_state_month.csv"
-      ],
-      "caveats": [
-        "What 'vials returned' means is to be confirmed with the form owner: never present 100 minus pct_returned as vials lost or not returned.",
-        "Only 68,184 of 78,466 reports have valid vial counts; 409 report returned above received (left out of the totals).",
-        "The detailed stock fields (detail_*) exist only in the newest form version (about 1% of reports).",
-        "Nigeria only; very few 2026 reports (187 rows, 164 with valid vials) against 40,041 in 2024: say the year when quoting a total.",
-        "gps_valid is False on every row of the 26 Nov 2026 file: do not use lat/lon for this form.",
-        "The raw file has 80,978 records; 2,512 were removed by the cleaning (repeats and duplicates)."
-      ],
-      "pages": [
-        "workflows/10_ona_form_pipelines.md"
-      ],
-      "key": [
-        "record_id"
-      ],
-      "time_columns": [
-        "visit_date",
-        "submission_time"
-      ],
-      "geography_columns": [
-        "state",
-        "lga",
-        "ward",
-        "lat",
-        "lon"
-      ],
-      "dictionary": {
-        "file": "AFRO-Vaccine-Accountability-data-workflow/data/metadata/AFRO_vaccine_accountability_dictionary.xlsx",
-        "sheet": "Columns",
-        "name_col": "column",
-        "type_col": "type",
-        "desc_col": "description",
-        "filter": {
-          "file": "afro_vaccine_accountability_repository.csv"
-        }
-      },
-      "metrics": [
-        {
-          "name": "pct_returned",
-          "definition": "100 x vials returned / vials received over VALID reports (both counts 0-5,000, returned <= received). A total over many reports is the ratio of sums, never the mean of the pct_returned column (56.4% against 40.75%).",
-          "formula": "100 * vials_returned[vials_valid].sum() / vials_received[vials_valid].sum()"
-        },
-        {
-          "name": "valid_reports",
-          "definition": "reports whose vial counts are usable",
-          "formula": "vials_valid == True"
-        }
-      ]
+     "name": "missed_children_rate",
+     "definition": "the dashboard's missed rate: children sampled and NOT found vaccinated, over children sampled (never the mean of row percentages, never total_missed over total_sampled)",
+     "formula": "100 * (1 - total_vaccinated.sum() / total_sampled.sum())"
     },
     {
-      "id": "social_mobilization",
-      "title": "Social mobilization reports, Nigeria (forms 8705 pre, 8703 intra, 8704 post, 15388 monitoring, 18506 ACSM nomadic)",
-      "repo": "AFRO-Social-Mobilization-data-workflow",
-      "file": "AFRO-Social-Mobilization-data-workflow/data/final/afro_social_mobilization_reports.csv",
-      "format": "csv",
-      "grain": "one row = one report (record) of one of the five forms; the long table holds one answer per row",
-      "extra_files": [
-        "afro_social_mobilization_answers_long.csv",
-        "afro_social_mobilization_yes_no_state_month.csv",
-        "afro_social_mobilization_numeric_state_month.csv"
-      ],
-      "caveats": [
-        "Always split by form_key and reporting_level: a state report and an LGA report of the same form answer different questions about different units (LGA 2,204, WARD 188, STATE 136, NATIONAL 2 reports).",
-        "A question exists only for reports of a version of the form that has it: the share is over reports that answered.",
-        "Forms differ by period: 8705, 8703 and 8704 are 2022 and 2023 reports, 15388 and 18506 run to 2026 (2,530 reports in all).",
-        "Comments and free-text answers are not kept."
-      ],
-      "pages": [
-        "workflows/10_ona_form_pipelines.md"
-      ],
-      "key": [
-        "record_id"
-      ],
-      "time_columns": [
-        "report_date"
-      ],
-      "geography_columns": [
-        "state",
-        "lga",
-        "ward",
-        "lat",
-        "lon"
-      ],
-      "dictionary": {
-        "file": "AFRO-Social-Mobilization-data-workflow/data/metadata/AFRO_social_mobilization_dictionary.xlsx",
-        "sheet": "Columns",
-        "name_col": "column",
-        "desc_col": "description",
-        "filter": {
-          "file": "afro_social_mobilization_reports.csv"
-        }
-      },
-      "metrics": [
-        {
-          "name": "reports",
-          "definition": "number of reports, always split by form_key and reporting_level",
-          "formula": "df.groupby(['form_key','reporting_level']).size()"
-        },
-        {
-          "name": "pct_yes",
-          "definition": "yes / answered for a yes-no question, 'na' not counted (from the yes_no summary tables)",
-          "formula": "yes / answered"
-        }
-      ]
+     "name": "coverage_of_sampled",
+     "definition": "the dashboard's LQAS coverage: children found vaccinated over children sampled",
+     "formula": "100 * total_vaccinated.sum() / total_sampled.sum()"
     },
     {
-      "id": "team_supervision",
-      "title": "Team supervision, Nigeria (form 16194)",
-      "repo": "AFRO-Team-Supervision-data-workflow",
-      "file": "AFRO-Team-Supervision-data-workflow/data/final/afro_team_supervision_repository.csv",
-      "format": "csv",
-      "grain": "one row = one supervision visit (a team observed by a supervisor); team_type H2H, H2H_TFP, FP or SPECIAL decides which indicators exist",
-      "extra_files": [
-        "afro_team_supervision_lga_month.csv",
-        "afro_team_supervision_indicators_state_month.csv"
-      ],
-      "caveats": [
-        "Indicators exist only for the team types that have the question: ind_house_marked is answered by 364,738 of 444,933 visits (H2H teams), not by every visit.",
-        "Lower is better only for evidence of false finger marking (3.39% yes) and evidence of over-tallying (1.95%); all other indicators: higher is better.",
-        "Typed counts outside 0-500 (children sampled) and 0-50 (AFP cases) become NA; flag_number_outlier marks them (117 visits).",
-        "Visits by month are uneven: 401 in June 2026 and 3,019 in September 2026 against 113,483 in May and 82,805 in November: say the months before comparing.",
-        "Nigeria only (28 states, 370 LGAs); geo_match shows how the place was matched (exact, fuzzy, override, unmatched 43).",
-        "The repository file is large (about 133 MB) and is local plus SharePoint, not in git."
-      ],
-      "pages": [
-        "workflows/10_ona_form_pipelines.md"
-      ],
-      "key": [
-        "record_id"
-      ],
-      "time_columns": [
-        "visit_date",
-        "submission_time"
-      ],
-      "geography_columns": [
-        "state",
-        "lga",
-        "ward",
-        "settlement",
-        "lat",
-        "lon"
-      ],
-      "dictionary": {
-        "file": "AFRO-Team-Supervision-data-workflow/data/metadata/AFRO_team_supervision_dictionary.xlsx",
-        "sheet": "Columns",
-        "name_col": "column",
-        "type_col": "type",
-        "desc_col": "description",
-        "filter": {
-          "file": "afro_team_supervision_repository.csv"
-        }
-      },
-      "metrics": [
-        {
-          "name": "pct_yes",
-          "definition": "for an indicator ind_*: 100 x mean over answered visits (1 = favourable, 0 = other valid answer, NA not counted). Lower is better ONLY for ind_evidence_ffm (evidence of false finger marking) and ind_evidence_overtally.",
-          "formula": "100 * df['ind_house_marked'].mean()"
-        },
-        {
-          "name": "children_sampled",
-          "definition": "H2H teams: children sampled by the supervisor (0 to 500, else NA); not_fully_marked_sampled are those not fully marked",
-          "formula": "children_sampled.sum()"
-        }
-      ]
-    },
-    {
-      "id": "scope",
-      "title": "SIA scope (districts planned per campaign)",
-      "repo": "scope / AFRO-Dash",
-      "file": "AFRO-Dash/input/Scope.rds",
-      "format": "rds (R only)",
-      "grain": "one row per planned district per campaign round (about 45,000 rows on 26 Nov 2026 in scope_.csv)",
-      "caveats": [
-        "18 older Polio campaigns have no scope rows (empty or unresolvable scopes in the GPEI API, 26 Nov 2026)."
-      ],
-      "pages": [
-        "workflows/01_scope_refresh.md"
-      ]
-    },
-    {
-      "id": "im_repository",
-      "title": "Independent monitoring, regional repository (cleaned)",
-      "repo": "AFRO-Independant-Monitoring-data-workflow",
-      "file": "AFRO-Independant-Monitoring-data-workflow/data/final/Regional_IM_repository_cleaned.csv",
-      "format": "csv (also .parquet and .rds)",
-      "grain": "one row = one aggregated IM record of a district and round (up to 24 rows share the same country, province, district, response, round and start date): sum the counts, never average the rows. To confirm with the owner (OPEN_QUESTIONS).",
-      "key": [
-        "country",
-        "province",
-        "district",
-        "response",
-        "roundNumber",
-        "start_date_IM_end"
-      ],
-      "time_columns": [
-        "start_date_IM_end",
-        "end_date_IM_end",
-        "round_start_date",
-        "year"
-      ],
-      "geography_columns": [
-        "country",
-        "province",
-        "district",
-        "geo_code"
-      ],
-      "metrics": [
-        {
-          "name": "finger_marked_share",
-          "definition": "children under 5 found with finger mark over children present: u5_FM / u5_present, a ratio of sums (cv holds the row ratio as a fraction 0 to 1)",
-          "formula": "100 * u5_FM.sum() / u5_present.sum()"
-        },
-        {
-          "name": "children_missed",
-          "definition": "missed_child = u5_present - u5_FM, summed",
-          "formula": "missed_child.sum()"
-        },
-        {
-          "name": "reasons",
-          "definition": "r_non_FM_* (absent, non-compliance, household not visited, not revisited, asleep, vaccinated routine, other) and r_abs_* details",
-          "formula": "sum of r_non_FM_*"
-        }
-      ],
-      "caveats": [
-        "Weighted ratio of sums, not the mean of cv: 96.93% finger-marked in 2026 (4,550 rows; 78,431 children missed).",
-        "denominator_qc_flag says whether the denominator was reconstructed (40 rows) or inconsistent (8 rows): the rest is 'Denominator OK'.",
-        "The repository differs from the Dash regional table by cleaning: say which one is used. The country filter must use the standardised country names.",
-        "Row unit to confirm: rows per district-round reach 24."
-      ],
-      "pages": [
-        "workflows/04_im.md",
-        "workflows/12_im_dashboard_and_cloud.md"
-      ]
+     "name": "reasons_for_missed",
+     "definition": "counts r_* (non-compliance, house not visited, child absent, asleep, visitor, vaccinated but not finger-marked, security, not born, other_r) and their prct_r_* shares of total_missed; abs_reason_* and nc_reason_* give details of absence and non-compliance. other_r also holds the unsampled children of under-reported lots (see caveats): for reasons use complete lots (total_sampled == 60) or say so.",
+     "formula": "sum of the r_* columns over lots with total_sampled == 60"
     }
-  ],
-  "geography": {
-    "reference": "AFRO-Geo-Reference (AFROGDB)",
-    "join_key": "geo_code (for example NGA-SOK-WAW); names are standardised upstream, the dashboard never fixes names",
-    "rule": "Join datasets on geo_code, never on raw names; a record without geo_code is reported, not guessed.",
-    "page": "workflows/05_geo_reference.md"
+   ],
+   "caveats": [
+    "A row is a lot, not a child and not a district: a district-round can have several lots (lot_id). Say 'lots' when counting rows.",
+    "total_missed is 60 minus vaccinated in EVERY row: the children never sampled in an under-reported lot (3 to 5 clusters, 30 to 50 children) count as missed. In 2026 that is 3,990 of the 18,044 children counted missed (22%), so the lot measures (total_missed, status, performance) and the dashboard's missed rate (sampled children not vaccinated: 4.06% in 2026, against 5.22% for total_missed over total_sampled) differ. Always say which one is used.",
+    "In the reasons, other_r absorbs those unsampled children (4,020 of the 5,339 'other' in 2026 come from under-reported lots): 'other' is the largest reason in the whole file but is mostly an artifact; for the reasons use complete lots.",
+    "291 Nigerian lots (2020 to 2026; 16 in 2026) have only 1 or 2 clusters (10 or 20 children sampled) and are all 'Fail' with 40 to 55 missed. They lower Nigeria's pass rate (74.9% in 2026 with them, 76.3% without lots below 30 children); the rule of at least 3 clusters is not applied to them (OPEN_QUESTIONS).",
+    "Cluster numbers are ordinal; number_clusters is the number of forms in the lot (6 is complete).",
+    "Rows where geo_code is empty (3.4% on 26 Nov 2026, mostly Ethiopia, Zimbabwe, Angola) cannot be joined to the geographic reference.",
+    "DR Congo, Algeria, South Sudan, Nigeria, Rwanda and Ethiopia use their own selection logic (page workflows/15); never compare their lots with another country without saying so.",
+    "Always give the period asked for (the dashboard tools default to the last 6 months): never answer 'the rate' without the months or years it covers.",
+    "LQAS samples children: it never gives the number of children vaccinated in a country; use the administrative data for that.",
+    "Two dates: round_start_date is the start of the campaign round (the dashboard's 'SIA date', used for its data period and month filters); lqas_start_date is the date of the LQAS survey, usually 4 days later (a few rows differ by months). The column year follows the survey date.",
+    "A campaign round is identified by country + response (campaign) + vaccine type + round label (RND1, RND2...); the dashboard's 'Campaigns' tile counts these rounds, not campaign names."
+   ],
+   "dashboard_tools": [
+    "get_missed",
+    "get_coverage",
+    "get_reasons",
+    "get_district_performance",
+    "get_trend",
+    "get_anomalies"
+   ],
+   "pages": [
+    "workflows/03_lqas.md",
+    "workflows/15_lqas_pipeline_in_depth.md",
+    "workflows/09_raw_form_analysis.md"
+   ]
   },
-  "blocks": {
-    "WA": "West Africa",
-    "LCB": "Lake Chad Basin",
-    "ESA": "East and Southern Africa",
-    "DRC": "Democratic Republic of the Congo",
-    "CA": "Central Africa",
-    "CEA": "present in the LQAS file (359 rows on 26 Nov 2026), meaning to confirm"
-  },
-  "raw_forms": {
-    "_about": "Raw ONA exports (before any cleaning): <pipeline>/data/raw/<ISO3>_<form_id>.parquet with _metadata.json (form id, country, name, records, last_fetch) and _form.json (the questions and their labels); IM and LQAS use <form_id>.parquet, IM form 4498 is split by year (4498_<year>.parquet). catalog/raw_catalog.json lists every file (tools/raw_catalog.py); tools/raw_profile.py profiles or queries one form.",
-    "platform_columns": {
-      "_id": "ONA submission id (unique)",
-      "_uuid": "submission uuid (unique)",
-      "_submission_time": "when ONA received it",
-      "_edited": "edited after submission",
-      "_status": "ONA status (submitted_via_web)",
-      "_version": "version of the form that was used",
-      "today / end / endtime": "dates typed or recorded on the device",
-      "GPS or _geolocation": "device point"
+  {
+   "id": "admin",
+   "title": "Administrative vaccination data (polio SIAs, one record per district round vaccine)",
+   "repo": "Admin_data_coadministration / AFRO_admin_operations_center",
+   "file": "AFRO_admin_operations_center/ops_work/backup_repo/snapshots/admin/AFRO_admin_data__*.xlsx",
+   "pick": "newest",
+   "format": "xlsx",
+   "also_in": [
+    "SharePoint 7. SIA_Data/Data Repository/AFRO_admin_data.xlsx (the live file)",
+    "AFRO-Dash/input/AFRO_admin_data.rds"
+   ],
+   "dictionary": {
+    "file": "AFRO_admin_operations_center/ops_work/workspace/runs/v*/AFRO_admin_data_dictionary_v*.xlsx",
+    "pick": "newest",
+    "sheet": "Data dictionary",
+    "name_col": "Column",
+    "type_col": "Type",
+    "desc_col": "Description",
+    "group_col": "Group",
+    "filled_col": "Filled (%)",
+    "range_col": "Range / values"
+   },
+   "grain": "one row = one district, one campaign round and one vaccine; a co-administered campaign is ONE combined row (Vaccine_type 'nOPV2 & bOPV')",
+   "key": [
+    "Country",
+    "Province",
+    "District",
+    "Response",
+    "Round_Add",
+    "SIA_date",
+    "Vaccine_type"
+   ],
+   "time_columns": [
+    "SIA_date",
+    "Year",
+    "SIAMTH",
+    "Date_Report"
+   ],
+   "geography_columns": [
+    "Ctry_Code",
+    "Country",
+    "Province",
+    "District",
+    "Admin_3",
+    "AFRO_block",
+    "geo_code"
+   ],
+   "refresh": "each publish of the admin cycle (admin.py publish or the Operations Center); on 26 Nov 2026 it is build v30, 44,451 records, 205 columns",
+   "metrics": [
+    {
+     "name": "children_vaccinated",
+     "definition": "sum of TotalNbrVaccPolio (for a co-administered row it is the LARGER of the two vaccine totals, so a child given both vaccines counts once). Never add Tot_Vacc_nOPV2 and Total_Vacc_bOPV.",
+     "formula": "TotalNbrVaccPolio.sum()"
     },
-    "reconciliation_26_nov_2026": [
-      {
-        "form": "team supervision 16194",
-        "raw_rows": 444933,
-        "repository_rows": 444933,
-        "note": "nothing removed"
-      },
-      {
-        "form": "vaccine accountability 829",
-        "raw_rows": 80978,
-        "repository_rows": 78466,
-        "note": "2,512 removed (repeats and duplicates)"
-      },
-      {
-        "form": "social mobilization (5 forms)",
-        "raw_rows": 2530,
-        "repository_rows": 2530,
-        "note": "nothing removed"
-      },
-      {
-        "form": "Form A (45 forms)",
-        "raw_rows": 170474,
-        "repository_rows": 167938,
-        "note": "2,536 exact repeats removed (afro_form_a_repository_removed_repeats.csv)"
-      },
-      {
-        "form": "preparedness (39 forms)",
-        "raw_rows": 428541,
-        "repository_rows": 417503,
-        "note": "11,038 exact duplicates or unusable records (afro_preparedness_repository_removed_duplicates.csv)"
-      },
-      {
-        "form": "LQAS (37 forms)",
-        "raw_rows": 310982,
-        "repository_rows": 35768,
-        "note": "raw rows are clusters, the repository rows are lots (up to 6 clusters)"
-      }
-    ],
-    "caveats": [
-      "Raw is not a reported figure: place names are not standardised (raw team supervision has 33 distinct state names, the repository 28), dates are as typed, duplicates and test submissions are present.",
-      "The same form can sit in more than one folder (the research workbook keeps copies in SIA_for_doctorate_research): use the pipeline's own raw folder.",
-      "IM raw is about 2.7 GB of parquet (form 4498 alone 1.7 GB): read by partition and by column.",
-      "Free-text and person columns (names, comments, phone numbers) exist in raw: counts and shares only, the values of high-cardinality columns are not listed."
-    ]
+    {
+     "name": "target_population",
+     "definition": "sum of PopPolio (children targeted in the district and round)",
+     "formula": "PopPolio.sum()"
+    },
+    {
+     "name": "administrative_coverage",
+     "definition": "official coverage = children vaccinated / target population (TotalNbrVaccPolio / PopPolio); the stored CVPolio is kept as reference only; a ratio where 1.00 is 100%",
+     "formula": "TotalNbrVaccPolio.sum() / PopPolio.sum()"
+    },
+    {
+     "name": "districts_reaching_95",
+     "definition": "share of district records with coverage at or above 0.95",
+     "formula": "((TotalNbrVaccPolio / PopPolio) >= 0.95).mean()"
+    },
+    {
+     "name": "campaign_count",
+     "definition": "distinct Response names (a campaign) or distinct Response and Round_Add (a round)",
+     "formula": "Response.nunique()"
+    }
+   ],
+   "caveats": [
+    "Coverage above 1.5 is not credible (target too low); 1,272 records on 26 Nov 2026 are above the ceiling and listed for the countries. State the number of records above 1.5 beside any coverage.",
+    "MR rows (measles-rubella in an integrated campaign) have TotalNbrVaccPolio 0: exclude Vaccine_type == 'MR' from polio coverage.",
+    "Some PopPolio values are corrected by the engine (250 records in v30: decimals, district median) or estimated by a model (listed for confirmation): say 'reported and corrected figures'.",
+    "Records with the same names but different figures are different units (about 2,600), not duplicates: do not drop them.",
+    "Many columns are filled for few records (Integ*, Pop*, AgeG* of other interventions, the 39 V2 template columns about 0.7%): never average over missing values without saying how many records have the value.",
+    "Integ* flags are written Yes, yes, YES, No, NO, 0: compare case-insensitively. AFRO_block has a typo variant 'LBC' for 'LCB'.",
+    "Pending rounds (no records 15 days after the start) are not in the file: absence of a record is not zero coverage (Pending_admin_data.xlsx lists them).",
+    "Response is empty on 3.4% of records and written differently in old campaigns; the lookup is the authority for campaign name, date and round.",
+    "The dashboard has two figures: 'Doses administered' (sum of TotalNbrVaccPolio over all rounds, 367.6 million in 2026) and 'Children vaccinated' (for each country the month with the most vaccinations, summed over countries, 188.6 million in 2026). Never call the sum of rounds 'children vaccinated'."
+   ],
+   "dashboard_tools": [
+    "get_admin_summary",
+    "get_coverage (type administrative)",
+    "get_scope_summary"
+   ],
+   "pages": [
+    "workflows/02_admin_cycle.md",
+    "workflows/14_admin_engine_rules.md",
+    "workflows/17_operations_center_in_depth.md"
+   ]
+  },
+  {
+   "id": "im_submissions",
+   "title": "Independent monitoring (IM): one submission per monitored settlement (10 households)",
+   "repo": "AFRO-Independant-Monitoring-data-workflow",
+   "file": "AFRO-Dash/input/<form_id>.csv.gz",
+   "format": "csv.gz (35 forms)",
+   "also_in": [
+    "AFRO-Dash/input/AFRO_IM_data.rds (the regional table the dashboard reads)",
+    "SharePoint 7. SIA_Data/Data Repository/AFRO_Inside_HH_M.csv"
+   ],
+   "grain": "one row = one monitoring submission (a settlement or facility visited, ten households in the columns Household_1 to Household_10); date_monitored, lat/lon given",
+   "key": [
+    "COUNTRY",
+    "PROVINCE",
+    "DISTRICT",
+    "Facility",
+    "Settlement",
+    "Response",
+    "roundNumber",
+    "date_monitored"
+   ],
+   "time_columns": [
+    "date_monitored"
+   ],
+   "geography_columns": [
+    "COUNTRY",
+    "PROVINCE",
+    "DISTRICT",
+    "Facility",
+    "Settlement",
+    "lat",
+    "lon"
+   ],
+   "refresh": "run_workflow.R (by hand, the nightly task does not exist)",
+   "metrics": [
+    {
+     "name": "children_missed",
+     "definition": "Total_child_missed summed over the chosen submissions",
+     "formula": "Total_child_missed.sum()"
+    },
+    {
+     "name": "reasons",
+     "definition": "Reason_Absent, Reason_NC (non-compliance), Reason_NotVisited, Reason_Asleep, Reason_VaccinatedRoutine, Reason_Others",
+     "formula": "sum of the Reason_* columns"
+    }
+   ],
+   "caveats": [
+    "Country names in these files are not standardised (codes and spellings); use the regional table AFRO_IM_data after geoname cleaning for any country comparison.",
+    "The repository files (data/final/<form>.csv) are aggregated differently (87 columns with cv = u5_FM / u5_present and missed_child = u5_present - u5_FM, true on 99.9% of rows) and their qc_flag says 'Needs review' on 69% of rows (101,267 of 146,007 on 26 Nov 2026): never drop those rows, quote the flag.",
+    "The unit of the repository rows (several rows per district-round) is to be confirmed with the owner (OPEN_QUESTIONS).",
+    "Comments of the monitors are free text and stay local; only counts by theme are shareable."
+   ],
+   "dashboard_tools": [
+    "get_missed",
+    "get_reasons"
+   ],
+   "pages": [
+    "workflows/04_im.md",
+    "workflows/12_im_dashboard_and_cloud.md"
+   ]
+  },
+  {
+   "id": "form_a",
+   "title": "Form A: vaccine management in a campaign (45 country forms, 3 versions: vials, daily, bottles)",
+   "repo": "AFRO-Form-A-data-workflow",
+   "file": "AFRO-Form-A-data-workflow/data/final/afro_form_a_repository.csv",
+   "format": "csv",
+   "grain": "one row = one report of one place (National, Regional, District or Facility; sub-district and ward count as Facility) for one round. Several reports of the same place are kept: is_latest_of_place marks the one that counts.",
+   "extra_files": [
+    "afro_form_a_district_round.csv (adds only facility-level reports)",
+    "afro_form_a_country_round.csv (groups by level)"
+   ],
+   "caveats": [
+    "Reports of different levels are never added together: a country can have a National report, Regional reports and District reports for the same round (129,944 of 167,938 rows are Facility, 28,881 District, 4,619 National, 4,494 Regional).",
+    "Only the last report of a place and round counts (is_latest_of_place): 104,762 of 167,938 rows on 24 Nov 2026. Earlier submissions stay in the file.",
+    "46.7% of rows carry at least one qc_flags value; the largest are stock_mismatch (41,040), campaign_from_lookup_date (25,651), returned_below_distributed (21,453) and campaign_not_in_lookup (13,997). Quote the flags that touch the figure.",
+    "wastage_rate can be negative (children vaccinated above doses used; 4,536 rows flagged wastage_negative) and ranges down to -63,560: use the median over unflagged reports, never the mean.",
+    "Campaign and round follow the GPEI lookup (as in the admin data); campaign_source says whether the name was typed or found from the lookup.",
+    "target_population is asked by some versions of the form only.",
+    "33 countries have reports (45 forms); the Form A is a report of stock, not of coverage: use the administrative data for children vaccinated per district."
+   ],
+   "pages": [
+    "workflows/10_ona_form_pipelines.md"
+   ],
+   "key": [
+    "record_uuid"
+   ],
+   "time_columns": [
+    "report_date",
+    "campaign_start",
+    "submission_time"
+   ],
+   "geography_columns": [
+    "iso3",
+    "country",
+    "region",
+    "district",
+    "facility"
+   ],
+   "dictionary": {
+    "file": "AFRO-Form-A-data-workflow/data/metadata/AFRO_form_a_dictionary.xlsx",
+    "sheet": "Columns",
+    "name_col": "Column",
+    "desc_col": "Description"
+   },
+   "metrics": [
+    {
+     "name": "reports",
+     "definition": "reports that count: the last report of each place and round, one level at a time (District, never National + Regional + District + Facility added together)",
+     "formula": "df[(df.is_latest_of_place.astype(str)=='True') & (df.level=='District')]"
+    },
+    {
+     "name": "wastage_rate",
+     "definition": "(doses_used - children_vaccinated) / doses_used x 100, recomputed with one formula for every country (the form's own value is form_wastage_rate). Summarise with the median, after leaving out the reports flagged wastage_negative, wastage_over_100 or implausible_number.",
+     "formula": "median of wastage_rate over the chosen reports"
+    },
+    {
+     "name": "unaccounted_vials",
+     "definition": "vials_distributed - (usable + unusable vials back from the lower level); negative means more vials back than distributed",
+     "formula": "unaccounted_vials"
+    },
+    {
+     "name": "children_vaccinated",
+     "definition": "children vaccinated reported by the place; add only reports of ONE level",
+     "formula": "children_vaccinated.sum() over latest reports of one level"
+    }
+   ]
+  },
+  {
+   "id": "preparedness",
+   "title": "SIA preparedness validation checklist (38 country forms, English, French, Portuguese)",
+   "repo": "AFRO-Preparedness-Validation-data-workflow",
+   "file": "AFRO-Preparedness-Validation-data-workflow/data/final/afro_preparedness_repository.csv",
+   "format": "csv",
+   "grain": "one row = one supervision visit of one place (several visits before a round are normal and all kept; is_latest_of_place marks the last visit of each place and round)",
+   "extra_files": [
+    "afro_preparedness_country_round.csv",
+    "afro_preparedness_nigeria_extra_items.csv"
+   ],
+   "caveats": [
+    "Count places with is_latest_of_place, not visits: 235,844 latest visits of 417,503 rows on 24 Nov 2026.",
+    "The checklist is filled BEFORE the round: when the campaign is missing it is the next round of the country starting in the lookup (21 days before the visit to 120 days after); 133,744 rows have campaign_from_lookup_date.",
+    "qc_flags all_yes (12 or more questions answered and all ready) is on 83,374 rows (20%): to check, not removed. few_answers (134 rows): fewer than 10 questions answered.",
+    "Nigeria uses its own checklist (form 356): only the questions shared with the standard checklist are in this table.",
+    "Names of monitors are not kept, only monitor_group.",
+    "Level of the place comes from the form's 'level validated' question, else the deepest name filled (level_source)."
+   ],
+   "pages": [
+    "workflows/10_ona_form_pipelines.md"
+   ],
+   "key": [
+    "record_uuid"
+   ],
+   "time_columns": [
+    "report_date",
+    "campaign_start",
+    "submission_time"
+   ],
+   "geography_columns": [
+    "iso3",
+    "country",
+    "region",
+    "district",
+    "facility",
+    "settlement"
+   ],
+   "dictionary": {
+    "file": "AFRO-Preparedness-Validation-data-workflow/data/metadata/AFRO_preparedness_dictionary.xlsx",
+    "sheet": "Columns",
+    "name_col": "Column",
+    "desc_col": "Description"
+   },
+   "metrics": [
+    {
+     "name": "readiness_pct",
+     "definition": "items_ready / items_answered x 100: share of 'ready' answers among Yes/No answers (NA ignored); for 'vials with VVM at discard point' ready means No",
+     "formula": "readiness_pct"
+    },
+    {
+     "name": "readiness_of_places",
+     "definition": "mean readiness over the last visit of each place and round (places, not visits)",
+     "formula": "df[df.is_latest_of_place.astype(str)=='True'].readiness_pct.mean()"
+    },
+    {
+     "name": "percent_yes_per_question",
+     "definition": "share of Yes among answered, per checklist question, over places",
+     "formula": "yes / answered over latest visits"
+    },
+    {
+     "name": "section_readiness",
+     "definition": "ready_Microplan, ready_ColdChain_Logistics, ready_SocialMobilization, ready_Training: readiness % of each section",
+     "formula": "ready_*"
+    }
+   ]
+  },
+  {
+   "id": "vaccine_accountability",
+   "title": "Vaccine accountability, Nigeria (form 829)",
+   "repo": "AFRO-Vaccine-Accountability-data-workflow",
+   "file": "AFRO-Vaccine-Accountability-data-workflow/data/final/afro_vaccine_accountability_repository.csv",
+   "format": "csv",
+   "grain": "one row = one ward and campaign-day report",
+   "extra_files": [
+    "afro_vaccine_accountability_lga_month.csv",
+    "afro_vaccine_accountability_state_month.csv"
+   ],
+   "caveats": [
+    "What 'vials returned' means is to be confirmed with the form owner: never present 100 minus pct_returned as vials lost or not returned.",
+    "Only 68,184 of 78,466 reports have valid vial counts; 409 report returned above received (left out of the totals).",
+    "The detailed stock fields (detail_*) exist only in the newest form version (about 1% of reports).",
+    "Nigeria only; very few 2026 reports (187 rows, 164 with valid vials) against 40,041 in 2024: say the year when quoting a total.",
+    "gps_valid is False on every row of the 26 Nov 2026 file: do not use lat/lon for this form.",
+    "The raw file has 80,978 records; 2,512 were removed by the cleaning (repeats and duplicates)."
+   ],
+   "pages": [
+    "workflows/10_ona_form_pipelines.md"
+   ],
+   "key": [
+    "record_id"
+   ],
+   "time_columns": [
+    "visit_date",
+    "submission_time"
+   ],
+   "geography_columns": [
+    "state",
+    "lga",
+    "ward",
+    "lat",
+    "lon"
+   ],
+   "dictionary": {
+    "file": "AFRO-Vaccine-Accountability-data-workflow/data/metadata/AFRO_vaccine_accountability_dictionary.xlsx",
+    "sheet": "Columns",
+    "name_col": "column",
+    "type_col": "type",
+    "desc_col": "description",
+    "filter": {
+     "file": "afro_vaccine_accountability_repository.csv"
+    }
+   },
+   "metrics": [
+    {
+     "name": "pct_returned",
+     "definition": "100 x vials returned / vials received over VALID reports (both counts 0-5,000, returned <= received). A total over many reports is the ratio of sums, never the mean of the pct_returned column (56.4% against 40.75%).",
+     "formula": "100 * vials_returned[vials_valid].sum() / vials_received[vials_valid].sum()"
+    },
+    {
+     "name": "valid_reports",
+     "definition": "reports whose vial counts are usable",
+     "formula": "vials_valid == True"
+    }
+   ]
+  },
+  {
+   "id": "social_mobilization",
+   "title": "Social mobilization reports, Nigeria (forms 8705 pre, 8703 intra, 8704 post, 15388 monitoring, 18506 ACSM nomadic)",
+   "repo": "AFRO-Social-Mobilization-data-workflow",
+   "file": "AFRO-Social-Mobilization-data-workflow/data/final/afro_social_mobilization_reports.csv",
+   "format": "csv",
+   "grain": "one row = one report (record) of one of the five forms; the long table holds one answer per row",
+   "extra_files": [
+    "afro_social_mobilization_answers_long.csv",
+    "afro_social_mobilization_yes_no_state_month.csv",
+    "afro_social_mobilization_numeric_state_month.csv"
+   ],
+   "caveats": [
+    "Always split by form_key and reporting_level: a state report and an LGA report of the same form answer different questions about different units (LGA 2,204, WARD 188, STATE 136, NATIONAL 2 reports).",
+    "A question exists only for reports of a version of the form that has it: the share is over reports that answered.",
+    "Forms differ by period: 8705, 8703 and 8704 are 2022 and 2023 reports, 15388 and 18506 run to 2026 (2,530 reports in all).",
+    "Comments and free-text answers are not kept."
+   ],
+   "pages": [
+    "workflows/10_ona_form_pipelines.md"
+   ],
+   "key": [
+    "record_id"
+   ],
+   "time_columns": [
+    "report_date"
+   ],
+   "geography_columns": [
+    "state",
+    "lga",
+    "ward",
+    "lat",
+    "lon"
+   ],
+   "dictionary": {
+    "file": "AFRO-Social-Mobilization-data-workflow/data/metadata/AFRO_social_mobilization_dictionary.xlsx",
+    "sheet": "Columns",
+    "name_col": "column",
+    "desc_col": "description",
+    "filter": {
+     "file": "afro_social_mobilization_reports.csv"
+    }
+   },
+   "metrics": [
+    {
+     "name": "reports",
+     "definition": "number of reports, always split by form_key and reporting_level",
+     "formula": "df.groupby(['form_key','reporting_level']).size()"
+    },
+    {
+     "name": "pct_yes",
+     "definition": "yes / answered for a yes-no question, 'na' not counted (from the yes_no summary tables)",
+     "formula": "yes / answered"
+    }
+   ]
+  },
+  {
+   "id": "team_supervision",
+   "title": "Team supervision, Nigeria (form 16194)",
+   "repo": "AFRO-Team-Supervision-data-workflow",
+   "file": "AFRO-Team-Supervision-data-workflow/data/final/afro_team_supervision_repository.csv",
+   "format": "csv",
+   "grain": "one row = one supervision visit (a team observed by a supervisor); team_type H2H, H2H_TFP, FP or SPECIAL decides which indicators exist",
+   "extra_files": [
+    "afro_team_supervision_lga_month.csv",
+    "afro_team_supervision_indicators_state_month.csv"
+   ],
+   "caveats": [
+    "Indicators exist only for the team types that have the question: ind_house_marked is answered by 364,738 of 444,933 visits (H2H teams), not by every visit.",
+    "Lower is better only for evidence of false finger marking (3.39% yes) and evidence of over-tallying (1.95%); all other indicators: higher is better.",
+    "Typed counts outside 0-500 (children sampled) and 0-50 (AFP cases) become NA; flag_number_outlier marks them (117 visits).",
+    "Visits by month are uneven: 401 in June 2026 and 3,019 in September 2026 against 113,483 in May and 82,805 in November: say the months before comparing.",
+    "Nigeria only (28 states, 370 LGAs); geo_match shows how the place was matched (exact, fuzzy, override, unmatched 43).",
+    "The repository file is large (about 133 MB) and is local plus SharePoint, not in git."
+   ],
+   "pages": [
+    "workflows/10_ona_form_pipelines.md"
+   ],
+   "key": [
+    "record_id"
+   ],
+   "time_columns": [
+    "visit_date",
+    "submission_time"
+   ],
+   "geography_columns": [
+    "state",
+    "lga",
+    "ward",
+    "settlement",
+    "lat",
+    "lon"
+   ],
+   "dictionary": {
+    "file": "AFRO-Team-Supervision-data-workflow/data/metadata/AFRO_team_supervision_dictionary.xlsx",
+    "sheet": "Columns",
+    "name_col": "column",
+    "type_col": "type",
+    "desc_col": "description",
+    "filter": {
+     "file": "afro_team_supervision_repository.csv"
+    }
+   },
+   "metrics": [
+    {
+     "name": "pct_yes",
+     "definition": "for an indicator ind_*: 100 x mean over answered visits (1 = favourable, 0 = other valid answer, NA not counted). Lower is better ONLY for ind_evidence_ffm (evidence of false finger marking) and ind_evidence_overtally.",
+     "formula": "100 * df['ind_house_marked'].mean()"
+    },
+    {
+     "name": "children_sampled",
+     "definition": "H2H teams: children sampled by the supervisor (0 to 500, else NA); not_fully_marked_sampled are those not fully marked",
+     "formula": "children_sampled.sum()"
+    }
+   ]
+  },
+  {
+   "id": "scope",
+   "title": "SIA scope (districts planned per campaign)",
+   "repo": "scope / AFRO-Dash",
+   "file": "AFRO-Dash/input/Scope.rds",
+   "format": "rds (R only)",
+   "grain": "one row per planned district per campaign round (about 45,000 rows on 26 Nov 2026 in scope_.csv)",
+   "caveats": [
+    "18 older Polio campaigns have no scope rows (empty or unresolvable scopes in the GPEI API, 26 Nov 2026)."
+   ],
+   "pages": [
+    "workflows/01_scope_refresh.md"
+   ]
+  },
+  {
+   "id": "im_repository",
+   "title": "Independent monitoring, regional repository (cleaned)",
+   "repo": "AFRO-Independant-Monitoring-data-workflow",
+   "file": "AFRO-Independant-Monitoring-data-workflow/data/final/Regional_IM_repository_cleaned.csv",
+   "format": "csv (also .parquet and .rds)",
+   "grain": "one row = one aggregated IM record of a district and round (up to 24 rows share the same country, province, district, response, round and start date): sum the counts, never average the rows. To confirm with the owner (OPEN_QUESTIONS).",
+   "key": [
+    "country",
+    "province",
+    "district",
+    "response",
+    "roundNumber",
+    "start_date_IM_end"
+   ],
+   "time_columns": [
+    "start_date_IM_end",
+    "end_date_IM_end",
+    "round_start_date",
+    "year"
+   ],
+   "geography_columns": [
+    "country",
+    "province",
+    "district",
+    "geo_code"
+   ],
+   "metrics": [
+    {
+     "name": "finger_marked_share",
+     "definition": "children under 5 found with finger mark over children present: u5_FM / u5_present, a ratio of sums (cv holds the row ratio as a fraction 0 to 1)",
+     "formula": "100 * u5_FM.sum() / u5_present.sum()"
+    },
+    {
+     "name": "children_missed",
+     "definition": "missed_child = u5_present - u5_FM, summed",
+     "formula": "missed_child.sum()"
+    },
+    {
+     "name": "reasons",
+     "definition": "r_non_FM_* (absent, non-compliance, household not visited, not revisited, asleep, vaccinated routine, other) and r_abs_* details",
+     "formula": "sum of r_non_FM_*"
+    }
+   ],
+   "caveats": [
+    "Weighted ratio of sums, not the mean of cv: 96.93% finger-marked in 2026 (4,550 rows; 78,431 children missed).",
+    "denominator_qc_flag says whether the denominator was reconstructed (40 rows) or inconsistent (8 rows): the rest is 'Denominator OK'.",
+    "The repository differs from the Dash regional table by cleaning: say which one is used. The country filter must use the standardised country names.",
+    "Row unit to confirm: rows per district-round reach 24."
+   ],
+   "pages": [
+    "workflows/04_im.md",
+    "workflows/12_im_dashboard_and_cloud.md"
+   ]
+  },
+  {
+   "id": "settlement",
+   "title": "IM settlement routes (IM Settlement Maps files)",
+   "repo": "AFRO-Dash",
+   "file": "AFRO-Dash/input/<form id>.csv.gz",
+   "format": "csv.gz, one file per country form, built from the raw IM forms by AFRO-Dash/tools/build_settlement_inputs.py",
+   "grain": "one row = one monitor route that found at least one missed child: start and end GPS, the households, the reasons, the total children missed. No child, caregiver or monitor identity. Routes that found no missed child are not in the files.",
+   "key": [
+    "country",
+    "province",
+    "district",
+    "place",
+    "date_monitored",
+    "lat",
+    "lon"
+   ],
+   "time_columns": [
+    "date_monitored",
+    "year"
+   ],
+   "geography_columns": [
+    "country",
+    "province",
+    "district",
+    "facility",
+    "settlement",
+    "lat",
+    "lon"
+   ],
+   "metrics": [
+    {
+     "name": "routes",
+     "definition": "monitor routes that found at least one missed child (routes that pass the quality rules)",
+     "formula": "number of routes with qc == OK"
+    },
+    {
+     "name": "children_missed",
+     "definition": "children found missed on those routes (Total_child_missed summed)",
+     "formula": "sum(children) over routes with qc == OK"
+    },
+    {
+     "name": "households_with_missed_children",
+     "definition": "households where at least one missed child was found",
+     "formula": "count of Household_1..10 cells above 0, summed"
+    },
+    {
+     "name": "settlements",
+     "definition": "distinct places (settlement, else health facility) with missed children found",
+     "formula": "distinct country, province, district, place"
+    },
+    {
+     "name": "districts_covered",
+     "definition": "distinct districts with at least one route",
+     "formula": "distinct country, district"
+    },
+    {
+     "name": "children_per_route",
+     "definition": "average children found missed per route (routes only exist where at least one was found)",
+     "formula": "children_missed / routes"
+    },
+    {
+     "name": "reasons",
+     "definition": "reasons of the missed children with their share (the reason counts of the routes)",
+     "formula": "sum of Reason_* over routes with qc == OK"
+    },
+    {
+     "name": "routes_left_out",
+     "definition": "routes that fail a quality rule (GPS outside the country or missing, more than 100 children on one route, route longer than 5 km)",
+     "formula": "number of routes with qc != OK"
+    },
+    {
+     "name": "children_absent",
+     "definition": "children missed because of: child absent",
+     "formula": "sum(absent) over routes with qc == OK"
+    },
+    {
+     "name": "children_noncompliance",
+     "definition": "children missed because of: non-compliance",
+     "formula": "sum(nc) over routes with qc == OK"
+    },
+    {
+     "name": "children_not_visited",
+     "definition": "children missed because of: household not visited",
+     "formula": "sum(not_visited) over routes with qc == OK"
+    },
+    {
+     "name": "children_asleep",
+     "definition": "children missed because of: child asleep",
+     "formula": "sum(asleep) over routes with qc == OK"
+    },
+    {
+     "name": "children_vaccinated_routine",
+     "definition": "children missed because of: vaccinated in routine",
+     "formula": "sum(vacc_routine) over routes with qc == OK"
+    },
+    {
+     "name": "children_other_reason",
+     "definition": "children missed because of: other reason",
+     "formula": "sum(other) over routes with qc == OK"
+    }
+   ],
+   "caveats": [
+    "No coverage rate per settlement: the files hold only routes that found missed children.",
+    "Place names repeat across districts and countries: always give the country, and the district when known.",
+    "Routes with GPS outside the country, over 100 children on one route, or longer than 5 km are left out of every figure (same rules as the dashboard tab).",
+    "Blank response and round are filled from the campaign calendar by the build script; some forms still show NOT RECORDED.",
+    "Aggregated route counts only: never a record of a child or a caregiver."
+   ],
+   "pages": [
+    "workflows/04_im.md"
+   ]
   }
+ ],
+ "geography": {
+  "reference": "AFRO-Geo-Reference (AFROGDB)",
+  "join_key": "geo_code (for example NGA-SOK-WAW); names are standardised upstream, the dashboard never fixes names",
+  "rule": "Join datasets on geo_code, never on raw names; a record without geo_code is reported, not guessed.",
+  "page": "workflows/05_geo_reference.md"
+ },
+ "blocks": {
+  "WA": "West Africa",
+  "LCB": "Lake Chad Basin",
+  "ESA": "East and Southern Africa",
+  "DRC": "Democratic Republic of the Congo",
+  "CA": "Central Africa",
+  "CEA": "present in the LQAS file (359 rows on 26 Nov 2026), meaning to confirm"
+ },
+ "raw_forms": {
+  "_about": "Raw ONA exports (before any cleaning): <pipeline>/data/raw/<ISO3>_<form_id>.parquet with _metadata.json (form id, country, name, records, last_fetch) and _form.json (the questions and their labels); IM and LQAS use <form_id>.parquet, IM form 4498 is split by year (4498_<year>.parquet). catalog/raw_catalog.json lists every file (tools/raw_catalog.py); tools/raw_profile.py profiles or queries one form.",
+  "platform_columns": {
+   "_id": "ONA submission id (unique)",
+   "_uuid": "submission uuid (unique)",
+   "_submission_time": "when ONA received it",
+   "_edited": "edited after submission",
+   "_status": "ONA status (submitted_via_web)",
+   "_version": "version of the form that was used",
+   "today / end / endtime": "dates typed or recorded on the device",
+   "GPS or _geolocation": "device point"
+  },
+  "reconciliation_26_nov_2026": [
+   {
+    "form": "team supervision 16194",
+    "raw_rows": 444933,
+    "repository_rows": 444933,
+    "note": "nothing removed"
+   },
+   {
+    "form": "vaccine accountability 829",
+    "raw_rows": 80978,
+    "repository_rows": 78466,
+    "note": "2,512 removed (repeats and duplicates)"
+   },
+   {
+    "form": "social mobilization (5 forms)",
+    "raw_rows": 2530,
+    "repository_rows": 2530,
+    "note": "nothing removed"
+   },
+   {
+    "form": "Form A (45 forms)",
+    "raw_rows": 170474,
+    "repository_rows": 167938,
+    "note": "2,536 exact repeats removed (afro_form_a_repository_removed_repeats.csv)"
+   },
+   {
+    "form": "preparedness (39 forms)",
+    "raw_rows": 428541,
+    "repository_rows": 417503,
+    "note": "11,038 exact duplicates or unusable records (afro_preparedness_repository_removed_duplicates.csv)"
+   },
+   {
+    "form": "LQAS (37 forms)",
+    "raw_rows": 310982,
+    "repository_rows": 35768,
+    "note": "raw rows are clusters, the repository rows are lots (up to 6 clusters)"
+   }
+  ],
+  "caveats": [
+   "Raw is not a reported figure: place names are not standardised (raw team supervision has 33 distinct state names, the repository 28), dates are as typed, duplicates and test submissions are present.",
+   "The same form can sit in more than one folder (the research workbook keeps copies in SIA_for_doctorate_research): use the pipeline's own raw folder.",
+   "IM raw is about 2.7 GB of parquet (form 4498 alone 1.7 GB): read by partition and by column.",
+   "Free-text and person columns (names, comments, phone numbers) exist in raw: counts and shares only, the values of high-cardinality columns are not listed."
+  ]
+ }
 }

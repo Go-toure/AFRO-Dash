@@ -73,3 +73,12 @@ Pages: At a Glance; Campaigns Overview (Power BI); SIA Scope Analysis (scope map
 - The dashboard shows TWO figures. 'Doses administered' = the sum of `TotalNbrVaccPolio` over all rounds and records (the same child is counted once per round): metric `doses_administered` (367,586,149 in 2026). 'Children vaccinated' = for each country the month with the most vaccinations, summed over countries (distinct children are not added again): metric `children_vaccinated` (188,578,639 in 2026).
 - 'How many children were vaccinated' -> `children_vaccinated`. 'Doses', 'vaccinations', 'adding all rounds' -> `doses_administered`. Always say which one you give and why they differ.
 - 'Campaigns': `campaigns` counts campaign names (Response); `rounds` counts (country, campaign, round, vaccine type), as the dashboard counts rounds.
+
+## Settlement information (dataset settlement, tool find_settlement)
+
+- Source: the route-level files of the IM Settlement Maps tab (AFRO-Dash/input/<form id>.csv.gz), built from the raw IM forms. One row = one monitor route that found at least one missed child. Counts only: no child, caregiver or monitor identity.
+- Routes that found nobody are not in the files: never give a coverage rate, a denominator or a "share of children missed" for a settlement. Say where, when, how many and why children were found missed.
+- Quality rules of the dashboard tab apply to every figure: GPS outside the country or missing, more than 100 children on one route, a route longer than 5 km are left out; say how many routes were left out.
+- A place name is the settlement of the form, else the health facility. The same name exists in several districts and countries: give the country, and the district when known; when several places match, list them and ask which one.
+- When the form does not record the district (NOT RECORDED), the map reads the district from the GPS position; say so.
+- Some country forms record no reasons: those routes count as zero in the reason figures; say so when the warning is present.

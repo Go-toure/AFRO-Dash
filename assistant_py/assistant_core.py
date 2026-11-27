@@ -78,6 +78,14 @@ MAP_TOOL = {"name": "make_map", "description": "Draw a MAP (an image shown to th
                 "latest_round": {"type": "boolean"}, "latest_only": {"type": "boolean"}, "complete_lots_only": {"type": "boolean"}, "min_n": {"type": "integer"}},
                 "required": ["dataset", "metric"]}}
 TOOLS.append(MAP_TOOL)
+SETTLEMENT_TOOL = {"name": "find_settlement", "description": "Information about ONE settlement or health facility from the route-level IM files (the IM Settlement Maps data): where and when monitors found missed children there, how many, the reasons, the campaign rounds, the district context and the GPS position, with an optional map. Give the place name as written by the user (spelling differences are handled) and the country (and the district when known): the same name exists in many districts. When several places match it returns the candidates: ask the user which one, then call again with the same name and the number in `pick` (1 is the first candidate). Counts only: the files hold no child, caregiver or monitor identity, and only routes that found missed children, so there is no coverage rate per settlement. For totals by country, district or month over many places use query_data on the dataset settlement instead.",
+                   "input_schema": {"type": "object", "properties": {
+                       "name": {"type": "string", "description": "settlement or health facility name"},
+                       "country": {"type": "string"}, "province": {"type": "string"}, "district": {"type": "string"},
+                       "pick": {"type": "integer", "description": "number (1-based) of the candidate to describe, after a first call returned several"},
+                       "map": {"type": "boolean", "description": "true to draw the routes of the place on the district boundary"}},
+                       "required": ["name"]}}
+TOOLS.append(SETTLEMENT_TOOL)
 FIGURE = re.compile(r"\d{1,3}(,\d{3})+|\d+\.\d+|\b\d{3,}\b|\d\s?%")
 
 
@@ -111,6 +119,7 @@ def system_prompt(here=HERE, engine=None):
             "'children vaccinated' is metric children_vaccinated; doses, vaccinations or the sum of all rounds is doses_administered; say which one you give. Use the metric the question names: median_wastage_rate unless the question asks to leave out flagged reports (then median_wastage_rate_unflagged and say so). Counts of reports or visits cover every report unless the question asks for the latest report of each place (latest_only=true). "
             ""
             "For the last, latest or most recent round or campaign use latest_round=true and name the campaign and round the result reports; never choose a round by its label and never group by round to find the latest. "
+            "For a question about ONE settlement, village or health facility (what happened there, how many missed children, why, when, where) call find_settlement with the name and the country; if it returns several candidates, list them and ask which one, then call again with pick; add map=true when a map is asked. State that the settlement files hold only routes that found missed children (no coverage rate per settlement) and the routes left out. For totals over many places use query_data on the dataset settlement. "
             "For a graph or chart call make_chart (bars for categories, a line for year or month): the image is shown after your reply, so describe what it shows and restate the warnings. For a map call make_map (district by geo code for LQAS, admin and IM; other datasets by province, state or district name inside one country, or by country): the image is shown after your reply, so say what it shows, how many places were placed, and restate the warnings; use latest_round=true for the last round. If the tool says R is missing, say that this computer cannot draw maps and give the table instead. "
             "When the question does not name the dataset, name the dataset you used. A dataset that is not in the list below is not available here: say so, do not guess. Answer in the language of the question, briefly.\n\nDATASETS AND THEIR METRICS (use these exact names):\n" + listing + "\n\nRULES OF THE CATALOGUE:\n" + rules)
 
@@ -251,6 +260,8 @@ class Assistant:
                 out = {"map_created": True, "level": info["level"], "metric": res["metric"], "unit": res["unit"], "country": info["country"], "period": res.get("period"), "rows_used": res["rows_used"],
                        "places_on_map": info["placed"].get("matched"), "places_in_result": info["placed"].get("total"), "places_not_placed": info["placed"].get("unmatched"),
                        "table": res["table"][:30], "warnings": res.get("warnings", []), "notes": res.get("notes", [])}
+            elif name == "find_settlement":
+                out = self._find_settlement(args)
             else:
                 out = {"error": "unknown tool " + str(name)}
         except EngineError as e:
@@ -258,6 +269,49 @@ class Assistant:
         except Exception as e:  # a bad argument must not stop the conversation
             out = {"error": "the query failed: %s" % str(e)[:200]}
         return json.dumps(out, ensure_ascii=False, default=str)
+
+    def _find_settlement(self, a):
+        import settlement_tools as st
+        if "settlement" not in self.engine.ds or not self.engine.available("settlement"):
+            return {"error": "the settlement files (AFRO-Dash/input/<form id>.csv.gz) are not available in this installation"}
+        df = self.engine.load("settlement")[0]
+        cands = st.search_places(df, a.get("name", ""), a.get("country"), a.get("district"), a.get("province"), limit=10)
+        if not cands:
+            return {"found": False, "message": "no place of this name in the settlement files%s: check the spelling, or give the country; places without any missed child are not in the files" % (" of " + a["country"] if a.get("country") else "")}
+        numbered = [dict(number=i + 1, **c) for i, c in enumerate(cands)]
+        exact = [c for c in cands if c["match"] == "exact name"]
+        pick = a.get("pick")
+        if pick:
+            if not 1 <= int(pick) <= len(cands):
+                return {"error": "pick must be between 1 and %d" % len(cands), "candidates": numbered}
+            chosen = cands[int(pick) - 1]
+        elif len(cands) == 1:
+            chosen = cands[0]
+        elif len(exact) == 1:
+            chosen = exact[0]
+        else:
+            return {"resolved": False, "message": "several places match: ask the user which one (country and district), then call again with `pick`", "candidates": numbered}
+        prof = st.profile(df, chosen["country"], chosen["district"], chosen["place"], chosen["province"])
+        out = {"resolved": True, "other_candidates": [c for c in numbered if c["place"] != chosen["place"] or c["district"] != chosen["district"]][:6], "profile": prof,
+               "warnings": ["Only monitor routes that found at least one missed child are in the files: there is no coverage rate or denominator for a settlement.",
+                            "Routes with GPS outside the country, over 100 children on one route or longer than 5 km are left out (routes_left_out says how many)."] + ([prof["note"]] if prof and prof.get("note") else [])}
+        if a.get("map") and prof and prof.get("routes_used"):
+            from map_tools import rscript, boundaries_dir, MapError
+            import tempfile
+            R = rscript()
+            if not R:
+                out["map_error"] = "R is not installed on this computer: maps need Rscript"
+            else:
+                try:
+                    png, info = st.render_place_map(df, chosen["country"], chosen["district"], chosen["place"], os.path.join(tempfile.mkdtemp(prefix="sia_place_"), "place.png"), boundaries_dir(self.engine), R, chosen["province"])
+                    self.images.append(open(png, "rb").read())
+                    out["map_created"] = True
+                    out["district_by_gps"] = info.get("district_by_gps"); out["province_by_gps"] = info.get("province_by_gps")
+                    if info.get("district_by_gps") and chosen["district"] == "NOT RECORDED":
+                        out["warnings"].append("The form does not record the district of this place; the district %s is read from the GPS position on the AFRO-Dash boundaries." % info["district_by_gps"])
+                except (MapError, RuntimeError) as e:
+                    out["map_error"] = str(e)
+        return out
 
     # ----- one question -----
     def ask(self, user_text, history=None):
@@ -295,7 +349,10 @@ def trail(calls):
     """One line per tool call, for the page and the logs."""
     out = []
     for c in calls:
-        if c["tool"] in ("query_data", "make_chart", "make_map"):
+        if c["tool"] == "find_settlement":
+            i = c["input"]
+            out.append("settlement %s%s%s" % (i.get("name", ""), (" (%s)" % ", ".join(str(i[k]) for k in ("district", "country") if i.get(k))) if (i.get("district") or i.get("country")) else "", "  [error]" if c["error"] else ""))
+        elif c["tool"] in ("query_data", "make_chart", "make_map"):
             i = c["input"]
             f = ", ".join("%s=%s" % (k, v) for k, v in i.items() if k not in ("dataset", "metric") and v not in (None, "", [], {}))
             out.append("%s%s.%s%s%s" % ({"make_chart": "chart ", "make_map": "map "}.get(c["tool"], ""), i.get("dataset"), i.get("metric"), (" (" + f + ")") if f else "", "  [error]" if c["error"] else ""))
