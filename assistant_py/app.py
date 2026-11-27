@@ -25,7 +25,11 @@ app_ui = ui.page_fillable(
 
 
 def server(input, output, session):
-    chat = ui.Chat(id="chat", messages=["Hello. Which figure do you need? For example: *What share of LQAS lots passed in 2026, by block?*"])
+    hello = "Hello. Which figure do you need? For example: *What share of LQAS lots passed in 2026, by block?*"
+    try:  # shinychat 0.7 and later: a greeting; the conversation is kept by this page, not by the chat component
+        chat = ui.Chat(id="chat", greeting=hello, history=False)
+    except TypeError:  # older shiny: startup messages
+        chat = ui.Chat(id="chat", messages=[hello])
     state = {"bot": None, "history": []}
 
     def bot():
@@ -35,7 +39,8 @@ def server(input, output, session):
 
     @chat.on_user_submit
     async def _():
-        question = chat.user_input()
+        ui_in = chat.user_input()
+        question = getattr(ui_in, "text", ui_in)  # newer shinychat returns (text, attachments), older ones the text
         try:
             reply, hist, calls = await asyncio.to_thread(bot().ask, question, state["history"])
         except SystemExit as e:
