@@ -1,0 +1,1167 @@
+{
+ "_about": "Executable specification of the catalogue query engine (tools/catalog_engine.py). Per dataset: where the file is, which columns to read, the dimensions (group by and filters), the metrics (pandas expression on df = the selected rows, p = parameters, rows_of(id) = rows of another dataset) and the warnings that touch a figure. The meaning, grain and caveats in prose stay in semantic_layer.json; build_catalog.py / catalog_engine.py selftest check that the two agree. Expressions are written in this repository, never taken from a user or a model. 'sources' are tried in order; @data = the folder of the data repositories (SIA_DATA_ROOT, or the folder above the agent repository), @dash = the AFRO-Dash folder, @here = the assistant's own folder. A dataset with no source found is 'not available' in that installation.",
+ "datasets": {
+  "lqas": {
+   "semantic": "lqas",
+   "date_col": "lqas_start_date",
+   "entity": "lots",
+   "dims": {
+    "country": "country",
+    "year": "year",
+    "vaccine": "vaccine.type",
+    "status": "status",
+    "performance": "performance",
+    "round": "roundNumber",
+    "response": "response",
+    "block": "afro_block",
+    "province": "province",
+    "district": "district",
+    "missed_in_lot": "total_missed"
+   },
+   "metrics": {
+    "lots": {
+     "unit": "lots",
+     "def": "number of lots assessed",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "pass_rate": {
+     "unit": "percent of lots",
+     "def": "share of lots that pass (at most 3 children missed in the lot of 60)",
+     "formula": "100 * mean(status == 'Pass')",
+     "expr": "100*(df.status=='Pass').mean()",
+     "kind": "scalar"
+    },
+    "missed_children_rate": {
+     "unit": "percent of children sampled",
+     "def": "the dashboard missed rate: sampled children not found vaccinated over children sampled",
+     "formula": "100 * (1 - sum(total_vaccinated) / sum(total_sampled))",
+     "expr": "100*(1-df.total_vaccinated.sum()/df.total_sampled.sum())",
+     "kind": "scalar"
+    },
+    "coverage_of_sampled": {
+     "unit": "percent of children sampled",
+     "def": "the dashboard LQAS coverage: sampled children found vaccinated over children sampled",
+     "formula": "100 * sum(total_vaccinated) / sum(total_sampled)",
+     "expr": "100*df.total_vaccinated.sum()/df.total_sampled.sum()",
+     "kind": "scalar"
+    },
+    "children_sampled": {
+     "unit": "children",
+     "def": "children sampled",
+     "formula": "sum(total_sampled)",
+     "expr": "df.total_sampled.sum()",
+     "kind": "scalar"
+    },
+    "children_vaccinated": {
+     "unit": "children",
+     "def": "sampled children found vaccinated (NOT the number of children vaccinated in the country)",
+     "formula": "sum(total_vaccinated)",
+     "expr": "df.total_vaccinated.sum()",
+     "kind": "scalar"
+    },
+    "children_missed": {
+     "unit": "children",
+     "def": "sampled children not found vaccinated",
+     "formula": "sum(total_sampled) - sum(total_vaccinated)",
+     "expr": "df.total_sampled.sum()-df.total_vaccinated.sum()",
+     "kind": "scalar"
+    },
+    "total_missed_lot_measure": {
+     "unit": "children (lot measure)",
+     "def": "60 minus vaccinated in every lot: also counts the children never sampled in under-reported lots; used for pass or fail",
+     "formula": "sum(total_missed)",
+     "expr": "df.total_missed.sum()",
+     "kind": "scalar"
+    },
+    "unsampled_counted_missed": {
+     "unit": "children",
+     "def": "children never sampled but counted as missed in under-reported lots (60 minus sampled)",
+     "formula": "sum(pmax(60 - total_sampled, 0))",
+     "expr": "(60-df.total_sampled).clip(lower=0).sum()",
+     "kind": "scalar"
+    },
+    "under_reported_lots": {
+     "unit": "lots",
+     "def": "lots with fewer than 60 children sampled",
+     "formula": "sum(total_sampled < 60)",
+     "expr": "(df.total_sampled<60).sum()",
+     "kind": "scalar"
+    },
+    "districts": {
+     "unit": "districts",
+     "def": "distinct districts with at least one lot",
+     "formula": "distinct (country, province, district)",
+     "expr": "len(df[['country','province','district']].drop_duplicates())",
+     "kind": "scalar"
+    },
+    "countries": {
+     "unit": "countries",
+     "def": "distinct countries with at least one lot",
+     "formula": "distinct country",
+     "expr": "df.country.nunique()",
+     "kind": "scalar"
+    },
+    "campaigns": {
+     "unit": "campaigns",
+     "def": "distinct campaign names (response) with lots",
+     "formula": "distinct response",
+     "expr": "df.response.nunique()",
+     "kind": "scalar"
+    },
+    "lots_below_3_clusters": {
+     "unit": "lots",
+     "def": "lots with fewer than 30 children sampled (1 or 2 clusters), which all fail",
+     "formula": "sum(total_sampled < 30)",
+     "expr": "(df.total_sampled<30).sum()",
+     "kind": "scalar"
+    },
+    "share_without_geo_code": {
+     "unit": "percent of lots",
+     "def": "share of lots with no AFROGDB geo_code",
+     "formula": "100 * mean(is.na(geo_code))",
+     "expr": "100*df.geo_code.isna().mean()",
+     "kind": "scalar"
+    },
+    "latest_date": {
+     "unit": "date",
+     "def": "date of the most recent survey (round start date)",
+     "formula": "max(lqas_start_date)",
+     "expr": "df['.date'].max()",
+     "kind": "date"
+    },
+    "reasons": {
+     "unit": "children",
+     "def": "reasons for missed children (sum of the r_* counts) with their share; over complete lots (60 sampled) unless complete_lots_only is false",
+     "formula": "sum of r_* columns over lots with total_sampled == 60",
+     "expr": "(lambda x: (lambda s: pd.DataFrame({'reason':s.index,'children':s.values.astype(int),'share_percent':(100*s/s.sum()).round(1).values}).sort_values('children',ascending=False))(x[['r_non_compliance','r_house_not_visited','r_childabsent','r_Child_was_asleep','r_Child_is_a_visitor','r_Vaccinated_but_not_FM','r_security','r_childnotborn','other_r']].apply(pd.to_numeric, errors='coerce').sum()))(df[df.total_sampled==60] if p.get('complete_lots_only',True) else df)",
+     "kind": "table"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "pass_rate",
+      "total_missed_lot_measure",
+      "lots",
+      "reasons"
+     ],
+     "count": "int((df.total_sampled<60).sum())",
+     "text": "{n} of {rows} lots are under-reported (fewer than 60 children sampled); they count the unsampled children as missed."
+    },
+    {
+     "metrics": [
+      "total_missed_lot_measure"
+     ],
+     "text": "This is the lot measure; the dashboard missed rate (missed_children_rate) is lower."
+    },
+    {
+     "metrics": [
+      "children_vaccinated"
+     ],
+     "text": "These are sampled children found vaccinated, not the number of children vaccinated: use the administrative data for that."
+    },
+    {
+     "metrics": [
+      "pass_rate",
+      "lots"
+     ],
+     "count": "int(((df.country.str.upper()=='NIGERIA')&(df.total_sampled<30)).sum())",
+     "text": "{n} Nigerian lot(s) have only 1 or 2 clusters (under 30 children) and all fail."
+    },
+    {
+     "metrics": [
+      "reasons"
+     ],
+     "text": "'other' also holds the unsampled children of under-reported lots: it is mostly an artifact in the whole file.",
+     "only_if": "not p.get('complete_lots_only',True)"
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/Posit-LQAS-Workflow/data/final/afro_lqas_repositorty.csv"
+    },
+    {
+     "kind": "rds",
+     "path": "@dash/input/AFRO_LQAS_data_c.rds"
+    },
+    {
+     "kind": "rds",
+     "path": "@here/data/AFRO_LQAS_data_c.rds"
+    }
+   ]
+  },
+  "admin": {
+   "semantic": "admin",
+   "date_col": "SIA_date",
+   "entity": "records",
+   "dims": {
+    "country": "Country",
+    "year": "Year",
+    "vaccine": "Vaccine_type",
+    "block": "AFRO_block",
+    "response": "Response",
+    "round": "Round_Add",
+    "province": "Province"
+   },
+   "metrics": {
+    "records": {
+     "unit": "records",
+     "def": "number of district-round-vaccine records",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "children_vaccinated": {
+     "unit": "children",
+     "def": "children vaccinated with polio vaccine (measles-rubella records excluded); for co-administered rows the larger of the two vaccine totals",
+     "formula": "sum(TotalNbrVaccPolio) where Vaccine_type != 'MR'",
+     "expr": "df[df.Vaccine_type!='MR'].TotalNbrVaccPolio.sum()",
+     "kind": "scalar"
+    },
+    "target_population": {
+     "unit": "children",
+     "def": "polio target population of the records (MR excluded)",
+     "formula": "sum(PopPolio) where Vaccine_type != 'MR'",
+     "expr": "df[df.Vaccine_type!='MR'].PopPolio.sum()",
+     "kind": "scalar"
+    },
+    "coverage": {
+     "unit": "ratio (1.00 = 100%)",
+     "def": "administrative coverage: children vaccinated over target, over records that have both figures and a target above zero, MR excluded",
+     "formula": "sum(TotalNbrVaccPolio) / sum(PopPolio)",
+     "expr": "(lambda d: d.TotalNbrVaccPolio.sum()/d.PopPolio.sum())(df[df.Vaccine_type!='MR'].dropna(subset=['TotalNbrVaccPolio','PopPolio']).query('PopPolio>0'))",
+     "kind": "scalar"
+    },
+    "share_districts_95": {
+     "unit": "percent of records",
+     "def": "share of district records with coverage of at least 95%",
+     "formula": "100 * mean(TotalNbrVaccPolio / PopPolio >= 0.95)",
+     "expr": "(lambda d: 100*((d.TotalNbrVaccPolio/d.PopPolio)>=0.95).mean())(df[df.Vaccine_type!='MR'].dropna(subset=['TotalNbrVaccPolio','PopPolio']).query('PopPolio>0'))",
+     "kind": "scalar"
+    },
+    "records_above_1_5": {
+     "unit": "records",
+     "def": "records with coverage above 1.5 (not credible)",
+     "formula": "sum(TotalNbrVaccPolio / PopPolio > 1.5)",
+     "expr": "((df.TotalNbrVaccPolio/df.PopPolio)>1.5).sum()",
+     "kind": "scalar"
+    },
+    "campaigns": {
+     "unit": "campaigns",
+     "def": "distinct campaign names (Response)",
+     "formula": "distinct Response",
+     "expr": "df.Response.nunique()",
+     "kind": "scalar"
+    },
+    "countries": {
+     "unit": "countries",
+     "def": "distinct countries with records",
+     "formula": "distinct Country",
+     "expr": "df.Country.nunique()",
+     "kind": "scalar"
+    },
+    "share_co_administered": {
+     "unit": "percent of records",
+     "def": "share of records of co-administered campaigns (nOPV2 & bOPV, or nOPV2_bOPV_IPV)",
+     "formula": "100 * mean(Vaccine_type in co-administered)",
+     "expr": "100*df.Vaccine_type.isin(['nOPV2 & bOPV','nOPV2_bOPV_IPV']).mean()",
+     "kind": "scalar"
+    },
+    "records_without_geo_code": {
+     "unit": "records",
+     "def": "records with no AFROGDB geo_code",
+     "formula": "sum(is.na(geo_code))",
+     "expr": "df.geo_code.isna().sum()",
+     "kind": "scalar"
+    },
+    "latest_date": {
+     "unit": "date",
+     "def": "latest SIA start date in the data",
+     "formula": "max(SIA_date)",
+     "expr": "df['.date'].max()",
+     "kind": "date"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "children_vaccinated"
+     ],
+     "count": "int(df.Vaccine_type.isin(['nOPV2 & bOPV','nOPV2_bOPV_IPV']).sum())",
+     "text": "Co-administered rows (nOPV2 & bOPV, nOPV2_bOPV_IPV) hold ONE figure per district: the larger of the two vaccine totals. The nOPV2 and bOPV totals must never be added together; if you were asked to add them, say that they should not be added."
+    },
+    {
+     "metrics": [
+      "coverage",
+      "share_districts_95",
+      "children_vaccinated"
+     ],
+     "count": "int(((df.TotalNbrVaccPolio/df.PopPolio)>1.5).sum())",
+     "text": "{n} record(s) in this selection have coverage above 1.5 (not credible)."
+    },
+    {
+     "metrics": [
+      "children_vaccinated",
+      "target_population",
+      "coverage",
+      "share_districts_95"
+     ],
+     "text": "Measles-rubella (MR) records are excluded from this polio figure."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "admin",
+     "path": "@data/AFRO_admin_operations_center/ops_work/backup_repo/snapshots/admin/AFRO_admin_data__*.xlsx"
+    },
+    {
+     "kind": "rds",
+     "path": "@dash/input/AFRO_admin_data.rds"
+    },
+    {
+     "kind": "rds",
+     "path": "@here/data/AFRO_admin_data.rds"
+    }
+   ]
+  },
+  "form_a": {
+   "semantic": "form_a",
+   "date_col": "report_date",
+   "entity": "reports",
+   "usecols": [
+    "record_uuid",
+    "iso3",
+    "country",
+    "region",
+    "district",
+    "vaccine",
+    "template",
+    "round",
+    "report_date",
+    "report_year",
+    "level",
+    "is_latest_of_place",
+    "qc_flags",
+    "children_vaccinated",
+    "wastage_rate",
+    "unaccounted_vials",
+    "vials_distributed",
+    "vials_received",
+    "doses_used"
+   ],
+   "latest": {
+    "col": "is_latest_of_place",
+    "default": true,
+    "note": "only the last report of a place and round counts"
+   },
+   "dims": {
+    "country": "country",
+    "year": "report_year",
+    "vaccine": "vaccine",
+    "level": "level",
+    "template": "template",
+    "round": "round"
+   },
+   "metrics": {
+    "reports": {
+     "unit": "reports",
+     "def": "number of reports",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar",
+     "all_rows": true
+    },
+    "countries": {
+     "unit": "countries",
+     "def": "distinct countries with reports",
+     "formula": "distinct country",
+     "expr": "df.country.nunique()",
+     "kind": "scalar",
+     "all_rows": true
+    },
+    "children_vaccinated": {
+     "unit": "children",
+     "def": "children vaccinated reported by the places; add only reports of ONE level (filter level)",
+     "formula": "sum(children_vaccinated)",
+     "expr": "df.children_vaccinated.sum()",
+     "kind": "scalar"
+    },
+    "median_wastage_rate": {
+     "unit": "percent",
+     "def": "median wastage rate of the selected reports (can be negative)",
+     "formula": "median(wastage_rate)",
+     "expr": "df.wastage_rate.median()",
+     "kind": "scalar"
+    },
+    "median_wastage_rate_unflagged": {
+     "unit": "percent",
+     "def": "median wastage rate leaving out reports flagged wastage_negative, wastage_over_100 or implausible_number",
+     "formula": "median(wastage_rate) of unflagged reports",
+     "expr": "df[~df.qc_flags.fillna('').str.contains('wastage_negative|wastage_over_100|implausible_number')].wastage_rate.median()",
+     "kind": "scalar"
+    },
+    "unaccounted_vials": {
+     "unit": "vials",
+     "def": "vials distributed minus vials back from the lower level; negative = more back than distributed",
+     "formula": "sum(unaccounted_vials)",
+     "expr": "df.unaccounted_vials.sum()",
+     "kind": "scalar"
+    },
+    "share_with_qc_flag": {
+     "unit": "percent of reports",
+     "def": "share of reports with at least one QC flag",
+     "formula": "100 * mean(!is.na(qc_flags))",
+     "expr": "100*df.qc_flags.notna().mean()",
+     "kind": "scalar",
+     "all_rows": true
+    },
+    "reports_stock_mismatch": {
+     "unit": "reports",
+     "def": "reports flagged stock_mismatch (theoretical stock differs from the physical count)",
+     "formula": "count of qc_flags containing stock_mismatch",
+     "expr": "df.qc_flags.fillna('').str.contains('stock_mismatch').sum()",
+     "kind": "scalar",
+     "all_rows": true
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "children_vaccinated",
+      "unaccounted_vials"
+     ],
+     "count": "int(df.level.nunique())",
+     "min_count": 2,
+     "text": "The selection mixes %d levels: reports of different levels are never added together; filter one level."
+    },
+    {
+     "metrics": [
+      "median_wastage_rate"
+     ],
+     "count": "int(df.qc_flags.fillna('').str.contains('wastage_negative').sum())",
+     "text": "{n} report(s) in this selection have a negative wastage rate (more children than doses used); median_wastage_rate_unflagged leaves the flagged reports out (give it only when asked, and say which one you give)."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Form-A-data-workflow/data/final/afro_form_a_repository.csv"
+    }
+   ]
+  },
+  "preparedness": {
+   "semantic": "preparedness",
+   "date_col": "report_date",
+   "entity": "visits",
+   "usecols": [
+    "record_uuid",
+    "iso3",
+    "country",
+    "district",
+    "round",
+    "report_date",
+    "report_year",
+    "level",
+    "is_latest_of_place",
+    "readiness_pct",
+    "items_answered",
+    "items_ready",
+    "qc_flags",
+    "ready_Microplan",
+    "ready_ColdChain_Logistics",
+    "ready_SocialMobilization",
+    "ready_Training"
+   ],
+   "latest": {
+    "col": "is_latest_of_place",
+    "default": true,
+    "note": "readiness is over places (the last visit of each place and round), not over visits"
+   },
+   "dims": {
+    "country": "country",
+    "year": "report_year",
+    "level": "level",
+    "round": "round"
+   },
+   "metrics": {
+    "visits": {
+     "unit": "visits",
+     "def": "number of visits (places when only the latest visits are kept)",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar",
+     "all_rows": true
+    },
+    "countries": {
+     "unit": "countries",
+     "def": "distinct countries",
+     "formula": "distinct country",
+     "expr": "df.country.nunique()",
+     "kind": "scalar",
+     "all_rows": true
+    },
+    "mean_readiness": {
+     "unit": "percent",
+     "def": "mean readiness of the selected visits (readiness_pct = items ready / items answered)",
+     "formula": "mean(readiness_pct)",
+     "expr": "df.readiness_pct.mean()",
+     "kind": "scalar"
+    },
+    "mean_readiness_microplan": {
+     "unit": "percent",
+     "def": "mean readiness of the microplan section",
+     "formula": "mean(ready_Microplan)",
+     "expr": "df.ready_Microplan.mean()",
+     "kind": "scalar"
+    },
+    "mean_readiness_coldchain": {
+     "unit": "percent",
+     "def": "mean readiness of the cold chain and logistics section",
+     "formula": "mean(ready_ColdChain_Logistics)",
+     "expr": "df.ready_ColdChain_Logistics.mean()",
+     "kind": "scalar"
+    },
+    "mean_readiness_socialmob": {
+     "unit": "percent",
+     "def": "mean readiness of the social mobilization section",
+     "formula": "mean(ready_SocialMobilization)",
+     "expr": "df.ready_SocialMobilization.mean()",
+     "kind": "scalar"
+    },
+    "mean_readiness_training": {
+     "unit": "percent",
+     "def": "mean readiness of the training section",
+     "formula": "mean(ready_Training)",
+     "expr": "df.ready_Training.mean()",
+     "kind": "scalar"
+    },
+    "visits_flag_all_yes": {
+     "unit": "visits",
+     "def": "visits with the QC flag all_yes (12 or more questions answered and all ready): to check",
+     "formula": "count of qc_flags containing all_yes",
+     "expr": "df.qc_flags.fillna('').str.contains('all_yes').sum()",
+     "kind": "scalar",
+     "all_rows": true
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "mean_readiness"
+     ],
+     "count": "int(df.qc_flags.fillna('').str.contains('all_yes').sum())",
+     "text": "{n} visit(s) in this selection carry the flag all_yes (to check, not removed)."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Preparedness-Validation-data-workflow/data/final/afro_preparedness_repository.csv"
+    }
+   ]
+  },
+  "vaccine_accountability": {
+   "semantic": "vaccine_accountability",
+   "date_col": "visit_date",
+   "entity": "reports",
+   "usecols": [
+    "record_id",
+    "country",
+    "visit_date",
+    "year",
+    "month",
+    "state",
+    "lga",
+    "vaccine_type",
+    "vials_valid",
+    "vials_received",
+    "vials_returned",
+    "pct_returned",
+    "vials_returned_gt_received"
+   ],
+   "dims": {
+    "country": "country",
+    "year": "year",
+    "state": "state",
+    "vaccine": "vaccine_type"
+   },
+   "metrics": {
+    "reports": {
+     "unit": "reports",
+     "def": "number of reports (a ward and campaign-day each)",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "valid_reports": {
+     "unit": "reports",
+     "def": "reports whose vial counts are valid (both 0-5,000, returned <= received)",
+     "formula": "sum(vials_valid)",
+     "expr": "(df.vials_valid.astype(str)=='True').sum()",
+     "kind": "scalar"
+    },
+    "pct_returned": {
+     "unit": "percent of vials received",
+     "def": "vials returned over vials received, ratio of sums over valid reports (never the mean of the pct_returned column)",
+     "formula": "100 * sum(vials_returned) / sum(vials_received) over valid reports",
+     "expr": "(lambda d: 100*d.vials_returned.sum()/d.vials_received.sum())(df[df.vials_valid.astype(str)=='True'])",
+     "kind": "scalar"
+    },
+    "vials_received": {
+     "unit": "vials",
+     "def": "vials received over valid reports",
+     "formula": "sum(vials_received)",
+     "expr": "df[df.vials_valid.astype(str)=='True'].vials_received.sum()",
+     "kind": "scalar"
+    },
+    "vials_returned": {
+     "unit": "vials",
+     "def": "vials returned over valid reports",
+     "formula": "sum(vials_returned)",
+     "expr": "df[df.vials_valid.astype(str)=='True'].vials_returned.sum()",
+     "kind": "scalar"
+    },
+    "reports_returned_gt_received": {
+     "unit": "reports",
+     "def": "reports where returned exceeds received (left out of the totals)",
+     "formula": "sum(vials_returned_gt_received)",
+     "expr": "(df.vials_returned_gt_received.astype(str)=='True').sum()",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "pct_returned",
+      "vials_returned"
+     ],
+     "text": "What 'returned' means is to be confirmed with the form owner: do not present 100 minus the percentage as vials lost or not returned."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Vaccine-Accountability-data-workflow/data/final/afro_vaccine_accountability_repository.csv"
+    }
+   ]
+  },
+  "social_mobilization": {
+   "semantic": "social_mobilization",
+   "date_col": "report_date",
+   "entity": "reports",
+   "usecols": [
+    "record_id",
+    "country",
+    "report_date",
+    "year",
+    "month",
+    "state",
+    "lga",
+    "form_key",
+    "reporting_level",
+    "campaign_type",
+    "agency"
+   ],
+   "dims": {
+    "country": "country",
+    "year": "year",
+    "state": "state",
+    "form": "form_key",
+    "level": "reporting_level",
+    "campaign_type": "campaign_type",
+    "agency": "agency"
+   },
+   "metrics": {
+    "reports": {
+     "unit": "reports",
+     "def": "number of reports",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "states": {
+     "unit": "states",
+     "def": "distinct states with reports",
+     "formula": "distinct state",
+     "expr": "df.state.nunique()",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "reports",
+      "states"
+     ],
+     "text": "Split by form and level: a state report and an LGA report of the same form answer different questions about different units."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Social-Mobilization-data-workflow/data/final/afro_social_mobilization_reports.csv"
+    }
+   ]
+  },
+  "team_supervision": {
+   "semantic": "team_supervision",
+   "date_col": "visit_date",
+   "entity": "visits",
+   "usecols": [
+    "record_id",
+    "country",
+    "visit_date",
+    "year",
+    "month",
+    "state",
+    "lga",
+    "team_type",
+    "campaign_type",
+    "children_sampled",
+    "not_fully_marked_sampled",
+    "flag_number_outlier",
+    "ind_house_marked",
+    "ind_pen_marker",
+    "ind_tally_recorded",
+    "ind_know_vvm",
+    "ind_in_assigned_area",
+    "ind_asks_afp",
+    "ind_afp_pictorial",
+    "ind_revisits_missed",
+    "ind_uses_pluses",
+    "ind_records_nc",
+    "ind_reminds_ri",
+    "ind_mobility_ensured",
+    "ind_icepack_frozen",
+    "ind_vvm_stage_1_2",
+    "ind_evidence_ffm",
+    "ind_evidence_overtally",
+    "ind_fp_team_dip",
+    "ind_fp_social_mob",
+    "ind_fp_tallying",
+    "ind_fp_team_complete",
+    "ind_fp_safety_box",
+    "ind_fp_needles",
+    "ind_fp_vaccine_carrier",
+    "ind_fp_ice_packs"
+   ],
+   "dims": {
+    "country": "country",
+    "year": "year",
+    "state": "state",
+    "lga": "lga",
+    "team_type": "team_type",
+    "campaign_type": "campaign_type"
+   },
+   "indicators": [
+    "ind_house_marked",
+    "ind_pen_marker",
+    "ind_tally_recorded",
+    "ind_know_vvm",
+    "ind_in_assigned_area",
+    "ind_asks_afp",
+    "ind_afp_pictorial",
+    "ind_revisits_missed",
+    "ind_uses_pluses",
+    "ind_records_nc",
+    "ind_reminds_ri",
+    "ind_mobility_ensured",
+    "ind_icepack_frozen",
+    "ind_vvm_stage_1_2",
+    "ind_evidence_ffm",
+    "ind_evidence_overtally",
+    "ind_fp_team_dip",
+    "ind_fp_social_mob",
+    "ind_fp_tallying",
+    "ind_fp_team_complete",
+    "ind_fp_safety_box",
+    "ind_fp_needles",
+    "ind_fp_vaccine_carrier",
+    "ind_fp_ice_packs"
+   ],
+   "metrics": {
+    "visits": {
+     "unit": "visits",
+     "def": "number of supervision visits",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "states": {
+     "unit": "states",
+     "def": "distinct states",
+     "formula": "distinct state",
+     "expr": "df.state.nunique()",
+     "kind": "scalar"
+    },
+    "lgas": {
+     "unit": "LGAs",
+     "def": "distinct LGAs",
+     "formula": "distinct lga",
+     "expr": "df.lga.nunique()",
+     "kind": "scalar"
+    },
+    "indicator_pct_yes": {
+     "unit": "percent of answered visits",
+     "def": "share of favourable answers for one indicator (parameter indicator, e.g. ind_house_marked); only the visits that answered count. Lower is better ONLY for ind_evidence_ffm and ind_evidence_overtally",
+     "formula": "100 * mean(indicator)",
+     "expr": "100*df[p['indicator']].mean()",
+     "kind": "scalar",
+     "params": {
+      "indicator": [
+       "ind_house_marked",
+       "ind_pen_marker",
+       "ind_tally_recorded",
+       "ind_know_vvm",
+       "ind_in_assigned_area",
+       "ind_asks_afp",
+       "ind_afp_pictorial",
+       "ind_revisits_missed",
+       "ind_uses_pluses",
+       "ind_records_nc",
+       "ind_reminds_ri",
+       "ind_mobility_ensured",
+       "ind_icepack_frozen",
+       "ind_vvm_stage_1_2",
+       "ind_evidence_ffm",
+       "ind_evidence_overtally",
+       "ind_fp_team_dip",
+       "ind_fp_social_mob",
+       "ind_fp_tallying",
+       "ind_fp_team_complete",
+       "ind_fp_safety_box",
+       "ind_fp_needles",
+       "ind_fp_vaccine_carrier",
+       "ind_fp_ice_packs"
+      ]
+     }
+    },
+    "indicator_answered": {
+     "unit": "visits",
+     "def": "number of visits that answered one indicator (parameter indicator)",
+     "formula": "count(indicator)",
+     "expr": "df[p['indicator']].notna().sum()",
+     "kind": "scalar",
+     "params": {
+      "indicator": [
+       "ind_house_marked",
+       "ind_pen_marker",
+       "ind_tally_recorded",
+       "ind_know_vvm",
+       "ind_in_assigned_area",
+       "ind_asks_afp",
+       "ind_afp_pictorial",
+       "ind_revisits_missed",
+       "ind_uses_pluses",
+       "ind_records_nc",
+       "ind_reminds_ri",
+       "ind_mobility_ensured",
+       "ind_icepack_frozen",
+       "ind_vvm_stage_1_2",
+       "ind_evidence_ffm",
+       "ind_evidence_overtally",
+       "ind_fp_team_dip",
+       "ind_fp_social_mob",
+       "ind_fp_tallying",
+       "ind_fp_team_complete",
+       "ind_fp_safety_box",
+       "ind_fp_needles",
+       "ind_fp_vaccine_carrier",
+       "ind_fp_ice_packs"
+      ]
+     }
+    },
+    "children_sampled": {
+     "unit": "children",
+     "def": "children sampled by H2H supervisors (0-500, else empty)",
+     "formula": "sum(children_sampled)",
+     "expr": "df.children_sampled.sum()",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "indicator_pct_yes"
+     ],
+     "text": "An indicator is answered only by the team types that have the question; for ind_evidence_ffm and ind_evidence_overtally a LOWER share is better."
+    },
+    {
+     "metrics": [
+      "visits",
+      "indicator_pct_yes"
+     ],
+     "text": "Visits by month are uneven (for example June and September 2026 hold very few): say the months before comparing."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Team-Supervision-data-workflow/data/final/afro_team_supervision_repository.csv"
+    }
+   ]
+  },
+  "im_repository": {
+   "semantic": "im_repository",
+   "date_col": "start_date_IM_end",
+   "entity": "rows",
+   "usecols": [
+    "country",
+    "province",
+    "district",
+    "response",
+    "vaccine_type",
+    "roundNumber",
+    "start_date_IM_end",
+    "year",
+    "u5_present",
+    "u5_FM",
+    "missed_child",
+    "afro_block",
+    "geo_code",
+    "denominator_qc_flag"
+   ],
+   "dims": {
+    "country": "country",
+    "year": "year",
+    "province": "province",
+    "district": "district",
+    "vaccine": "vaccine_type",
+    "block": "afro_block",
+    "response": "response",
+    "round": "roundNumber"
+   },
+   "metrics": {
+    "rows": {
+     "unit": "rows",
+     "def": "number of IM rows (aggregated records; the unit is to be confirmed)",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "countries": {
+     "unit": "countries",
+     "def": "distinct countries",
+     "formula": "distinct country",
+     "expr": "df.country.nunique()",
+     "kind": "scalar"
+    },
+    "finger_marked_share": {
+     "unit": "percent of children present",
+     "def": "children under 5 with a finger mark over children present, ratio of sums (never the mean of cv)",
+     "formula": "100 * sum(u5_FM) / sum(u5_present)",
+     "expr": "100*df.u5_FM.sum()/df.u5_present.sum()",
+     "kind": "scalar"
+    },
+    "children_present": {
+     "unit": "children",
+     "def": "children under 5 present",
+     "formula": "sum(u5_present)",
+     "expr": "df.u5_present.sum()",
+     "kind": "scalar"
+    },
+    "children_missed": {
+     "unit": "children",
+     "def": "missed_child = u5_present - u5_FM, summed",
+     "formula": "sum(missed_child)",
+     "expr": "df.missed_child.sum()",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "finger_marked_share",
+      "children_missed"
+     ],
+     "count": "int((df.denominator_qc_flag!='Denominator OK').sum())",
+     "text": "{n} row(s) have a reconstructed or inconsistent denominator (denominator_qc_flag)."
+    },
+    {
+     "metrics": [
+      "rows",
+      "finger_marked_share"
+     ],
+     "text": "The row unit of the IM repository is to be confirmed with the owner (several rows per district-round)."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "csv",
+     "path": "@data/AFRO-Independant-Monitoring-data-workflow/data/final/Regional_IM_repository_cleaned.csv"
+    }
+   ]
+  },
+  "raw_team_supervision": {
+   "semantic": null,
+   "entity": "raw records",
+   "raw": true,
+   "usecols": [
+    "_uuid",
+    "_id",
+    "_edited",
+    "_status",
+    "states",
+    "lgas",
+    "_submission_time"
+   ],
+   "dims": {
+    "state": "states"
+   },
+   "metrics": {
+    "rows": {
+     "unit": "raw records",
+     "def": "records of the form as exported from ONA, before any cleaning",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "edited_records": {
+     "unit": "raw records",
+     "def": "records edited after submission",
+     "formula": "count of _edited",
+     "expr": "df._edited.astype(str).str.lower().isin(['true','1']).sum()",
+     "kind": "scalar"
+    },
+    "duplicate_uuid": {
+     "unit": "raw records",
+     "def": "records with a repeated _uuid",
+     "formula": "count of repeated _uuid",
+     "expr": "df._uuid.duplicated().sum()",
+     "kind": "scalar"
+    },
+    "distinct_values": {
+     "unit": "values",
+     "def": "number of distinct typed values of one column (parameter column)",
+     "formula": "nunique(column)",
+     "expr": "df[p['column']].nunique()",
+     "kind": "scalar",
+     "params": {
+      "column": [
+       "states",
+       "lgas"
+      ]
+     }
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "rows",
+      "edited_records",
+      "distinct_values"
+     ],
+     "text": "RAW figure (ONA export, before cleaning): place names are not standardised and duplicates, repeats and tests may be present; compare with the repository before quoting a reported figure."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "parquet",
+     "path": "@data/AFRO-Team-Supervision-data-workflow/data/raw/NGA_16194.parquet"
+    }
+   ]
+  },
+  "raw_vaccine_accountability": {
+   "semantic": null,
+   "entity": "raw records",
+   "raw": true,
+   "usecols": [
+    "_uuid",
+    "_id",
+    "_edited",
+    "_status",
+    "_submission_time"
+   ],
+   "dims": {},
+   "metrics": {
+    "rows": {
+     "unit": "raw records",
+     "def": "records of the form as exported from ONA, before any cleaning",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "edited_records": {
+     "unit": "raw records",
+     "def": "records edited after submission",
+     "formula": "count of _edited",
+     "expr": "df._edited.astype(str).str.lower().isin(['true','1']).sum()",
+     "kind": "scalar"
+    },
+    "duplicate_uuid": {
+     "unit": "raw records",
+     "def": "records with a repeated _uuid",
+     "formula": "count of repeated _uuid",
+     "expr": "df._uuid.duplicated().sum()",
+     "kind": "scalar"
+    },
+    "rows_removed_by_cleaning": {
+     "unit": "records",
+     "def": "raw records minus the rows of the vaccine accountability repository (repeats and duplicates removed by the cleaning)",
+     "formula": "raw rows - repository rows",
+     "expr": "len(df) - rows_of('vaccine_accountability')",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [
+    {
+     "metrics": [
+      "rows",
+      "edited_records",
+      "rows_removed_by_cleaning"
+     ],
+     "text": "RAW figure (ONA export, before cleaning): compare with the repository before quoting a reported figure."
+    }
+   ],
+   "sources": [
+    {
+     "kind": "parquet",
+     "path": "@data/AFRO-Vaccine-Accountability-data-workflow/data/raw/NGA_829.parquet"
+    }
+   ]
+  },
+  "rawcat": {
+   "semantic": null,
+   "entity": "raw files",
+   "raw": true,
+   "dims": {
+    "pipeline": "pipeline",
+    "country": "country"
+   },
+   "metrics": {
+    "raw_files": {
+     "unit": "files",
+     "def": "raw ONA export files on the owner's computer",
+     "formula": "number of rows",
+     "expr": "len(df)",
+     "kind": "scalar"
+    },
+    "raw_rows": {
+     "unit": "raw records",
+     "def": "records in those raw files (parquet footers)",
+     "formula": "sum(rows)",
+     "expr": "df.rows.sum()",
+     "kind": "scalar"
+    },
+    "raw_size_mb": {
+     "unit": "MB",
+     "def": "size of the raw files",
+     "formula": "sum(size_mb)",
+     "expr": "df.size_mb.sum()",
+     "kind": "scalar"
+    }
+   },
+   "warnings": [],
+   "sources": [
+    {
+     "kind": "rawcat",
+     "path": "@here/catalog/raw_catalog.json"
+    }
+   ]
+  }
+ },
+ "generated_at": "2026-11-26"
+}

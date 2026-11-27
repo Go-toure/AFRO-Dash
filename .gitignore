@@ -35,3 +35,9 @@ _to_delete/
 *.done
 *.bak_logo
 __pycache__/
+
+# Python assistant (assistant_py)
+assistant_py/.env
+assistant_py/state/
+assistant_py/__pycache__/
+assistant_py/catalog/assistant_eval_*.csv

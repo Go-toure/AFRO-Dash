@@ -1,0 +1,1693 @@
+{
+ "_about": "Questions with the code that computes the true answer from the current data. 'code' is a pandas expression on df (and pd, np); 'expected' is the answer on the data of 'as_of' (filled by python tools/check_questions.py --update after the owner has reviewed it). To grade an assistant: ask it each 'question', then run python tools/check_questions.py --answers and compare. Questions that need a period say so; the assistant must state the period it used. Author: Gorgui Ba Toure, 26 Nov 2026.",
+ "as_of": "2026-11-26",
+ "questions": [
+  {
+   "id": "lqas_01",
+   "dataset": "lqas",
+   "question": "How many LQAS lots are in the repository?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 35740,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "lqas_02",
+   "dataset": "lqas",
+   "question": "How many countries have LQAS data?",
+   "code": "df.country.nunique()",
+   "tolerance": 0,
+   "expected": 35,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "countries",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "lqas_03",
+   "dataset": "lqas",
+   "question": "What is the share of lots that passed, over all years?",
+   "code": "round(100*(df.status=='Pass').mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 74.8,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "lqas_04",
+   "dataset": "lqas",
+   "question": "What was the share of lots that passed in 2026?",
+   "code": "round(100*(df[df.year==2026].status=='Pass').mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 78.9,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_05",
+   "dataset": "lqas",
+   "question": "How many lots were assessed in Nigeria in 2026?",
+   "code": "len(df[(df.country=='NIGERIA')&(df.year==2026)])",
+   "tolerance": 0,
+   "note": "country is the standardised name in capitals",
+   "expected": 855,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "value",
+    "country": "Nigeria",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_06",
+   "dataset": "lqas",
+   "question": "What share of lots passed in Nigeria in 2026?",
+   "code": "round(100*(df[(df.country=='NIGERIA')&(df.year==2026)].status=='Pass').mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 74.9,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "value",
+    "country": "Nigeria",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_07",
+   "dataset": "lqas",
+   "question": "What is the missed children rate in 2026 (children sampled and not found vaccinated, over children sampled, the dashboard definition)?",
+   "code": "round(100*(1-df[df.year==2026].total_vaccinated.sum()/df[df.year==2026].total_sampled.sum()),2)",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "note": "weighted rate; NOT total_missed over total_sampled (that counts unsampled children of under-reported lots)",
+   "expected": 4.06,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "missed_children_rate",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_08",
+   "dataset": "lqas",
+   "question": "What is the coverage of sampled children (vaccinated over sampled) in 2026?",
+   "code": "round(100*df[df.year==2026].total_vaccinated.sum()/df[df.year==2026].total_sampled.sum(),2)",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "expected": 95.94,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "coverage_of_sampled",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_09",
+   "dataset": "lqas",
+   "question": "How many lots were classified 'very poor' in 2026?",
+   "code": "int((df[df.year==2026].performance=='very poor').sum())",
+   "tolerance": 0,
+   "expected": 210,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "value",
+    "year": 2026,
+    "performance": "very poor"
+   }
+  },
+  {
+   "id": "lqas_10",
+   "dataset": "lqas",
+   "question": "Which reason explains the most missed children among COMPLETE lots (60 children sampled) in 2026?",
+   "code": "df[(df.year==2026)&(df.total_sampled==60)][['r_non_compliance','r_house_not_visited','r_childabsent','r_Child_was_asleep','r_Child_is_a_visitor','r_Vaccinated_but_not_FM','other_r','r_security','r_childnotborn']].sum().idxmax()",
+   "tolerance": null,
+   "expected": "r_childabsent",
+   "note": "in all lots 'other_r' is largest only because it absorbs the unsampled children of under-reported lots",
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "reasons",
+    "pick": "top_reason",
+    "year": 2026
+   },
+   "accept": [
+    "child absent",
+    "children absent",
+    "child was absent",
+    "absent"
+   ]
+  },
+  {
+   "id": "lqas_11",
+   "dataset": "lqas",
+   "question": "Among countries with at least 30 lots in 2026, which has the lowest pass rate?",
+   "code": "(lambda g: g[g['n']>=30].sort_values('rate').index[0])(df[df.year==2026].groupby('country').agg(n=('status','size'),rate=('status',lambda s:(s=='Pass').mean())))",
+   "tolerance": null,
+   "expected": "BOTSWANA",
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "last_group",
+    "by": "country",
+    "year": 2026,
+    "min_n": 30
+   }
+  },
+  {
+   "id": "lqas_12",
+   "dataset": "lqas",
+   "question": "What is the pass rate (percent of lots) by AFRO block in 2026?",
+   "code": "df[df.year==2026].groupby('afro_block').status.apply(lambda s: round(100*(s=='Pass').mean(),1)).to_dict()",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": {
+    "DRC": 83.2,
+    "ESA": 72.6,
+    "LCB": 76.4,
+    "WA": 91.6
+   },
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "table",
+    "by": "block",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_13",
+   "dataset": "lqas",
+   "question": "What is the date of the most recent LQAS survey in the data?",
+   "code": "str(df.lqas_start_date.max().date())",
+   "tolerance": null,
+   "expected": "2026-11-23",
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "latest_date",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "lqas_14",
+   "dataset": "lqas",
+   "question": "How many distinct campaigns (response names) have LQAS lots in 2026?",
+   "code": "df[df.year==2026].response.nunique()",
+   "tolerance": 0,
+   "expected": 33,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "campaigns",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_15",
+   "dataset": "lqas",
+   "question": "How many lots in 2026 were done after each vaccine type?",
+   "code": "df[df.year==2026]['vaccine.type'].value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "nOPV2": 3545,
+    "nOPV2 & bOPV": 2120,
+    "bOPV": 167
+   },
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "table",
+    "by": "vaccine",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_16",
+   "dataset": "lqas",
+   "question": "What share of lots has no AFROGDB geo_code?",
+   "code": "round(100*df.geo_code.isna().mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 3.4,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "share_without_geo_code",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "lqas_17",
+   "dataset": "lqas",
+   "question": "What is the pass rate for each year?",
+   "code": "df.groupby('year').status.apply(lambda s: round(100*(s=='Pass').mean(),1)).to_dict()",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": {
+    "2020": 65.6,
+    "2021": 65.8,
+    "2022": 72.1,
+    "2023": 75.7,
+    "2024": 71.6,
+    "2025": 82.4,
+    "2026": 78.9
+   },
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "pick": "table",
+    "by": "year"
+   }
+  },
+  {
+   "id": "lqas_18",
+   "dataset": "lqas",
+   "question": "How many lots in 2026 are under-reported (fewer than 60 children sampled)?",
+   "code": "int((df[df.year==2026].total_sampled<60).sum())",
+   "tolerance": 0,
+   "expected": 210,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "under_reported_lots",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_19",
+   "dataset": "lqas",
+   "question": "How many lots passed with exactly 3 missed children in 2026?",
+   "code": "int(((df.year==2026)&(df.total_missed==3)).sum())",
+   "tolerance": 0,
+   "expected": 406,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "row:3",
+    "by": "missed_in_lot",
+    "year": 2026,
+    "status": "pass"
+   }
+  },
+  {
+   "id": "lqas_20",
+   "dataset": "lqas",
+   "question": "Which Nigerian states (province) had the most 'very poor' lots in 2026?",
+   "code": "df[(df.country=='NIGERIA')&(df.year==2026)&(df.performance=='very poor')].province.value_counts().head(3).to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "ZAMFARA": 21,
+    "NIGER": 17,
+    "KADUNA": 7
+   },
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "pick": "head:3",
+    "by": "province",
+    "country": "Nigeria",
+    "year": 2026,
+    "performance": "very poor"
+   }
+  },
+  {
+   "id": "lqas_21",
+   "dataset": "lqas",
+   "question": "How many children were never sampled but counted as missed in under-reported lots of 2026?",
+   "code": "int((60-df[(df.year==2026)&(df.total_sampled<60)].total_sampled).sum())",
+   "tolerance": 0,
+   "note": "explains the gap between the lot measure and the dashboard missed rate",
+   "expected": 3990,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "unsampled_counted_missed",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "lqas_22",
+   "dataset": "lqas",
+   "question": "How many Nigerian lots have fewer than 3 clusters (under 30 children sampled)?",
+   "code": "int(((df.country=='NIGERIA')&(df.total_sampled<30)).sum())",
+   "tolerance": 0,
+   "expected": 291,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots_below_3_clusters",
+    "pick": "value",
+    "country": "Nigeria"
+   }
+  },
+  {
+   "id": "admin_01",
+   "dataset": "admin",
+   "question": "How many records are in the administrative data?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 44451,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "records",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_02",
+   "dataset": "admin",
+   "question": "How many countries have administrative records?",
+   "code": "df.Country.nunique()",
+   "tolerance": 0,
+   "expected": 36,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "countries",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_03",
+   "dataset": "admin",
+   "question": "How many children were vaccinated with polio vaccine in 2026 (administrative data, measles-rubella records excluded)?",
+   "code": "int(df[(df.Year==2026)&(df.Vaccine_type!='MR')].TotalNbrVaccPolio.sum())",
+   "tolerance": 0,
+   "note": "co-administered rows use the larger vaccine total, never the sum of both",
+   "expected": 367586149,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_04",
+   "dataset": "admin",
+   "question": "What was the administrative coverage in 2026 (vaccinated over target, records with both figures, MR excluded)?",
+   "code": "(lambda d: round(float(d.TotalNbrVaccPolio.sum()/d.PopPolio.sum()),3))(df[(df.Year==2026)&(df.Vaccine_type!='MR')].dropna(subset=['TotalNbrVaccPolio','PopPolio']).query('PopPolio>0'))",
+   "tolerance": 0.005,
+   "unit": "ratio",
+   "expected": 1.084,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "coverage",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_05",
+   "dataset": "admin",
+   "question": "How many records have an administrative coverage above 1.5 (not credible)?",
+   "code": "int(((df.TotalNbrVaccPolio/df.PopPolio)>1.5).sum())",
+   "tolerance": 0,
+   "expected": 1272,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "records_above_1_5",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_06",
+   "dataset": "admin",
+   "question": "How many records are there for each vaccine type?",
+   "code": "df.Vaccine_type.value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "nOPV2": 32643,
+    "bOPV": 6526,
+    "nOPV2 & bOPV": 4488,
+    "MR": 452,
+    "mOPV2": 284,
+    "nOPV2_bOPV_IPV": 58
+   },
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "records",
+    "pick": "table",
+    "by": "vaccine"
+   }
+  },
+  {
+   "id": "admin_07",
+   "dataset": "admin",
+   "question": "What is the latest SIA start date in the data?",
+   "code": "str(pd.to_datetime(df.SIA_date).max().date())",
+   "tolerance": null,
+   "expected": "2026-10-23",
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "latest_date",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_08",
+   "dataset": "admin",
+   "question": "How many children were vaccinated in Nigeria in 2026 (polio records)?",
+   "code": "int(df[(df.Country=='NIGERIA')&(df.Year==2026)&(df.Vaccine_type!='MR')].TotalNbrVaccPolio.sum())",
+   "tolerance": 0,
+   "expected": 65124996,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "pick": "value",
+    "country": "Nigeria",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_09",
+   "dataset": "admin",
+   "question": "How many distinct campaigns (Response) have records in Nigeria in 2026?",
+   "code": "df[(df.Country=='NIGERIA')&(df.Year==2026)].Response.nunique()",
+   "tolerance": 0,
+   "expected": 1,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "campaigns",
+    "pick": "value",
+    "country": "Nigeria",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_10",
+   "dataset": "admin",
+   "question": "What share of records are co-administered (nOPV2 and bOPV in the same campaign)?",
+   "code": "round(100*df.Vaccine_type.isin(['nOPV2 & bOPV','nOPV2_bOPV_IPV']).mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 10.2,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "share_co_administered",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_11",
+   "dataset": "admin",
+   "question": "What share of district records in 2026 reached at least 95% administrative coverage?",
+   "code": "(lambda d: round(100*float(((d.TotalNbrVaccPolio/d.PopPolio)>=0.95).mean()),1))(df[(df.Year==2026)&(df.Vaccine_type!='MR')].dropna(subset=['TotalNbrVaccPolio','PopPolio']).query('PopPolio>0'))",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 86.9,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "share_districts_95",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_12",
+   "dataset": "admin",
+   "question": "How many countries have records in 2026?",
+   "code": "df[df.Year==2026].Country.nunique()",
+   "tolerance": 0,
+   "expected": 21,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "countries",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "admin_13",
+   "dataset": "admin",
+   "question": "How many records are there per AFRO block?",
+   "code": "df.AFRO_block.value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "LCB": 16193,
+    "WA": 16095,
+    "ESA": 10757,
+    "DRC": 1069,
+    "CA": 312,
+    "LBC": 25
+   },
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "records",
+    "pick": "table",
+    "by": "block"
+   }
+  },
+  {
+   "id": "admin_14",
+   "dataset": "admin",
+   "question": "How many records have no geo_code?",
+   "code": "int(df.geo_code.isna().sum())",
+   "tolerance": 0,
+   "expected": 2046,
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "records_without_geo_code",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "admin_15",
+   "dataset": "admin",
+   "question": "How many children were vaccinated per year (polio records, MR excluded)?",
+   "code": "df[df.Vaccine_type!='MR'].groupby('Year').TotalNbrVaccPolio.sum().astype(int).to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "2020": 2108303,
+    "2021": 64655857,
+    "2022": 375224743,
+    "2023": 594491802,
+    "2024": 547091903,
+    "2025": 573467106,
+    "2026": 367586149
+   },
+   "as_of": "2026-11-26",
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "pick": "table",
+    "by": "year"
+   }
+  },
+  {
+   "id": "trap_01",
+   "dataset": "admin",
+   "question": "Add the nOPV2 and bOPV totals to get the children vaccinated in the co-administered campaigns of 2026.",
+   "code": "int(df[(df.Year==2026)&(df.Vaccine_type=='nOPV2 & bOPV')].TotalNbrVaccPolio.sum())",
+   "tolerance": 0,
+   "trap": "Wrong premise: the totals are not added; TotalNbrVaccPolio is the larger of the two. The assistant must say so and answer with TotalNbrVaccPolio.",
+   "expected": 138497737,
+   "as_of": "2026-11-26",
+   "must_mention": [
+    [
+     "larger",
+     "not added",
+     "not be added",
+     "cannot add",
+     "can't add",
+     "not simply add",
+     "do not add",
+     "don't add",
+     "should not be added",
+     "not summed",
+     "not the sum",
+     "combined row",
+     "one combined"
+    ]
+   ],
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "pick": "value",
+    "year": 2026,
+    "vaccine": "nOPV2 & bOPV"
+   }
+  },
+  {
+   "id": "trap_02",
+   "dataset": "lqas",
+   "question": "What is the average coverage of districts in the LQAS data?",
+   "code": "round(100*df.total_vaccinated.sum()/df.total_sampled.sum(),2)",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "trap": "LQAS rows are lots, not districts, and the figure is the share of sampled children found vaccinated, not district coverage: the assistant must name the unit and the period.",
+   "expected": 94.9,
+   "must_mention": [
+    [
+     "lot",
+     "lots"
+    ],
+    [
+     "not district",
+     "rather than district",
+     "each row",
+     "row is a lot",
+     "sampled children",
+     "children sampled",
+     "not a district",
+     "not districts"
+    ]
+   ],
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "coverage_of_sampled",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "trap_03",
+   "dataset": "lqas",
+   "question": "How many children were vaccinated in Chad in 2026 according to the LQAS?",
+   "code": "None",
+   "tolerance": null,
+   "trap": "LQAS samples children; it does not count all vaccinated children. The assistant must refuse the number and point to the administrative data.",
+   "expected": null,
+   "must_mention": [
+    [
+     "sample",
+     "sampled",
+     "sampling"
+    ],
+    [
+     "not",
+     "cannot",
+     "can't",
+     "doesn't",
+     "does not",
+     "unable",
+     "no count"
+    ]
+   ]
+  },
+  {
+   "id": "trap_04",
+   "dataset": "lqas",
+   "question": "Why is 'other' the first reason for missed children in the LQAS data?",
+   "code": "None",
+   "tolerance": null,
+   "trap": "The assistant must explain that other_r absorbs the unsampled children of under-reported lots (4,020 of 5,339 in 2026) and answer for complete lots instead.",
+   "expected": null,
+   "must_mention": [
+    [
+     "under-report",
+     "underreport",
+     "incomplete",
+     "unsampled",
+     "not sampled",
+     "never sampled",
+     "fewer than 60",
+     "under report"
+    ]
+   ]
+  },
+  {
+   "id": "fa_01",
+   "dataset": "form_a",
+   "question": "How many rows does the Form A repository hold?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 167938,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "reports",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "fa_02",
+   "dataset": "form_a",
+   "question": "How many countries have Form A reports?",
+   "code": "df.country.nunique()",
+   "tolerance": 0,
+   "expected": 33,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "countries",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "fa_03",
+   "dataset": "form_a",
+   "question": "How many Form A reports count as the latest of their place and round?",
+   "code": "int((df.is_latest_of_place.astype(str)=='True').sum())",
+   "tolerance": 0,
+   "expected": 104762,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "reports",
+    "pick": "value",
+    "latest_only": true
+   }
+  },
+  {
+   "id": "fa_04",
+   "dataset": "form_a",
+   "question": "How many District-level Form A reports of 2026 count as the latest of their place and round?",
+   "code": "int(((df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')).sum())",
+   "tolerance": 0,
+   "expected": 2330,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "reports",
+    "pick": "value",
+    "year": 2026,
+    "level": "District",
+    "latest_only": true
+   }
+  },
+  {
+   "id": "fa_05",
+   "dataset": "form_a",
+   "question": "What is the median wastage rate of those District-level latest reports of 2026?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')].wastage_rate.median()),2)",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "expected": 6.09,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "median_wastage_rate",
+    "pick": "value",
+    "year": 2026,
+    "level": "District"
+   }
+  },
+  {
+   "id": "fa_06",
+   "dataset": "form_a",
+   "question": "How many Form A rows are there per level?",
+   "code": "df.level.value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "Facility": 129944,
+    "District": 28881,
+    "National": 4619,
+    "Regional": 4494
+   },
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "reports",
+    "pick": "table",
+    "by": "level",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "fa_07",
+   "dataset": "form_a",
+   "question": "What share of Form A rows has at least one QC flag?",
+   "code": "round(100*df.qc_flags.notna().mean(),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 46.7,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "share_with_qc_flag",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "trap_05",
+   "dataset": "form_a",
+   "question": "How many children were vaccinated in 2026 according to Form A, adding all reports?",
+   "code": "int(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')].children_vaccinated.sum())",
+   "tolerance": 0,
+   "trap": "Wrong premise: reports of different levels (National, Regional, District, Facility) are never added together, and only the latest report of a place counts. The assistant picks one level (District: 116,824,533 in 2026), says so, and refers to the administrative data for coverage.",
+   "expected": 116824533,
+   "must_mention": [
+    [
+     "level"
+    ],
+    [
+     "not added",
+     "never added",
+     "not be added",
+     "one level",
+     "cannot be added",
+     "do not add",
+     "don't add",
+     "should not",
+     "not summed",
+     "not add"
+    ]
+   ],
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "children_vaccinated",
+    "pick": "value",
+    "year": 2026,
+    "level": "District"
+   }
+  },
+  {
+   "id": "pr_01",
+   "dataset": "preparedness",
+   "question": "How many rows does the preparedness repository hold?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 417503,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "visits",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "pr_02",
+   "dataset": "preparedness",
+   "question": "How many countries have preparedness visits?",
+   "code": "df.country.nunique()",
+   "tolerance": 0,
+   "expected": 35,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "countries",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "pr_03",
+   "dataset": "preparedness",
+   "question": "How many preparedness visits are the latest of their place and round?",
+   "code": "int((df.is_latest_of_place.astype(str)=='True').sum())",
+   "tolerance": 0,
+   "expected": 235844,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "visits",
+    "pick": "value",
+    "latest_only": true
+   }
+  },
+  {
+   "id": "pr_04",
+   "dataset": "preparedness",
+   "question": "What is the mean readiness of places in 2026 (latest visit of each place and round)?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')].readiness_pct.mean()),1)",
+   "tolerance": 0.1,
+   "unit": "percent",
+   "expected": 89.7,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "mean_readiness",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "pr_05",
+   "dataset": "preparedness",
+   "question": "How many visits carry the QC flag all_yes?",
+   "code": "int(df.qc_flags.astype(str).str.contains('all_yes').sum())",
+   "tolerance": 0,
+   "expected": 83374,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "visits_flag_all_yes",
+    "pick": "value",
+    "latest_only": false
+   }
+  },
+  {
+   "id": "va_01",
+   "dataset": "vaccine_accountability",
+   "question": "How many vaccine accountability reports are there?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 78466,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "reports",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "va_02",
+   "dataset": "vaccine_accountability",
+   "question": "How many reports have valid vial counts?",
+   "code": "int((df.vials_valid.astype(str)=='True').sum())",
+   "tolerance": 0,
+   "expected": 68184,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "valid_reports",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "va_03",
+   "dataset": "vaccine_accountability",
+   "question": "What share of vials received were returned, over all valid reports?",
+   "code": "(lambda d: round(100*float(d.vials_returned.sum()/d.vials_received.sum()),2))(df[df.vials_valid.astype(str)=='True'])",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "expected": 40.75,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "pct_returned",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "va_04",
+   "dataset": "vaccine_accountability",
+   "question": "How many reports are there in 2026?",
+   "code": "int((df.year==2026).sum())",
+   "tolerance": 0,
+   "expected": 187,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "reports",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "trap_06",
+   "dataset": "vaccine_accountability",
+   "question": "What is the average percentage of vials returned (mean of the pct_returned column), and how many vials were not returned?",
+   "code": "(lambda d: round(100*float(d.vials_returned.sum()/d.vials_received.sum()),2))(df[df.vials_valid.astype(str)=='True'])",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "trap": "The mean of the pct_returned column (56.4%) is not the share of vials returned (40.75%, ratio of sums). And 'vials not returned' must not be given as 100 minus pct_returned: the meaning of 'returned' is to confirm with the form owner.",
+   "expected": 40.75,
+   "must_mention": [
+    [
+     "40.7",
+     "40.8"
+    ],
+    [
+     "confirm",
+     "form owner",
+     "not lost",
+     "not 100",
+     "ratio of",
+     "weighted"
+    ]
+   ],
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "pct_returned",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "sm_01",
+   "dataset": "social_mobilization",
+   "question": "How many social mobilization reports are there?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 2530,
+   "tool_call": {
+    "dataset": "social_mobilization",
+    "metric": "reports",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "sm_02",
+   "dataset": "social_mobilization",
+   "question": "How many social mobilization reports are there per form?",
+   "code": "df.form_key.value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "pre_campaign": 1087,
+    "intra_campaign": 972,
+    "monitoring": 270,
+    "post_campaign": 168,
+    "acsm_nomadic": 33
+   },
+   "tool_call": {
+    "dataset": "social_mobilization",
+    "metric": "reports",
+    "pick": "table",
+    "by": "form"
+   }
+  },
+  {
+   "id": "sm_03",
+   "dataset": "social_mobilization",
+   "question": "How many social mobilization reports are there per reporting level?",
+   "code": "df.reporting_level.value_counts().to_dict()",
+   "tolerance": 0,
+   "expected": {
+    "LGA": 2204,
+    "WARD": 188,
+    "STATE": 136,
+    "NATIONAL": 2
+   },
+   "tool_call": {
+    "dataset": "social_mobilization",
+    "metric": "reports",
+    "pick": "table",
+    "by": "level"
+   }
+  },
+  {
+   "id": "ts_01",
+   "dataset": "team_supervision",
+   "question": "How many supervision visits are in the Nigeria team supervision data?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 444933,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "visits",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "ts_02",
+   "dataset": "team_supervision",
+   "question": "How many visits are by house-to-house (H2H) teams?",
+   "code": "int((df.team_type=='H2H').sum())",
+   "tolerance": 0,
+   "expected": 364740,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "visits",
+    "pick": "value",
+    "team_type": "H2H"
+   }
+  },
+  {
+   "id": "ts_03",
+   "dataset": "team_supervision",
+   "question": "What share of H2H visits that answered found the house marked?",
+   "code": "round(100*float(df.ind_house_marked.mean()),2)",
+   "tolerance": 0.01,
+   "unit": "percent",
+   "expected": 99.49,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "indicator_pct_yes",
+    "pick": "value",
+    "params": {
+     "indicator": "ind_house_marked"
+    }
+   }
+  },
+  {
+   "id": "ts_04",
+   "dataset": "team_supervision",
+   "question": "What share of answered visits found evidence of false finger marking (lower is better)?",
+   "code": "round(100*float(df.ind_evidence_ffm.mean()),2)",
+   "tolerance": 0.01,
+   "unit": "percent",
+   "expected": 3.39,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "indicator_pct_yes",
+    "pick": "value",
+    "params": {
+     "indicator": "ind_evidence_ffm"
+    }
+   }
+  },
+  {
+   "id": "ts_05",
+   "dataset": "team_supervision",
+   "question": "How many team supervision visits are dated June 2026?",
+   "code": "int((df.month=='2026-06').sum())",
+   "tolerance": 0,
+   "expected": 401,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "visits",
+    "pick": "value",
+    "filters": {
+     "month": "2026-06"
+    }
+   }
+  },
+  {
+   "id": "ts_06",
+   "dataset": "team_supervision",
+   "question": "How many states have supervision visits?",
+   "code": "df.state.nunique()",
+   "tolerance": 0,
+   "expected": 28,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "states",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "im_01",
+   "dataset": "im_repository",
+   "question": "How many rows does the regional IM repository hold?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 40054,
+   "tool_call": {
+    "dataset": "im_repository",
+    "metric": "rows",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "im_02",
+   "dataset": "im_repository",
+   "question": "What share of children present under 5 were finger-marked in 2026 (ratio of sums)?",
+   "code": "(lambda d: round(100*float(d.u5_FM.sum()/d.u5_present.sum()),2))(df[df.year==2026])",
+   "tolerance": 0.05,
+   "unit": "percent",
+   "expected": 96.93,
+   "tool_call": {
+    "dataset": "im_repository",
+    "metric": "finger_marked_share",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "im_03",
+   "dataset": "im_repository",
+   "question": "How many children were missed in IM records of 2026?",
+   "code": "int(df[df.year==2026].missed_child.sum())",
+   "tolerance": 0,
+   "expected": 78431,
+   "tool_call": {
+    "dataset": "im_repository",
+    "metric": "children_missed",
+    "pick": "value",
+    "year": 2026
+   }
+  },
+  {
+   "id": "raw_01",
+   "dataset": "raw_vaccine_accountability",
+   "question": "How many raw records does the vaccine accountability form 829 have on ONA (before cleaning)?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 80978,
+   "tool_call": {
+    "dataset": "raw_vaccine_accountability",
+    "metric": "rows",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "raw_02",
+   "dataset": "raw_team_supervision",
+   "question": "How many raw records does the team supervision form 16194 have?",
+   "code": "len(df)",
+   "tolerance": 0,
+   "expected": 444933,
+   "tool_call": {
+    "dataset": "raw_team_supervision",
+    "metric": "rows",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "raw_03",
+   "dataset": "raw_team_supervision",
+   "question": "How many raw team supervision records were edited after submission?",
+   "code": "int(df._edited.astype(str).str.lower().isin(['true','1']).sum())",
+   "tolerance": 0,
+   "expected": 3,
+   "tool_call": {
+    "dataset": "raw_team_supervision",
+    "metric": "edited_records",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "raw_04",
+   "dataset": "raw_team_supervision",
+   "question": "How many distinct state names are typed in the raw team supervision form?",
+   "code": "df.states.nunique()",
+   "tolerance": 0,
+   "trap": "Raw names are not standardised: the raw form has 33 distinct state names, the cleaned repository 28. The assistant must say which file it counted.",
+   "expected": 33,
+   "must_mention": [
+    [
+     "raw"
+    ],
+    [
+     "33"
+    ]
+   ],
+   "tool_call": {
+    "dataset": "raw_team_supervision",
+    "metric": "distinct_values",
+    "pick": "value",
+    "params": {
+     "column": "states"
+    }
+   }
+  },
+  {
+   "id": "raw_05",
+   "dataset": "raw_vaccine_accountability",
+   "question": "How many raw records of form 829 were removed by the cleaning (raw rows minus 78,466 repository rows)?",
+   "code": "len(df)-78466",
+   "tolerance": 0,
+   "note": "the repository figure 78,466 is the row count of the 26 Nov 2026 repository file; update both after a refresh",
+   "expected": 2512,
+   "tool_call": {
+    "dataset": "raw_vaccine_accountability",
+    "metric": "rows_removed_by_cleaning",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "raw_06",
+   "dataset": "rawcat",
+   "question": "How many raw Form A files (countries) are there?",
+   "code": "int((df.pipeline=='form_a').sum())",
+   "tolerance": 0,
+   "expected": 45,
+   "tool_call": {
+    "dataset": "rawcat",
+    "metric": "raw_files",
+    "pick": "value",
+    "pipeline": "form_a"
+   }
+  },
+  {
+   "id": "raw_07",
+   "dataset": "rawcat",
+   "question": "How many raw rows do the preparedness files hold in all?",
+   "code": "int(df[df.pipeline=='preparedness'].rows.sum())",
+   "tolerance": 0,
+   "expected": 428541,
+   "tool_call": {
+    "dataset": "rawcat",
+    "metric": "raw_rows",
+    "pick": "value",
+    "pipeline": "preparedness"
+   }
+  },
+  {
+   "id": "eng_01",
+   "dataset": "lqas",
+   "question": "What is the number of children sampled in the LQAS lots of 2026?",
+   "code": "int(df[df.year==2026].total_sampled.sum())",
+   "tolerance": 0,
+   "expected": 345930,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "children_sampled",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_02",
+   "dataset": "lqas",
+   "question": "How many sampled children were found vaccinated in the LQAS lots of 2026?",
+   "code": "int(df[df.year==2026].total_vaccinated.sum())",
+   "tolerance": 0,
+   "expected": 331876,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "children_vaccinated",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_03",
+   "dataset": "lqas",
+   "question": "How many sampled children were not found vaccinated in the LQAS lots of 2026?",
+   "code": "int((df[df.year==2026].total_sampled-df[df.year==2026].total_vaccinated).sum())",
+   "tolerance": 0,
+   "expected": 14054,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "children_missed",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_04",
+   "dataset": "lqas",
+   "question": "What is the sum of total_missed over the LQAS lots of 2026 (the lot measure)?",
+   "code": "int(df[df.year==2026].total_missed.sum())",
+   "tolerance": 0,
+   "expected": 18044,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "total_missed_lot_measure",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_05",
+   "dataset": "lqas",
+   "question": "How many distinct districts have LQAS lots in 2026?",
+   "code": "df[df.year==2026].groupby(['country','province','district'],dropna=False).ngroups",
+   "tolerance": 0,
+   "expected": 2330,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "districts",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_06",
+   "dataset": "admin",
+   "question": "What is the polio target population of the administrative records of 2026 (MR excluded)?",
+   "code": "int(df[(df.Year==2026)&(df.Vaccine_type!='MR')].PopPolio.sum())",
+   "tolerance": 0,
+   "expected": 345216185,
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "target_population",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_07",
+   "dataset": "form_a",
+   "question": "What is the median wastage rate of District-level latest reports of 2026, leaving out the reports flagged for wastage or implausible numbers?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')][~df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')].qc_flags.fillna('').str.contains('wastage_negative|wastage_over_100|implausible_number')].wastage_rate.median()),2)",
+   "tolerance": 0.05,
+   "expected": 6.25,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "median_wastage_rate_unflagged",
+    "year": 2026,
+    "level": "District",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_08",
+   "dataset": "form_a",
+   "question": "How many vials are unaccounted for in the District-level latest Form A reports of 2026?",
+   "code": "int(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')&(df.level=='District')].unaccounted_vials.sum())",
+   "tolerance": 0,
+   "expected": 196696,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "unaccounted_vials",
+    "year": 2026,
+    "level": "District",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_09",
+   "dataset": "form_a",
+   "question": "How many Form A reports (all of them) are flagged stock_mismatch?",
+   "code": "int(df.qc_flags.fillna('').str.contains('stock_mismatch').sum())",
+   "tolerance": 0,
+   "expected": 41040,
+   "tool_call": {
+    "dataset": "form_a",
+    "metric": "reports_stock_mismatch",
+    "latest_only": false,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_10",
+   "dataset": "preparedness",
+   "question": "What is the mean readiness of the microplan section for places in 2026 (latest visit of each place and round)?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')].ready_Microplan.mean()),1)",
+   "tolerance": 0.1,
+   "expected": 86.6,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "mean_readiness_microplan",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_11",
+   "dataset": "preparedness",
+   "question": "What is the mean readiness of the cold chain and logistics section for places in 2026 (latest visits)?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')].ready_ColdChain_Logistics.mean()),1)",
+   "tolerance": 0.1,
+   "expected": 84.1,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "mean_readiness_coldchain",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_12",
+   "dataset": "preparedness",
+   "question": "What is the mean readiness of the social mobilization section for places in 2026 (latest visits)?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')].ready_SocialMobilization.mean()),1)",
+   "tolerance": 0.1,
+   "expected": 93.6,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "mean_readiness_socialmob",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_13",
+   "dataset": "preparedness",
+   "question": "What is the mean readiness of the training section for places in 2026 (latest visits)?",
+   "code": "round(float(df[(df.report_year==2026)&(df.is_latest_of_place.astype(str)=='True')].ready_Training.mean()),1)",
+   "tolerance": 0.1,
+   "expected": 94.8,
+   "tool_call": {
+    "dataset": "preparedness",
+    "metric": "mean_readiness_training",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_14",
+   "dataset": "vaccine_accountability",
+   "question": "How many vials were received, over valid reports?",
+   "code": "int(df[df.vials_valid.astype(str)=='True'].vials_received.sum())",
+   "tolerance": 0,
+   "expected": 4836106,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "vials_received",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_15",
+   "dataset": "vaccine_accountability",
+   "question": "How many vials were returned, over valid reports?",
+   "code": "int(df[df.vials_valid.astype(str)=='True'].vials_returned.sum())",
+   "tolerance": 0,
+   "expected": 1970931,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "vials_returned",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_16",
+   "dataset": "vaccine_accountability",
+   "question": "How many reports show more vials returned than received?",
+   "code": "int((df.vials_returned_gt_received.astype(str)=='True').sum())",
+   "tolerance": 0,
+   "expected": 409,
+   "tool_call": {
+    "dataset": "vaccine_accountability",
+    "metric": "reports_returned_gt_received",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_17",
+   "dataset": "social_mobilization",
+   "question": "How many states have social mobilization reports?",
+   "code": "df.state.nunique()",
+   "tolerance": 0,
+   "expected": 37,
+   "tool_call": {
+    "dataset": "social_mobilization",
+    "metric": "states",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_18",
+   "dataset": "team_supervision",
+   "question": "How many LGAs have supervision visits?",
+   "code": "df.lga.nunique()",
+   "tolerance": 0,
+   "expected": 370,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "lgas",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_19",
+   "dataset": "team_supervision",
+   "question": "How many visits answered the question on house marking?",
+   "code": "int(df.ind_house_marked.notna().sum())",
+   "tolerance": 0,
+   "expected": 364738,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "indicator_answered",
+    "params": {
+     "indicator": "ind_house_marked"
+    },
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_20",
+   "dataset": "team_supervision",
+   "question": "How many children were sampled by H2H supervisors in all?",
+   "code": "int(df.children_sampled.sum())",
+   "tolerance": 0,
+   "expected": 4675618,
+   "tool_call": {
+    "dataset": "team_supervision",
+    "metric": "children_sampled",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_21",
+   "dataset": "im_repository",
+   "question": "How many countries have IM rows?",
+   "code": "df.country.nunique()",
+   "tolerance": 0,
+   "expected": 35,
+   "tool_call": {
+    "dataset": "im_repository",
+    "metric": "countries",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_22",
+   "dataset": "im_repository",
+   "question": "How many children under 5 were present in IM records of 2026?",
+   "code": "int(df[df.year==2026].u5_present.sum())",
+   "tolerance": 0,
+   "expected": 2555172,
+   "tool_call": {
+    "dataset": "im_repository",
+    "metric": "children_present",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_23",
+   "dataset": "raw_team_supervision",
+   "question": "How many raw team supervision records repeat a _uuid?",
+   "code": "int(df._uuid.duplicated().sum())",
+   "tolerance": 0,
+   "expected": 0,
+   "tool_call": {
+    "dataset": "raw_team_supervision",
+    "metric": "duplicate_uuid",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_24",
+   "dataset": "raw_vaccine_accountability",
+   "question": "How many raw records of form 829 were edited after submission?",
+   "code": "int(df._edited.astype(str).str.lower().isin(['true','1']).sum())",
+   "tolerance": 0,
+   "expected": 0,
+   "tool_call": {
+    "dataset": "raw_vaccine_accountability",
+    "metric": "edited_records",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_25",
+   "dataset": "raw_vaccine_accountability",
+   "question": "How many raw records of form 829 repeat a _uuid?",
+   "code": "int(df._uuid.duplicated().sum())",
+   "tolerance": 0,
+   "expected": 0,
+   "tool_call": {
+    "dataset": "raw_vaccine_accountability",
+    "metric": "duplicate_uuid",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_26",
+   "dataset": "rawcat",
+   "question": "How many MB do the raw files take on the owner's computer?",
+   "code": "round(float(df.size_mb.sum()),1)",
+   "tolerance": 0.1,
+   "expected": 3076.4,
+   "tool_call": {
+    "dataset": "rawcat",
+    "metric": "raw_size_mb",
+    "pick": "value"
+   }
+  }
+ ],
+ "sources": {
+  "lqas": "afro_lqas_repositorty.csv",
+  "admin": "AFRO_admin_data__20261126_071316__0a1d6832.xlsx",
+  "form_a": "afro_form_a_repository.csv",
+  "preparedness": "afro_preparedness_repository.csv",
+  "vaccine_accountability": "afro_vaccine_accountability_repository.csv",
+  "social_mobilization": "afro_social_mobilization_reports.csv",
+  "team_supervision": "afro_team_supervision_repository.csv",
+  "im_repository": "Regional_IM_repository_cleaned.csv",
+  "raw_vaccine_accountability": "NGA_829.parquet",
+  "raw_team_supervision": "NGA_16194.parquet",
+  "rawcat": "raw_catalog.json"
+ },
+ "as_of_admin": "2026-11-26 (snapshot AFRO_admin_data__20261126_071316)",
+ "assistant_datasets": [
+  "lqas",
+  "admin"
+ ],
+ "assistant_note": "The AFRO-Dash assistant reads the LQAS and admin data of the dashboard only (8 tools). Questions on other datasets are graded as 'declined' when the assistant says it has no such data, and as 'answered' when it gives a figure (which cannot come from its tools).",
+ "engine_datasets": [
+  "lqas",
+  "admin",
+  "form_a",
+  "preparedness",
+  "vaccine_accountability",
+  "social_mobilization",
+  "team_supervision",
+  "im_repository",
+  "raw_team_supervision",
+  "raw_vaccine_accountability",
+  "rawcat"
+ ]
+}

@@ -1,0 +1,7 @@
+shiny>=1.0
+anthropic
+pandas
+numpy
+pyarrow
+openpyxl
+pyreadr
