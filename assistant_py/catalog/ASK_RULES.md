@@ -58,3 +58,18 @@ Author: Gorgui Ba Toure
 ## 6. Test set
 
 `catalog/test_questions.json` has 78 questions with the true answers, for LQAS, admin data, the six other datasets and the raw forms (`tools/check_questions.py`). A good assistant reproduces the figures within the stated tolerance and answers the traps (`trap_*`) by correcting the premise. After each data refresh run `python tools/check_questions.py` to see which answers moved, review them, then `--update`.
+
+## 7. Rounds and the latest round (added 27 Nov 2026)
+- A round of a campaign is identified by the campaign (`response`), the vaccine type AND the round label (this is how the AFRO-Dash dashboard counts its 'Campaigns' tile); labels such as RND1, RND2, RND3 repeat across campaigns and years, so 'RND3' alone is not a round.
+- 'The last / latest / most recent round' = the round with the most recent round start date (`round_start_date`, the dashboard's 'SIA date') in the selection (engine option `latest_round`). Never find it by the highest label and never by grouping by round label.
+- Name the campaign, the round and the date of the round in the answer.
+- The chat page draws bar and line charts (tool make_chart) but not maps: for a map, say so, give the figures it would show (for example by district for the latest round) and name the dashboard page that has the map.
+- Two dates in LQAS: the round start (`round_start_date`, dashboard 'SIA date') and the survey (`lqas_start_date`, a few days later). Say which one a date is.
+
+## 8. What the AFRO-Dash dashboard shows (read from its code, 27 Nov 2026)
+Pages: At a Glance; Campaigns Overview (Power BI); SIA Scope Analysis (scope map and scope summary map); LQAS Repository Overview (value boxes Campaigns = rounds, Countries, Provinces, Districts, data period = round start dates); LQAS District Performance (maps of the performance class of districts by month, and the share of high-performing districts); IM Overview; IM Settlement Maps; Admin Data Overview; Generate Slides; Quick Start Guide. When a user asks for a map or a chart, name the page that has it. When a figure differs from a dashboard tile, check the definition (rounds versus campaign names, round start versus survey date) before saying either is wrong.
+
+## 9. Administrative data: doses versus children (read from AFRO-Dash app.R, 27 Nov 2026)
+- The dashboard shows TWO figures. 'Doses administered' = the sum of `TotalNbrVaccPolio` over all rounds and records (the same child is counted once per round): metric `doses_administered` (367,586,149 in 2026). 'Children vaccinated' = for each country the month with the most vaccinations, summed over countries (distinct children are not added again): metric `children_vaccinated` (188,578,639 in 2026).
+- 'How many children were vaccinated' -> `children_vaccinated`. 'Doses', 'vaccinations', 'adding all rounds' -> `doses_administered`. Always say which one you give and why they differ.
+- 'Campaigns': `campaigns` counts campaign names (Response); `rounds` counts (country, campaign, round, vaccine type), as the dashboard counts rounds.

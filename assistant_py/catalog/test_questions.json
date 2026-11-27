@@ -209,7 +209,7 @@
   {
    "id": "lqas_14",
    "dataset": "lqas",
-   "question": "How many distinct campaigns (response names) have LQAS lots in 2026?",
+   "question": "How many distinct campaign names (the response column) have LQAS lots in 2026?",
    "code": "df[df.year==2026].response.nunique()",
    "tolerance": 0,
    "expected": 33,
@@ -387,7 +387,7 @@
   {
    "id": "admin_03",
    "dataset": "admin",
-   "question": "How many children were vaccinated with polio vaccine in 2026 (administrative data, measles-rubella records excluded)?",
+   "question": "How many polio vaccinations (doses administered, adding all rounds, MR excluded) were recorded in 2026?",
    "code": "int(df[(df.Year==2026)&(df.Vaccine_type!='MR')].TotalNbrVaccPolio.sum())",
    "tolerance": 0,
    "note": "co-administered rows use the larger vaccine total, never the sum of both",
@@ -395,7 +395,7 @@
    "as_of": "2026-11-26",
    "tool_call": {
     "dataset": "admin",
-    "metric": "children_vaccinated",
+    "metric": "doses_administered",
     "pick": "value",
     "year": 2026
    }
@@ -469,14 +469,14 @@
   {
    "id": "admin_08",
    "dataset": "admin",
-   "question": "How many children were vaccinated in Nigeria in 2026 (polio records)?",
+   "question": "How many polio vaccinations (doses administered, adding all rounds) were recorded in Nigeria in 2026?",
    "code": "int(df[(df.Country=='NIGERIA')&(df.Year==2026)&(df.Vaccine_type!='MR')].TotalNbrVaccPolio.sum())",
    "tolerance": 0,
    "expected": 65124996,
    "as_of": "2026-11-26",
    "tool_call": {
     "dataset": "admin",
-    "metric": "children_vaccinated",
+    "metric": "doses_administered",
     "pick": "value",
     "country": "Nigeria",
     "year": 2026
@@ -583,7 +583,7 @@
   {
    "id": "admin_15",
    "dataset": "admin",
-   "question": "How many children were vaccinated per year (polio records, MR excluded)?",
+   "question": "How many polio vaccinations (doses administered, adding all rounds, MR excluded) were recorded per year?",
    "code": "df[df.Vaccine_type!='MR'].groupby('Year').TotalNbrVaccPolio.sum().astype(int).to_dict()",
    "tolerance": 0,
    "expected": {
@@ -598,7 +598,7 @@
    "as_of": "2026-11-26",
    "tool_call": {
     "dataset": "admin",
-    "metric": "children_vaccinated",
+    "metric": "doses_administered",
     "pick": "table",
     "by": "year"
    }
@@ -606,7 +606,7 @@
   {
    "id": "trap_01",
    "dataset": "admin",
-   "question": "Add the nOPV2 and bOPV totals to get the children vaccinated in the co-administered campaigns of 2026.",
+   "question": "Add the nOPV2 and bOPV totals to get the doses administered in the co-administered campaigns of 2026.",
    "code": "int(df[(df.Year==2026)&(df.Vaccine_type=='nOPV2 & bOPV')].TotalNbrVaccPolio.sum())",
    "tolerance": 0,
    "trap": "Wrong premise: the totals are not added; TotalNbrVaccPolio is the larger of the two. The assistant must say so and answer with TotalNbrVaccPolio.",
@@ -631,7 +631,7 @@
    ],
    "tool_call": {
     "dataset": "admin",
-    "metric": "children_vaccinated",
+    "metric": "doses_administered",
     "pick": "value",
     "year": 2026,
     "vaccine": "nOPV2 & bOPV"
@@ -1654,6 +1654,127 @@
    "tool_call": {
     "dataset": "rawcat",
     "metric": "raw_size_mb",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_27",
+   "dataset": "lqas",
+   "question": "How many LQAS lots were assessed in the latest round conducted in Chad (latest round start date; a round is a campaign, a vaccine and a round label)?",
+   "code": "len((lambda c: c[(c.response==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'response'])&(c['vaccine.type']==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'vaccine.type'])&(c.roundNumber==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'roundNumber'])])(df[df.country=='CHAD']))",
+   "tolerance": 0,
+   "expected": 194.0,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "lots",
+    "country": "Chad",
+    "latest_round": true,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_28",
+   "dataset": "lqas",
+   "question": "What share of LQAS lots passed in the latest round conducted in Chad?",
+   "code": "round(100*float(((lambda c: c[(c.response==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'response'])&(c['vaccine.type']==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'vaccine.type'])&(c.roundNumber==c.loc[pd.to_datetime(c.round_start_date).idxmax(),'roundNumber'])])(df[df.country=='CHAD']).status=='Pass').mean()),1)",
+   "tolerance": 0.1,
+   "expected": 63.9,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "pass_rate",
+    "country": "Chad",
+    "latest_round": true,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "trap_07",
+   "dataset": "lqas",
+   "question": "Generate a map of the LQAS results in Chad for the last round conducted.",
+   "code": null,
+   "trap": "The chat page cannot draw maps or charts; the assistant must say so briefly, then give the figures of the latest round (campaign CHD-2026-03_nOPV_NID, round 2, 194 lots, 63.9% passed), not a round chosen by its label.",
+   "must_mention": [
+    [
+     "cannot",
+     "can't",
+     "unable",
+     "not able",
+     "does not",
+     "do not",
+     "no map"
+    ],
+    [
+     "2026"
+    ]
+   ]
+  },
+  {
+   "id": "eng_29",
+   "dataset": "lqas",
+   "question": "How many campaign rounds had LQAS lots in 2026, counted as the dashboard counts its 'Campaigns' tile (distinct country, campaign, vaccine type and round label)?",
+   "code": "(lambda d: len(d.assign(c=d.country.astype(str).str.strip().str.upper(),r=d.response.astype(str).str.strip().str.upper(),v=d['vaccine.type'].astype(str).str.strip().str.upper(),n=d.roundNumber.astype(str))[['c','r','v','n']].drop_duplicates()))(df[(df.year==2026)].dropna(subset=['country','response','vaccine.type','roundNumber','round_start_date']))",
+   "tolerance": 0,
+   "expected": 67,
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "rounds",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_30",
+   "dataset": "lqas",
+   "question": "What is the start date of the most recent LQAS round in the data (round start date, the dashboard's SIA date)?",
+   "code": "str(pd.to_datetime(df.round_start_date).max().date())",
+   "tolerance": 0,
+   "expected": "2026-11-19",
+   "tool_call": {
+    "dataset": "lqas",
+    "metric": "latest_round_start",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_31",
+   "dataset": "admin",
+   "question": "How many children were vaccinated in 2026, as the dashboard's 'Children vaccinated' tile counts them (for each country the month with the most vaccinations, summed over countries)?",
+   "code": "(lambda x: int(x[x.Vaccine_type!='MR'].groupby(['Country',x.SIA_date.astype(str).str[:7]]).TotalNbrVaccPolio.sum().groupby(level=0).max().sum()))(df[df.Year==2026])",
+   "tolerance": 0,
+   "expected": 188578639,
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "year": 2026,
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_32",
+   "dataset": "admin",
+   "question": "How many children were vaccinated in Nigeria in 2026, as the dashboard's 'Children vaccinated' tile counts them?",
+   "code": "(lambda x: int(x[x.Vaccine_type!='MR'].groupby(['Country',x.SIA_date.astype(str).str[:7]]).TotalNbrVaccPolio.sum().groupby(level=0).max().sum()))(df[(df.Year==2026)&(df.Country=='NIGERIA')])",
+   "tolerance": 0,
+   "expected": 60511993,
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "children_vaccinated",
+    "year": 2026,
+    "country": "Nigeria",
+    "pick": "value"
+   }
+  },
+  {
+   "id": "eng_33",
+   "dataset": "admin",
+   "question": "How many campaign rounds (distinct country, campaign, round and vaccine type) have administrative records in 2026?",
+   "code": "len(df[df.Year==2026][['Country','Response','Round_Add','Vaccine_type']].drop_duplicates())",
+   "tolerance": 0,
+   "expected": 67,
+   "tool_call": {
+    "dataset": "admin",
+    "metric": "rounds",
+    "year": 2026,
     "pick": "value"
    }
   }

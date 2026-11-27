@@ -95,7 +95,9 @@
         "Rows where geo_code is empty (3.4% on 26 Nov 2026, mostly Ethiopia, Zimbabwe, Angola) cannot be joined to the geographic reference.",
         "DR Congo, Algeria, South Sudan, Nigeria, Rwanda and Ethiopia use their own selection logic (page workflows/15); never compare their lots with another country without saying so.",
         "Always give the period asked for (the dashboard tools default to the last 6 months): never answer 'the rate' without the months or years it covers.",
-        "LQAS samples children: it never gives the number of children vaccinated in a country; use the administrative data for that."
+        "LQAS samples children: it never gives the number of children vaccinated in a country; use the administrative data for that.",
+        "Two dates: round_start_date is the start of the campaign round (the dashboard's 'SIA date', used for its data period and month filters); lqas_start_date is the date of the LQAS survey, usually 4 days later (a few rows differ by months). The column year follows the survey date.",
+        "A campaign round is identified by country + response (campaign) + vaccine type + round label (RND1, RND2...); the dashboard's 'Campaigns' tile counts these rounds, not campaign names."
       ],
       "dashboard_tools": [
         "get_missed",
@@ -194,7 +196,8 @@
         "Many columns are filled for few records (Integ*, Pop*, AgeG* of other interventions, the 39 V2 template columns about 0.7%): never average over missing values without saying how many records have the value.",
         "Integ* flags are written Yes, yes, YES, No, NO, 0: compare case-insensitively. AFRO_block has a typo variant 'LBC' for 'LCB'.",
         "Pending rounds (no records 15 days after the start) are not in the file: absence of a record is not zero coverage (Pending_admin_data.xlsx lists them).",
-        "Response is empty on 3.4% of records and written differently in old campaigns; the lookup is the authority for campaign name, date and round."
+        "Response is empty on 3.4% of records and written differently in old campaigns; the lookup is the authority for campaign name, date and round.",
+        "The dashboard has two figures: 'Doses administered' (sum of TotalNbrVaccPolio over all rounds, 367.6 million in 2026) and 'Children vaccinated' (for each country the month with the most vaccinations, summed over countries, 188.6 million in 2026). Never call the sum of rounds 'children vaccinated'."
       ],
       "dashboard_tools": [
         "get_admin_summary",

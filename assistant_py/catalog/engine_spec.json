@@ -105,7 +105,7 @@
     },
     "campaigns": {
      "unit": "campaigns",
-     "def": "distinct campaign names (response) with lots",
+     "def": "distinct campaign names (the response column) with lots; a campaign has several rounds, and the dashboard's 'Campaigns' tile counts rounds (metric rounds), not names",
      "formula": "distinct response",
      "expr": "df.response.nunique()",
      "kind": "scalar"
@@ -137,6 +137,20 @@
      "formula": "sum of r_* columns over lots with total_sampled == 60",
      "expr": "(lambda x: (lambda s: pd.DataFrame({'reason':s.index,'children':s.values.astype(int),'share_percent':(100*s/s.sum()).round(1).values}).sort_values('children',ascending=False))(x[['r_non_compliance','r_house_not_visited','r_childabsent','r_Child_was_asleep','r_Child_is_a_visitor','r_Vaccinated_but_not_FM','r_security','r_childnotborn','other_r']].apply(pd.to_numeric, errors='coerce').sum()))(df[df.total_sampled==60] if p.get('complete_lots_only',True) else df)",
      "kind": "table"
+    },
+    "rounds": {
+     "unit": "rounds",
+     "def": "campaign rounds with lots, as the dashboard counts its 'Campaigns' tile: distinct (country, response, vaccine type, round label), text trimmed and upper-cased, rows without those fields or without a round start date left out",
+     "formula": "distinct (country, response, vaccine.type, roundNumber)",
+     "expr": "len(df.dropna(subset=['country','response','vaccine.type','roundNumber','round_start_date']).assign(c=lambda x: x.country.astype(str).str.strip().str.upper(), r=lambda x: x.response.astype(str).str.strip().str.upper(), v=lambda x: x['vaccine.type'].astype(str).str.strip().str.upper(), n=lambda x: x.roundNumber.astype(str))[['c','r','v','n']].drop_duplicates())",
+     "kind": "scalar"
+    },
+    "latest_round_start": {
+     "unit": "date",
+     "def": "start date of the most recent round (round_start_date, the dashboard's 'SIA date'); the LQAS survey date (latest_date) is a few days later",
+     "formula": "max(round_start_date)",
+     "expr": "pd.to_datetime(df.round_start_date, errors='coerce').max()",
+     "kind": "date"
     }
    },
    "warnings": [
@@ -176,6 +190,18 @@
      ],
      "text": "'other' also holds the unsampled children of under-reported lots: it is mostly an artifact in the whole file.",
      "only_if": "not p.get('complete_lots_only',True)"
+    },
+    {
+     "metrics": [
+      "campaigns"
+     ],
+     "text": "This counts campaign NAMES; the dashboard's 'Campaigns' tile counts rounds (campaign, vaccine and round label): use the metric rounds to match the dashboard."
+    },
+    {
+     "metrics": [
+      "latest_date"
+     ],
+     "text": "This is the date of the most recent LQAS SURVEY (lqas_start_date); the round itself starts a few days earlier (latest_round_start, the dashboard's 'SIA date')."
     }
    ],
    "sources": [
@@ -191,7 +217,13 @@
      "kind": "rds",
      "path": "@here/data/AFRO_LQAS_data_c.rds"
     }
-   ]
+   ],
+   "round_key": [
+    "response",
+    "vaccine",
+    "round"
+   ],
+   "round_date": "round_start_date"
   },
   "admin": {
    "semantic": "admin",
@@ -216,9 +248,9 @@
     },
     "children_vaccinated": {
      "unit": "children",
-     "def": "children vaccinated with polio vaccine (measles-rubella records excluded); for co-administered rows the larger of the two vaccine totals",
-     "formula": "sum(TotalNbrVaccPolio) where Vaccine_type != 'MR'",
-     "expr": "df[df.Vaccine_type!='MR'].TotalNbrVaccPolio.sum()",
+     "def": "children vaccinated, as the dashboard's 'Children vaccinated' tile: for each country the month with the most vaccinations (sum of TotalNbrVaccPolio in that SIA month), then summed over countries, so that the same children vaccinated in several rounds are not added again (an estimate of distinct children)",
+     "formula": "sum over countries of max over months of sum(TotalNbrVaccPolio) (MR excluded)",
+     "expr": "df[df.Vaccine_type!='MR'].dropna(subset=['.date']).groupby(['Country','.month']).TotalNbrVaccPolio.sum().groupby(level=0).max().sum()",
      "kind": "scalar"
     },
     "target_population": {
@@ -251,7 +283,7 @@
     },
     "campaigns": {
      "unit": "campaigns",
-     "def": "distinct campaign names (Response)",
+     "def": "distinct campaign names (the Response column); a campaign has several rounds (metric rounds)",
      "formula": "distinct Response",
      "expr": "df.Response.nunique()",
      "kind": "scalar"
@@ -283,12 +315,27 @@
      "formula": "max(SIA_date)",
      "expr": "df['.date'].max()",
      "kind": "date"
+    },
+    "doses_administered": {
+     "unit": "doses (vaccinations)",
+     "def": "polio vaccinations recorded, adding ALL rounds and records (MR excluded; co-administered rows hold the larger of the two vaccine totals). The same child is counted once per round: this is the dashboard's 'Doses administered' tile, NOT the number of children vaccinated",
+     "formula": "sum(TotalNbrVaccPolio) where Vaccine_type != 'MR'",
+     "expr": "df[df.Vaccine_type!='MR'].TotalNbrVaccPolio.sum()",
+     "kind": "scalar"
+    },
+    "rounds": {
+     "unit": "rounds",
+     "def": "campaign rounds with records: distinct (country, response, round, vaccine type)",
+     "formula": "distinct (Country, Response, Round_Add, Vaccine_type)",
+     "expr": "len(df[['Country','Response','Round_Add','Vaccine_type']].drop_duplicates())",
+     "kind": "scalar"
     }
    },
    "warnings": [
     {
      "metrics": [
-      "children_vaccinated"
+      "children_vaccinated",
+      "doses_administered"
      ],
      "count": "int(df.Vaccine_type.isin(['nOPV2 & bOPV','nOPV2_bOPV_IPV']).sum())",
      "text": "Co-administered rows (nOPV2 & bOPV, nOPV2_bOPV_IPV) hold ONE figure per district: the larger of the two vaccine totals. The nOPV2 and bOPV totals must never be added together; if you were asked to add them, say that they should not be added."
@@ -297,7 +344,8 @@
      "metrics": [
       "coverage",
       "share_districts_95",
-      "children_vaccinated"
+      "children_vaccinated",
+      "doses_administered"
      ],
      "count": "int(((df.TotalNbrVaccPolio/df.PopPolio)>1.5).sum())",
      "text": "{n} record(s) in this selection have coverage above 1.5 (not credible)."
@@ -305,11 +353,30 @@
     {
      "metrics": [
       "children_vaccinated",
-      "target_population",
       "coverage",
-      "share_districts_95"
+      "doses_administered",
+      "share_districts_95",
+      "target_population"
      ],
      "text": "Measles-rubella (MR) records are excluded from this polio figure."
+    },
+    {
+     "metrics": [
+      "doses_administered"
+     ],
+     "text": "This adds ALL rounds: the same child is counted once per round, so it is a number of vaccinations (doses), not of children. The dashboard's 'Children vaccinated' (metric children_vaccinated) takes the best month of each country; say which one you give."
+    },
+    {
+     "metrics": [
+      "children_vaccinated"
+     ],
+     "text": "Dashboard definition: for each country the month with the most vaccinations, summed over countries; it estimates distinct children and does not add rounds. The sum of all rounds is metric doses_administered."
+    },
+    {
+     "metrics": [
+      "campaigns"
+     ],
+     "text": "This counts campaign NAMES; a campaign has several rounds (metric rounds)."
     }
    ],
    "sources": [
@@ -325,6 +392,10 @@
      "kind": "rds",
      "path": "@here/data/AFRO_admin_data.rds"
     }
+   ],
+   "round_key": [
+    "response",
+    "round"
    ]
   },
   "form_a": {
@@ -993,6 +1064,10 @@
      "kind": "csv",
      "path": "@data/AFRO-Independant-Monitoring-data-workflow/data/final/Regional_IM_repository_cleaned.csv"
     }
+   ],
+   "round_key": [
+    "response",
+    "round"
    ]
   },
   "raw_team_supervision": {

@@ -114,6 +114,9 @@ class Engine:
         if dc and dc in df.columns:
             df[".date"] = pd.to_datetime(df[dc], errors="coerce")
             df[".month"] = df[".date"].dt.strftime("%Y-%m")
+        rdc = s.get("round_date")
+        if rdc and rdc in df.columns:
+            df[".rdate"] = pd.to_datetime(df[rdc], errors="coerce")
         self._cache[name] = (df, p)
         return self._cache[name]
 
@@ -149,7 +152,7 @@ class Engine:
     def _norm(v):
         return str(v).strip().lower()
 
-    def _select(self, s, df, filters, months, latest_only, all_rows=False):
+    def _select(self, s, df, filters, months, latest_only, all_rows=False, latest_round=False):
         import pandas as pd
         notes = []
         lt = s.get("latest")
@@ -183,6 +186,25 @@ class Engine:
             else:
                 df = df[df[".month"].isin([str(m) for m in ms])]
             applied["months"] = ms
+        if latest_round:
+            rk = s.get("round_key")
+            if not rk:
+                raise EngineError("this dataset has no rounds: latest_round is not available")
+            dcol = ".rdate" if ".rdate" in df.columns else ".date"
+            d = df[df[dcol].notna()]
+            if len(d):
+                row = d.loc[d[dcol].idxmax()]
+                cols = [s["dims"][k] for k in rk]
+                def norm(series):
+                    return series.astype(str).str.strip().str.upper()
+                sel = df
+                for c in cols:
+                    sel = sel[norm(sel[c]) == str(row[c]).strip().upper()]
+                df = sel
+                nm = ", ".join("%s %s" % (k, row[c]) for k, c in zip(rk, cols))
+                a, b = df[dcol].min(), df[dcol].max()
+                notes.append("latest round of this selection: %s (round started %s%s). A round is a campaign, a vaccine and a round label: labels such as RND3 repeat across campaigns, so never choose a round by its label" % (nm, a.strftime("%Y-%m-%d"), "" if a == b else " to " + b.strftime("%Y-%m-%d")))
+                applied["latest_round"] = {k: self._plain(row[c]) for k, c in zip(rk, cols)}
         return df, applied, notes
 
     def _eval(self, expr, df, p, name):
@@ -200,7 +222,7 @@ class Engine:
             return v.strftime("%Y-%m-%d") if hasattr(v, "strftime") else str(v)
         return v
 
-    def query(self, dataset, metric, by=None, filters=None, months=None, latest_only=None, params=None, min_n=None, top_n=None, complete_lots_only=None):
+    def query(self, dataset, metric, by=None, filters=None, months=None, latest_only=None, params=None, min_n=None, top_n=None, complete_lots_only=None, latest_round=False):
         import pandas as pd
         df0, path = self.load(dataset)
         s = self.ds[dataset]
@@ -215,7 +237,7 @@ class Engine:
                 raise EngineError("metric %s needs the parameter '%s' (one of: %s)" % (metric, k, ", ".join(allowed)))
             if p[k] not in allowed:
                 raise EngineError("parameter %s=%s is not allowed; allowed: %s" % (k, p[k], ", ".join(allowed)))
-        df, applied, notes = self._select(s, df0, filters, months, latest_only, bool(m.get("all_rows")))
+        df, applied, notes = self._select(s, df0, filters, months, latest_only, bool(m.get("all_rows")), bool(latest_round))
         res = {"dataset": dataset, "metric": metric, "unit": m["unit"], "definition": m["def"], "formula": m["formula"], "filters": applied, "notes": notes,
                "rows_used": int(len(df)), "catalogue_version": self.version}
         if m.get("params"):
@@ -257,6 +279,8 @@ class Engine:
         else:
             res["value"] = self._plain(self._eval(m["expr"], df, p, dataset))
         res["warnings"] = self._warnings(s, metric, df, p, res)
+        if latest_round:
+            res["warnings"].append(res["notes"][-1] if res.get("notes") else "latest round")
         if s.get("latest") and m.get("all_rows") and latest_only is None:
             res["warnings"].append("This counts every report of the repository, repeated reports of the same place and round included; latest_only=true keeps only the last report of each place and round.")
         return res
@@ -315,7 +339,7 @@ class Engine:
         extra = c.get("filters") or {}
         filt.update(extra)
         return self.query(c["dataset"], c["metric"], by=c.get("by"), filters=filt, months=c.get("months"), latest_only=c.get("latest_only"),
-                          params=c.get("params"), min_n=c.get("min_n"), top_n=c.get("top_n"), complete_lots_only=c.get("complete_lots_only"))
+                          params=c.get("params"), min_n=c.get("min_n"), top_n=c.get("top_n"), complete_lots_only=c.get("complete_lots_only"), latest_round=c.get("latest_round", False))
 
 
 def same(got, exp, tol, qid=""):

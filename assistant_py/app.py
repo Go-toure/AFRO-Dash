@@ -4,7 +4,7 @@ Run on the owner's computer:   pip install -r requirements.txt   then   set ANTH
 The model answers only through the engine (tools/catalog_engine.py): aggregated figures with unit, period and warnings; it never sees a record and writes no code.
 INTERNAL USE: the page has no sign-in; do not publish it publicly. The public AFRO-Dash assistant is a separate decision (workflows/18, section 3d).
 """
-import asyncio, os, sys
+import asyncio, os, sys, tempfile, uuid
 
 from shiny import App, ui
 
@@ -15,6 +15,8 @@ for _d in (APP, os.path.join(os.path.dirname(APP), "tools")):  # next to the mod
         break
 from assistant_core import Assistant, trail  # noqa: E402
 
+CHARTS = tempfile.mkdtemp(prefix="sia_charts_")  # chart images are served as files: the chat component strips data: images
+
 app_ui = ui.page_fillable(
     ui.h4("SIA data assistant (internal)"),
     ui.p("Ask about LQAS, administrative coverage, Form A, preparedness, vaccine accountability, social mobilization, team supervision, independent monitoring or the raw forms. "
@@ -22,6 +24,14 @@ app_ui = ui.page_fillable(
     ui.chat_ui("chat"),
     title="SIA data assistant",
 )
+
+
+def trim(hist, keep=20):
+    """Keep the last messages, starting at a question typed by the user: a tool result must never lose the tool call before it (the API refuses it)."""
+    cut = max(0, len(hist) - keep)
+    while cut < len(hist) and not (hist[cut].get("role") == "user" and isinstance(hist[cut].get("content"), str)):
+        cut += 1
+    return hist[cut:]
 
 
 def server(input, output, session):
@@ -49,9 +59,15 @@ def server(input, output, session):
         except Exception as e:
             await chat.append_message("The assistant could not answer: %s" % str(e)[:200])
             return
-        state["history"] = hist[-20:]  # keep the conversation short
+        state["history"] = trim(hist)  # keep the conversation short
         t = trail(calls)
-        await chat.append_message(reply + ("\n\n<details><summary>Data used</summary>\n\n" + "\n".join("- `%s`" % x for x in t) + "\n\n</details>" if t else ""))
+        imgs = ""
+        for b in getattr(bot(), "images", []):
+            name = "c_%s.png" % uuid.uuid4().hex[:10]
+            with open(os.path.join(CHARTS, name), "wb") as f:
+                f.write(b)
+            imgs += "\n\n![chart](charts/%s)" % name
+        await chat.append_message(reply + imgs + ("\n\n<details><summary>Data used</summary>\n\n" + "\n".join("- `%s`" % x for x in t) + "\n\n</details>" if t else ""))
 
 
-app = App(app_ui, server)
+app = App(app_ui, server, static_assets={"/charts": CHARTS})
