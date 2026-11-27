@@ -16,7 +16,8 @@
     "block": "afro_block",
     "province": "province",
     "district": "district",
-    "missed_in_lot": "total_missed"
+    "missed_in_lot": "total_missed",
+    "geo_code": "geo_code"
    },
    "metrics": {
     "lots": {
@@ -236,7 +237,8 @@
     "block": "AFRO_block",
     "response": "Response",
     "round": "Round_Add",
-    "province": "Province"
+    "province": "Province",
+    "geo_code": "geo_code"
    },
    "metrics": {
     "records": {
@@ -1003,7 +1005,8 @@
     "vaccine": "vaccine_type",
     "block": "afro_block",
     "response": "response",
-    "round": "roundNumber"
+    "round": "roundNumber",
+    "geo_code": "geo_code"
    },
    "metrics": {
     "rows": {

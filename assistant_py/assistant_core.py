@@ -68,6 +68,16 @@ CHART_TOOL = {"name": "make_chart", "description": "Draw a chart (an image shown
                   "min_n": {"type": "integer"}, "top_n": {"type": "integer", "description": "bars to draw (default 15)"}},
                   "required": ["dataset", "metric", "by"]}}
 TOOLS.append(CHART_TOOL)
+MAP_TOOL = {"name": "make_map", "description": "Draw a MAP (an image shown to the user after your reply) of ONE catalogue metric, one value per place on the AFRO boundaries. Use it whenever the user asks for a map. Level: district by geo code for LQAS, admin and IM; for the other datasets province, state or district by name inside ONE country (give `country`), or the country level. Same dataset, metric, filters and options as query_data, but no `by`. For 'the last round' set latest_round=true. Then say what the map shows, how many places were placed, and restate the warnings of the result.",
+            "input_schema": {"type": "object", "properties": {
+                "dataset": {"type": "string"}, "metric": {"type": "string"},
+                "level": {"type": "string", "enum": ["geo_code", "district", "province", "country"], "description": "optional: district (by geo code or name), province or state, country. Default: the finest level the dataset supports."},
+                "title": {"type": "string", "description": "short title"},
+                **FILTER_PROPS,
+                "filters": {"type": "object"}, "months": {"type": "array", "items": {"type": "string"}}, "params": {"type": "object"},
+                "latest_round": {"type": "boolean"}, "latest_only": {"type": "boolean"}, "complete_lots_only": {"type": "boolean"}, "min_n": {"type": "integer"}},
+                "required": ["dataset", "metric"]}}
+TOOLS.append(MAP_TOOL)
 FIGURE = re.compile(r"\d{1,3}(,\d{3})+|\d+\.\d+|\b\d{3,}\b|\d\s?%")
 
 
@@ -101,7 +111,7 @@ def system_prompt(here=HERE, engine=None):
             "'children vaccinated' is metric children_vaccinated; doses, vaccinations or the sum of all rounds is doses_administered; say which one you give. Use the metric the question names: median_wastage_rate unless the question asks to leave out flagged reports (then median_wastage_rate_unflagged and say so). Counts of reports or visits cover every report unless the question asks for the latest report of each place (latest_only=true). "
             ""
             "For the last, latest or most recent round or campaign use latest_round=true and name the campaign and round the result reports; never choose a round by its label and never group by round to find the latest. "
-            "For a graph or chart call make_chart (bars for categories, a line for year or month): the image is shown after your reply, so describe what it shows and restate the warnings. This page cannot draw maps: if asked for one, say so in one sentence, give the figures it would show as a table (for example by district, with latest_round=true) and say which dashboard page has the map; do not describe how to build one. "
+            "For a graph or chart call make_chart (bars for categories, a line for year or month): the image is shown after your reply, so describe what it shows and restate the warnings. For a map call make_map (district by geo code for LQAS, admin and IM; other datasets by province, state or district name inside one country, or by country): the image is shown after your reply, so say what it shows, how many places were placed, and restate the warnings; use latest_round=true for the last round. If the tool says R is missing, say that this computer cannot draw maps and give the table instead. "
             "When the question does not name the dataset, name the dataset you used. A dataset that is not in the list below is not available here: say so, do not guess. Answer in the language of the question, briefly.\n\nDATASETS AND THEIR METRICS (use these exact names):\n" + listing + "\n\nRULES OF THE CATALOGUE:\n" + rules)
 
 
@@ -228,6 +238,19 @@ class Assistant:
                     self.images.append(render_chart(res, call.get("chart"), call.get("title"), call.get("top_n") or 15))
                     out = {"chart_created": True, "chart_type": call.get("chart") or ("line" if res.get("by") in ("year", "month") else "bar"), "metric": res["metric"], "unit": res["unit"], "by": res.get("by"),
                            "period": res.get("period"), "rows_used": res["rows_used"], "table": res["table"][:30], "warnings": res.get("warnings", []), "notes": res.get("notes", [])}
+            elif name == "make_map":
+                from map_tools import render_map, MapError
+                call = dict(args)
+                title, level = call.pop("title", None), call.pop("level", None)
+                try:
+                    png, info = render_map(self.engine, call, title, level)
+                except MapError as e:
+                    return json.dumps({"error": str(e)}, ensure_ascii=False)
+                res = info["result"]
+                self.images.append(png)
+                out = {"map_created": True, "level": info["level"], "metric": res["metric"], "unit": res["unit"], "country": info["country"], "period": res.get("period"), "rows_used": res["rows_used"],
+                       "places_on_map": info["placed"].get("matched"), "places_in_result": info["placed"].get("total"), "places_not_placed": info["placed"].get("unmatched"),
+                       "table": res["table"][:30], "warnings": res.get("warnings", []), "notes": res.get("notes", [])}
             else:
                 out = {"error": "unknown tool " + str(name)}
         except EngineError as e:
@@ -272,10 +295,10 @@ def trail(calls):
     """One line per tool call, for the page and the logs."""
     out = []
     for c in calls:
-        if c["tool"] in ("query_data", "make_chart"):
+        if c["tool"] in ("query_data", "make_chart", "make_map"):
             i = c["input"]
             f = ", ".join("%s=%s" % (k, v) for k, v in i.items() if k not in ("dataset", "metric") and v not in (None, "", [], {}))
-            out.append("%s%s.%s%s%s" % ("chart " if c["tool"] == "make_chart" else "", i.get("dataset"), i.get("metric"), (" (" + f + ")") if f else "", "  [error]" if c["error"] else ""))
+            out.append("%s%s.%s%s%s" % ({"make_chart": "chart ", "make_map": "map "}.get(c["tool"], ""), i.get("dataset"), i.get("metric"), (" (" + f + ")") if f else "", "  [error]" if c["error"] else ""))
         else:
             out.append(c["tool"] + (" " + str(c["input"].get("dataset", "")) if c["input"].get("dataset") else ""))
     return out
