@@ -4,7 +4,7 @@
 #   values.csv      columns: key, value, n   (key = GEO_CODE, or a place name, or a country name, as `level` says)
 #   level           geo_code | district | province | country   (district and province join by name, inside the country filter)
 # Writes <out.png> and <out.png>.json (rows matched, rows not matched, the unmatched keys).
-suppressMessages({library(sf); library(ggplot2); library(dplyr)})
+suppressMessages({library(sf); library(ggplot2); library(dplyr); library(patchwork)})
 a <- commandArgs(trailingOnly = TRUE)
 dir <- a[1]; csv <- a[2]; out <- a[3]; level <- a[4]; ttl <- a[5]; sub <- a[6]; ctry <- a[7]; unit <- a[8]
 norm <- function(x) gsub("[^A-Z0-9]", "", toupper(iconv(as.character(x), to = "ASCII//TRANSLIT")))
@@ -37,6 +37,33 @@ has <- if (cat_vals) !is.na(m$value) else !is.na(m$value)
 bb <- sf::st_bbox(m[has, ]); padx <- 0.04 * (bb["xmax"] - bb["xmin"]) + 0.05; pady <- 0.04 * (bb["ymax"] - bb["ymin"]) + 0.05
 xl <- c(bb["xmin"] - padx, bb["xmax"] + padx); yl <- c(bb["ymin"] - pady, bb["ymax"] + pady)
 ink <- "#1d2530"; muted <- "#5b6675"
+if (cat_vals) {   # classes (LQAS performance): the look of the dashboard's "LQAS Performance by district and month"
+  DASH <- c("high" = "green4", "moderate" = "yellow", "poor" = "red", "very poor" = "brown4", "pass" = "green4", "fail" = "red")
+  cols <- ifelse(lv %in% names(DASH), DASH[lv], grDevices::hcl.colors(length(lv), "Dark 3")); names(cols) <- lv
+  cnt <- table(factor(m$value[has], levels = lv)); lab <- paste0(lv, " (", as.integer(cnt[lv]), ")"); names(lab) <- lv
+  placed <- m[has, ]
+  provs <- tryCatch({ pv <- readRDS(file.path(dir, "africa_provinces_simplified.rds")); pv$.c <- norm(pv[["ADM0_NAME"]]); pv[pv$.c %in% unique(placed$.c), ] }, error = function(e) NULL)
+  allc <- readRDS(file.path(dir, "africa_countries_simplified.rds")); allc$.c <- norm(allc[[cn]])
+  pl <- ggplot() +
+    geom_sf(data = allc, fill = "white", colour = "grey50", linewidth = 0.3) +
+    { if (!is.null(provs)) geom_sf(data = provs, colour = "white", fill = NA, linewidth = 0.2) } +
+    geom_sf(data = m[!has & m$.c %in% unique(placed$.c), ], fill = "white", colour = "grey80", linewidth = 0.2) +
+    geom_sf(data = placed, aes(fill = value), colour = "grey80") +
+    geom_sf(data = allc[allc$.c %in% unique(placed$.c), ], colour = "black", fill = NA, linewidth = 0.5) +
+    scale_fill_manual(values = cols, labels = lab, na.translate = FALSE, drop = FALSE) +
+    coord_sf(xlim = xl, ylim = yl, expand = FALSE, datum = NA) +
+    theme_void(base_size = 11) + labs(fill = "LQAS Range", title = sub) +
+    theme(plot.title = element_text(size = 12.5, face = "bold", hjust = 0.5, margin = margin(b = 4)),
+          legend.position = "right", legend.title = element_text(size = 10.5, face = "bold"), legend.text = element_text(size = 10),
+          legend.key.height = unit(0.6, "cm"), legend.key.width = unit(0.35, "cm"))
+  pl <- pl + plot_annotation(title = ttl, caption = paste0("Source: PEP SIA Repository | © WHO AFRO GIS CENTRE | Production Date: ", Sys.Date(), if (matched < nrow(vv) + length(unmatched)) sprintf(" | %d of %d districts placed", matched, nrow(vv) + length(unmatched)) else ""),
+    theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0, margin = margin(b = 6)), plot.caption = element_text(size = 9, hjust = 1, face = "italic", margin = margin(t = 6)),
+                  plot.margin = margin(10, 12, 8, 12), plot.background = element_rect(fill = "white", colour = NA)))
+  asp <- as.numeric((yl[2] - yl[1]) / (xl[2] - xl[1])); w <- 9.5; h <- min(9.5, max(5.2, (w - 1.6) * asp + 1.6))
+  ggsave(out, pl, device = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png else "png", width = w, height = h, dpi = 150, bg = "white")
+  writeLines(jsonlite::toJSON(list(matched = matched, total = nrow(vv) + length(unmatched), unmatched = head(unique(unmatched), 15)), auto_unbox = TRUE), paste0(out, ".json"))
+  quit(status = 0)
+}
 p <- ggplot(m) +
   geom_sf(aes(fill = value), colour = if (level == "country") "white" else "#ffffff", linewidth = if (level == "district" || level == "geo_code") 0.08 else 0.2) +
   geom_sf(data = countries, fill = NA, colour = "#8a94a3", linewidth = 0.25) +

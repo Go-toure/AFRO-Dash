@@ -95,7 +95,7 @@ FOOTPRINT_TOOL = {"name": "make_footprint_map", "description": "Draw a FOOTPRINT
                       "latest_round": {"type": "boolean", "description": "keep only the most recent campaign round of the country selection"},
                       "year": {"type": "integer"}, "months": {"type": "array", "items": {"type": "string"}},
                       "response": {"type": "string"}, "round": {"type": "string"},
-                      "basemap": {"type": "boolean", "description": "street map under the routes when the R packages ggspatial and rosm are installed"},
+                      "background": {"type": "string", "enum": ["auto", "satellite", "osm", "none"], "description": "under the routes: satellite photo (Esri, as the dashboard settlement map) is the DEFAULT: leave this empty unless the user asks for another background; osm = OpenStreetMap map tiles / street map; none = plain district boundary"},
                       "title": {"type": "string"}},
                       "required": ["country"]}}
 TOOLS.append(FOOTPRINT_TOOL)
@@ -383,7 +383,9 @@ class Assistant:
                                       ("window %s m wide" % int(round((window[1] - window[0]) * 111320 * 0.999))) if a.get("radius_m") else ""] if x)
         title = a.get("title") or (label or "Footprint of IM routes with missed children, %s" % a["country"].title())
         try:
-            png, minfo = st.render_footprint(d, mk, window, os.path.join(tempfile.mkdtemp(prefix="sia_fp_"), "footprint.png"), boundaries_dir(self.engine), R, a["country"], title, sub, bool(a.get("basemap")))
+            bgm = {"satellite": "sat", "osm": "osmtile", "none": "none"}.get(a.get("background") or "", "auto")
+            png, minfo = st.render_footprint(d, mk, window, os.path.join(tempfile.mkdtemp(prefix="sia_fp_"), "footprint.png"), boundaries_dir(self.engine), R, a["country"], title, sub, bgm,
+                                             st.footprint_meta(d[mk], a["country"], title, sub, place=label))
         except (MapError, RuntimeError) as e:
             return {"error": str(e)}
         slug = re.sub(r"[^a-z0-9]+", "_", (label or a["country"]).lower()).strip("_")[:40]
@@ -391,9 +393,9 @@ class Assistant:
         mine = d[mk]
         return {"map_created": True, "downloadable": True, "place": label, "country": a["country"], "routes_drawn": int(len(mine)), "children_missed_on_drawn_routes": int(mine.children.sum()),
                 "first_route": mine.date.min().strftime("%Y-%m-%d") if mine.date.notna().any() else None, "last_route": mine.date.max().strftime("%Y-%m-%d") if mine.date.notna().any() else None,
-                "latest_round": lr, "window_width_m": minfo.get("window_width_m"), "scale_bar_m": minfo.get("scale_bar_m"), "street_map": minfo.get("street_map"), "notes": notes,
+                "latest_round": lr, "window_width_m": minfo.get("window_width_m"), "scale_bar_m": minfo.get("scale_bar_m"), "background": minfo.get("background"), "satellite_photo": minfo.get("satellite"), "notes": notes,
                 "warnings": ["Only monitor routes that found at least one missed child are drawn: routes that found nobody are not in the data.",
-                             "Routes with GPS outside the country, more than 100 children on one route or longer than 5 km are left out."] + ([] if not a.get("basemap") or minfo.get("street_map") else ["No street map: the R packages ggspatial and rosm are not installed on this computer, so the background is the district boundary."])}
+                             "Routes with GPS outside the country, more than 100 children on one route or longer than 5 km are left out."] + ([minfo["background_note"]] if minfo.get("background_note") else [])}
 
     # ----- pipeline jobs through the job runner -----
     @staticmethod

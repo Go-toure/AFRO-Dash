@@ -81,6 +81,17 @@ def render_map(eng, call, title=None, level=None, out_png=None):
     unit = res.get("unit", "")
     per = res.get("period") or {}
     sub = " · ".join(x for x in [res.get("dataset", ""), "by " + ("district" if lv == "geo_code" else lv), ("%s to %s" % (per.get("from"), per.get("to"))) if per else "", "{:,} rows".format(res.get("rows_used", 0))] if x)
+    if unit == "performance class":   # the dashboard look: the title of the figure, the month(s) over the map
+        import datetime as _dt
+        def _mon(x):
+            try:
+                return _dt.date.fromisoformat(str(x)[:10]).strftime("%b %Y")
+            except Exception:
+                return str(x)
+        a_, b_ = _mon(per.get("from")), _mon(per.get("to"))
+        lr = (res.get("filters") or {}).get("latest_round")
+        sub = (a_ if a_ == b_ else a_ + " - " + b_) + ((" | " + " ".join(str(lr.get(k)) for k in ("response", "round") if lr.get(k))) if isinstance(lr, dict) else "")
+        title = title or "LQAS Performance by district" + (" - " + str(country).title() if country else "")
     ttl = title or "%s%s" % (res["metric"].replace("_", " ").capitalize(), (" — " + str(country).title()) if country else "")
     p = subprocess.run([R, os.path.join(os.path.dirname(os.path.abspath(__file__)), "make_map.R"), bdir, cs, out, lv, ttl, sub, str(country or "-"), unit], capture_output=True, text=True, timeout=300)
     if p.returncode or not os.path.exists(out):

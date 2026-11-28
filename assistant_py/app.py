@@ -17,10 +17,20 @@ from assistant_core import Assistant, trail  # noqa: E402
 
 CHARTS = tempfile.mkdtemp(prefix="sia_charts_")  # chart images are served as files: the chat component strips data: images
 
+CSS = """
+/* every output of the chat (maps, charts, slides previews, tables) is centred and never wider than the message: nothing is cut on the right */
+shiny-chat-container, shiny-chat-messages, shiny-chat-message, .chat-message, .message-content { max-width: 100%; min-width: 0; overflow-x: hidden; }
+shiny-chat-message img, .message-content img, .markdown img { display: block; margin: 10px auto; max-width: 100% !important; width: auto; height: auto; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,.25); }
+shiny-chat-message p:has(> a[href*="charts/"]), .message-content p:has(> a[href*="charts/"]) { text-align: center; margin: 4px 0 12px; }
+shiny-chat-message table, .message-content table { display: block; max-width: 100%; overflow-x: auto; margin: 8px auto; }
+shiny-chat-message pre, .message-content pre { max-width: 100%; overflow-x: auto; }
+"""
+
 app_ui = ui.page_fillable(
     ui.h4("SIA data assistant (internal)"),
     ui.p("Ask about LQAS, administrative coverage, Form A, preparedness, vaccine accountability, social mobilization, team supervision, independent monitoring or the raw forms. "
          "Every figure comes from the catalogue engine and is shown with its unit, period and warnings.", class_="text-muted"),
+    ui.tags.style(CSS),
     ui.chat_ui("chat"),
     title="SIA data assistant",
 )

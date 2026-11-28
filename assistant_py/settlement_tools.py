@@ -317,17 +317,52 @@ def footprint_window(d, mine_mask, radius_m=None):
     return (float(lo_x - px), float(hi_x + px), float(lo_y - py), float(hi_y + py))
 
 
-def render_footprint(routes, mine_mask, window, out_png, boundaries_dir, rscript, country, title, subtitle, basemap=False):
-    """Draws the footprint map with make_footprint_map.R; returns (png path, info from R)."""
+def footprint_meta(mine, country, title, subtitle, place=None, note=None):
+    """The information card of the footprint map: where, which round, how many routes / children / households, the reasons."""
+    def uniq(col):
+        v = [str(x).title() for x in mine[col].dropna().unique() if str(x).strip() and str(x).upper() != "NOT RECORDED"] if col in mine else []
+        return v
+    def one(col, many):
+        v = uniq(col)
+        return v[0] if len(v) == 1 else ("%d %s" % (len(v), many) if v else None)
+    info = [("Country", str(country).title()), ("Province", one("province", "provinces")), ("District", one("district", "districts"))]
+    if place:
+        fac, setl = one("facility", "facilities"), one("settlement", "settlements")
+        info += [("Facility", fac), ("Settlement", setl if setl != fac else None)]
+    info = [[k, v] for k, v in info if v]
+    resp = sorted({str(x) for x in mine["response"].dropna() if str(x).strip()}) if "response" in mine else []
+    rnd = sorted({str(x) for x in mine["round"].dropna() if str(x).strip()}) if "round" in mine else []
+    lines = []
+    if resp:
+        lines.append("Response: " + (resp[0] if len(resp) == 1 else "%d responses" % len(resp)) + ((" | Round " + rnd[0]) if len(rnd) == 1 else ""))
+    d = mine["date"].dropna() if "date" in mine else []
+    if len(d):
+        a, b = d.min().strftime("%d %b %Y"), d.max().strftime("%d %b %Y")
+        lines.append("Date(s): " + (a if a == b else a + " - " + b))
+    reasons = {REASONS[k]: float(mine[k].sum()) for k in REASONS if k in mine and mine[k].sum() > 0}
+    hh = float(mine["hh_missed"].sum()) if "hh_missed" in mine and mine["hh_missed"].notna().any() else None
+    return {"country": str(country), "title": title, "subtitle": subtitle, "info": info, "round_lines": lines, "reasons": reasons,
+            "totals": {"routes": int(len(mine)), "children": float(mine["children"].sum()), "households": hh},
+            "note": note or "Only routes that found at least one missed child are in the data. Routes with GPS outside the country, over 100 children or over 5 km are left out."}
+
+
+def render_footprint(routes, mine_mask, window, out_png, boundaries_dir, rscript, country, title, subtitle, bg="auto", meta=None):
+    """Draws the footprint map with make_footprint_map.R; returns (png path, info from R).
+    bg: sat (Esri satellite photo, as the dashboard's settlement map), osmtile, none (district boundary), auto (= sat: the satellite photo is the default at every zoom)."""
     import csv, subprocess, tempfile, json
     tmp = tempfile.mkdtemp(prefix="sia_fp_")
     cs = os.path.join(tmp, "routes.csv")
     r = routes.copy(); r["mine"] = mine_mask.astype(int).values if hasattr(mine_mask, "values") else 1
     r[["lat", "lon", "lat_end", "lon_end", "children", "mine"]].head(30000).to_csv(cs, index=False)
-    open(cs + ".txt", "w", encoding="utf-8").write("\n".join([str(country), str(title).replace("\n", " "), str(subtitle).replace("\n", " ")]))
     width_m = (window[1] - window[0]) * 111320.0
+    if bg in (None, False, "auto"):
+        bg = "sat"
+    elif bg is True:
+        bg = "sat"
+    m = dict(meta or {}); m.setdefault("country", str(country)); m.setdefault("title", str(title)); m.setdefault("subtitle", str(subtitle))
+    json.dump(m, open(cs + ".meta.json", "w", encoding="utf-8"), ensure_ascii=False)
     here = os.path.dirname(os.path.abspath(__file__))
-    p = subprocess.run([rscript, os.path.join(here, "make_footprint_map.R"), boundaries_dir, cs, out_png, str(country), title, subtitle] + ["%.6f" % x for x in window] + ["1" if basemap else "0", "%.0f" % width_m],
+    p = subprocess.run([rscript, os.path.join(here, "make_footprint_map.R"), boundaries_dir, cs, out_png, str(country), "-", "-"] + ["%.6f" % x for x in window] + [bg, "%.0f" % width_m],
                        capture_output=True, text=True, timeout=300)
     if p.returncode or not os.path.exists(out_png):
         raise RuntimeError("the map could not be drawn: " + ((p.stderr or p.stdout).strip().splitlines() or ["R failed"])[-1][:300])

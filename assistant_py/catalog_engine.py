@@ -273,7 +273,8 @@ class Engine:
                     gk = int(gk)
                 rows.append({"group": gk, "value": v, "n": int(len(d))})
             ordered_by_key = by in ("year", "month", "round")
-            rows.sort(key=lambda r: (r["group"] if ordered_by_key else (-(r["value"] if r["value"] is not None else float("-inf")))))
+            text_values = any(isinstance(r["value"], str) for r in rows)   # a class per group (for example "high"): alphabetical, nothing to rank
+            rows.sort(key=lambda r: (r["group"] if (ordered_by_key or text_values) else (-(r["value"] if r["value"] is not None else float("-inf")))))
             if top_n:
                 rows = rows[: int(top_n)]
             res["table"] = rows
